@@ -76,6 +76,13 @@ class _DownloadPageState extends State<DownloadPage> {
         _downloadInfo[chapter.id] = isDownloaded;
       }
     }
+    // ✅ Default select 第1话 (only if it hasn't already been downloaded)
+    if (_chapters.isNotEmpty) {
+      final firstChapterId = _chapters.first.id;
+      if (_downloadInfo[firstChapterId] != true) {
+        _downloadInfo[firstChapterId] = true;
+      }
+    }
   }
 
   // 判断是否所有章节都被选中

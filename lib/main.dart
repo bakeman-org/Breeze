@@ -768,6 +768,8 @@ class _MyAppState extends State<MyApp>
               }
 
               return MaterialApp.router(
+                // HACK: even on andorid debug build still no banner
+                debugShowCheckedModeBanner: false,
                 routerConfig: appRouter.config(),
                 scrollBehavior: const AppScrollBehavior(),
                 builder: (context, child) {
