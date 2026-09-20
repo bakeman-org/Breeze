@@ -1,28 +1,14 @@
 import 'package:flutter/widgets.dart';
-import 'package:toastification/toastification.dart';
 
 import 'package:zephyr/main.dart';
+import 'package:zephyr/widgets/hyper_toast.dart';
 
+/// Toast 类型。与 [HyperToastType] 一一对应，保留是为了兼容旧的
+/// [ToastEvent] 事件通道。
 enum ToastType { info, success, warning, error }
 
-void _showToastification({
-  required BuildContext context,
-  String? title,
-  required String message,
-  required ToastificationType type,
-  required Duration duration,
-}) {
-  toastification.show(
-    context: context,
-    title: title == null ? null : Text(title),
-    description: Text(message),
-    type: type,
-    style: ToastificationStyle.flatColored,
-    autoCloseDuration: duration,
-    showProgressBar: true,
-  );
-}
-
+/// 跨隔离事件：当调用方没有 context 时，通过 [eventBus] 把请求转发给
+/// 顶层（NavigationBar 的 `_showToast`）去消费。
 class ToastEvent {
   ToastType type;
   String? title;
@@ -37,6 +23,41 @@ class ToastEvent {
   });
 }
 
+/// 把 [ToastType] 映射成 [HyperToastType]。
+HyperToastType _mapType(ToastType type) {
+  switch (type) {
+    case ToastType.info:
+      return HyperToastType.info;
+    case ToastType.success:
+      return HyperToastType.success;
+    case ToastType.warning:
+      return HyperToastType.warning;
+    case ToastType.error:
+      return HyperToastType.error;
+  }
+}
+
+/// 把标题和正文拼成 HyperOS toast 能显示的多行文字。
+///
+/// HyperOS toast 没有独立的「标题区」，两行文本用换行符拼接即可。
+String _composeText(String? title, String message) {
+  if (title == null || title.isEmpty) return message;
+  return '$title\n$message';
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// 对外 API
+// ─────────────────────────────────────────────────────────────────────
+//
+// 4 个 showXxxToast 的签名保持不变：
+//   - 传 context → 直接走 HyperToast.show；
+//   - 不传 context → 通过 eventBus 转发 ToastEvent，由 NavigationBar 消费。
+//
+// 这样做的好处：
+//   1. 所有调用点无需修改；
+//   2. 底层 UI 从 toastification 换成 HyperOS 风格；
+//   3. 保留无 context 的兼容路径。
+
 void showInfoToast(
   String message, {
   String? title,
@@ -44,11 +65,10 @@ void showInfoToast(
   BuildContext? context,
 }) {
   if (context != null) {
-    _showToastification(
-      context: context,
-      title: title,
-      message: message,
-      type: ToastificationType.info,
+    HyperToast.show(
+      context,
+      _composeText(title, message),
+      type: HyperToastType.info,
       duration: duration,
     );
     return;
@@ -71,11 +91,10 @@ void showSuccessToast(
   BuildContext? context,
 }) {
   if (context != null) {
-    _showToastification(
-      context: context,
-      title: title,
-      message: message,
-      type: ToastificationType.success,
+    HyperToast.show(
+      context,
+      _composeText(title, message),
+      type: HyperToastType.success,
       duration: duration,
     );
     return;
@@ -98,11 +117,10 @@ void showWarningToast(
   BuildContext? context,
 }) {
   if (context != null) {
-    _showToastification(
-      context: context,
-      title: title,
-      message: message,
-      type: ToastificationType.warning,
+    HyperToast.show(
+      context,
+      _composeText(title, message),
+      type: HyperToastType.warning,
       duration: duration,
     );
     return;
@@ -125,11 +143,10 @@ void showErrorToast(
   BuildContext? context,
 }) {
   if (context != null) {
-    _showToastification(
-      context: context,
-      title: title,
-      message: message,
-      type: ToastificationType.error,
+    HyperToast.show(
+      context,
+      _composeText(title, message),
+      type: HyperToastType.error,
       duration: duration,
     );
     return;

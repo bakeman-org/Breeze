@@ -6,7 +6,6 @@ import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_miuix/miuix.dart';
-import 'package:toastification/toastification.dart';
 import 'package:zephyr/config/global/global_setting.dart';
 import 'package:zephyr/config/router/router.gr.dart';
 import 'package:zephyr/i18n/strings.g.dart';
@@ -19,6 +18,7 @@ import 'package:zephyr/service/update/check_update.dart';
 import 'package:zephyr/util/context/context_extensions.dart';
 import 'package:zephyr/util/error_filter.dart';
 import 'package:zephyr/util/manage_cache.dart';
+import 'package:zephyr/widgets/hyper_toast.dart';
 import 'package:zephyr/widgets/memory/memory_overlay_widget.dart';
 import 'package:zephyr/widgets/toast.dart';
 
@@ -324,7 +324,6 @@ class _NavigationBarState extends State<NavigationBar> {
     // 想查看完整可用名，可在 initState 里临时加：
     //   for (final n in MiuixIcons.extended.names) debugPrint(n);
     final base = <_NavDestination>[
-      // 书架：用 search 之外的更贴切名字，先尝试 home；若想用别的请替换
       const _NavDestination(icon: 'home', label: '书架'),
       const _NavDestination(icon: 'search', label: '发现'),
       const _NavDestination(icon: 'contacts', label: '更多'),
@@ -451,9 +450,22 @@ class _NavigationBarState extends State<NavigationBar> {
     }
   }
 
+  /// 消费 [ToastEvent]，用 HyperOS 风格 toast 显示。
+  ///
+  /// 事件来源：调用方在没有 context 时 fire 的 [ToastEvent]。
+  /// 这里直接用 [State.context] 走 [HyperToast.show]——NavigationBar 常驻
+  /// 在 widget 树上，context 一直有效，`Overlay.maybeOf` 一定能拿到根 Overlay。
+  ///
+  /// ⚠️ 不要用 `HyperToast.showGlobal`：那个依赖 `navigatorKey`，而当前
+  /// `MaterialApp.router` 并没有把 `navigatorKey` 传进去，所以
+  /// `navigatorKey.currentState` 为 null，会静默失败什么都不显示。
   void _showToast(ToastEvent event) {
+    if (!mounted) return;
+
     final now = DateTime.now();
     final toastEvent = (event.type, event.title, event.message, event.duration);
+
+    // 去重：2 秒内同一条 toast 只显示一次，避免短时间内重复弹。
     if (_lastToastEvent == toastEvent &&
         _lastToastShownAt != null &&
         now.difference(_lastToastShownAt!) < const Duration(seconds: 2)) {
@@ -462,33 +474,9 @@ class _NavigationBarState extends State<NavigationBar> {
     _lastToastEvent = toastEvent;
     _lastToastShownAt = now;
 
-    ToastificationType type;
-    switch (event.type) {
-      case ToastType.success:
-        type = ToastificationType.success;
-        break;
-      case ToastType.error:
-        type = ToastificationType.error;
-        break;
-      case ToastType.warning:
-        type = ToastificationType.warning;
-        break;
-      case ToastType.info:
-        type = ToastificationType.info;
-        break;
-    }
-
-    if (event.message.runes.length < 30) {
-      toastification.show(
-        context: context,
-        title: event.title == null ? null : Text(event.title!),
-        description: Text(event.message),
-        type: type,
-        style: ToastificationStyle.flatColored,
-        autoCloseDuration: event.duration,
-        showProgressBar: true,
-      );
-    } else {
+    // 长文本走对话框，避免胶囊变得超宽超丑。
+    // 这是从原实现保留下来的策略。
+    if (event.message.runes.length >= 30) {
       late String title;
       if (event.title != null) {
         title = event.title!;
@@ -509,6 +497,33 @@ class _NavigationBarState extends State<NavigationBar> {
         }
       }
       commonDialog(context, title, event.message);
+      return;
+    }
+
+    // 短文本走 HyperOS 风格 toast。
+    final text = event.title == null
+        ? event.message
+        : '${event.title}\n${event.message}';
+
+    HyperToast.show(
+      context,
+      text,
+      type: _mapToastType(event.type),
+      duration: event.duration,
+    );
+  }
+
+  /// 把 [ToastType] 映射成 [HyperToastType]。
+  HyperToastType _mapToastType(ToastType type) {
+    switch (type) {
+      case ToastType.info:
+        return HyperToastType.info;
+      case ToastType.success:
+        return HyperToastType.success;
+      case ToastType.warning:
+        return HyperToastType.warning;
+      case ToastType.error:
+        return HyperToastType.error;
     }
   }
 

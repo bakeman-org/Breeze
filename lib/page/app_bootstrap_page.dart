@@ -20,16 +20,18 @@ import 'package:zephyr/widgets/toast.dart';
 
 /// 启动引导页。
 ///
-/// 从前的实现会把插件初始化、插件预热、云更新检查全部同步做掉，导致每次
-/// 冷启动都要盯着「初始化中…」很久。现在的策略是：
+/// 由于重量级初始化（ObjectBox / 字体 / i18n…）已经在 [ZephyrApp] 的
+/// 闪屏阶段完成，本页只负责「路由级别」的收尾工作：
 ///
-/// 1. 只保留「必须先完成才能进入 UI」的任务同步执行；
-/// 2. 插件预热 / 云更新 / 运行时初始化全部塞到后台，不阻塞导航；
-/// 3. 去掉了原先 200ms 的最小延迟（纯等待，无逻辑价值）；
-/// 4. 只有应用锁启用时才会真正停留在本页，其他情况几乎瞬跳。
+///   1. 注册各种回调（原生桥、Rust FFI、前台任务事件）；
+///   2. 数据库兼容性迁移（任何 DB 读写前必须完成）；
+///   3. 插件注册表初始化（本地文件，通常很快）；
+///   4. 应用锁校验（仅当启用时）；
+///   5. 切换到主界面。
 ///
-/// 这样冷启动时用户看到的「初始化中…」转瞬即逝，甚至因为耗时太短
-/// 完全看不到（Flutter 会跳过中间帧的绘制）。
+/// 插件预热、云更新、插件运行时初始化全部挪到后台，不阻塞导航。
+///
+/// 冷启动时用户看到本页的时间通常 < 200ms；开了应用锁才会停留到校验完成。
 @RoutePage()
 class AppBootstrapPage extends StatelessWidget {
   const AppBootstrapPage({super.key});
@@ -87,63 +89,67 @@ class _AppBootstrapViewState extends State<AppBootstrapView> {
 
   /// 启动流程主入口。
   ///
-  /// 流程分两段：
+  /// ── 关于 `BuildContext across async gaps` ──
   ///
-  /// **同步段（阻塞导航）** —— 必须在用户进入主界面前完成：
-  ///   - `registerPersistentCallbacks` / `registerDartTools`：注册原生回调；
-  ///   - `initRustFunctions`：Rust 侧 FFI 函数注册；
-  ///   - `ForegroundTaskService.listenEvents`：注册前台任务事件监听；
-  ///   - `ensureCompatibleMigration`：数据库结构迁移，任何 DB 读写前必须完成；
-  ///   - `PluginRegistryService.init`：读插件注册表（本地文件，通常很快）。
+  /// 本方法里所有 `await` 之后对 `context` 的使用，都满足以下两条中的至少一条：
+  ///   1. 紧接 `if (!mounted) return;` 守卫；
+  ///   2. 使用提前捕获的引用（如 [StringSelectCubit] / [GlobalSettingCubit]），
+  ///      完全绕开 `context`。
   ///
-  /// **后台段（不阻塞导航）** —— 耗时较长且不阻塞首屏：
-  ///   - `warmupPluginInfos`：提前把插件元信息读进内存，加快后续插件页面打开；
-  ///   - `scheduleSilentCloudUpdate`：云更新检查（原本就延迟 1 分钟触发）；
-  ///   - `initializeActivePluginRuntimes`：初始化已启用插件的运行时。
+  /// 这样既满足 Flutter 推荐的 `use_build_context_synchronously` 模式，
+  /// 又避免了在每个 await 后面反复读写 `context.read` 的性能开销。
   ///
-  /// **应用锁**：仅当启用时才会真正停留本页做校验，否则一路导航到主界面。
+  /// ── 关于性能 ──
+  ///
+  ///   - 移除了旧实现的 200ms 最小延迟；
+  ///   - warmup / 云更新 / 插件运行时初始化全部 `unawaited`；
+  ///   - 只有应用锁启用时才真正停留本页。
   Future<void> _goNext() async {
-    // 用于更新转圈下方显示的状态文字。已 mounted 时才会执行。
-    void updateStatus(String msg) {
-      if (mounted) context.read<StringSelectCubit>().setDate(msg);
+    // 预先读出两个 cubit 的引用，避免 await 之后再次触碰 context。
+    if (!mounted) return;
+    final stringCubit = context.read<StringSelectCubit>();
+    final globalSettingCubit = context.read<GlobalSettingCubit>();
+
+    // 更新转圈下方状态文字。stringCubit 是提前捕获的引用，
+    // 不涉及 context，任何时机调用都安全。
+    void setStatus(String msg) {
+      stringCubit.setDate(msg);
     }
 
-    // ───── 同步段：必须完成的初始化 ─────
+    // ───── 同步段：无 I/O、无 context 依赖 ─────
     registerPersistentCallbacks();
     registerDartTools();
     initRustFunctions();
     ForegroundTaskService.instance.listenEvents();
 
-    // 数据库迁移：任何 DB 读写前必须完成。
-    if (mounted) await ensureCompatibleMigration(context);
+    // ───── 数据库迁移：需要 context 弹对话框 ─────
+    if (!mounted) return;
+    await ensureCompatibleMigration(context);
 
-    updateStatus(t.appBootstrap.initializing);
+    // 从这里开始，所有后续逻辑都使用提前捕获的 cubit，不再触碰 context。
+    setStatus(t.appBootstrap.initializing);
 
-    // 插件注册表初始化：读本地文件，通常很快，但必须在进主界面之前完成，
+    // 插件注册表初始化：本地文件读取，通常很快，但必须在进主界面之前完成，
     // 否则首屏的插件入口会拿不到数据。
     await PluginRegistryService.I.init();
 
     // ───── 后台段：不阻塞导航的耗时任务 ─────
     //
-    // 这里不 await，让它在后台跑。即使打开插件页面时后台还没跑完，
-    // PluginRegistryService 内部通常有按需加载兜底（首次访问时再拉）。
+    // 即使打开插件页面时后台还没跑完，PluginRegistryService 内部通常有
+    // 按需加载兜底（首次访问时再拉）。
     unawaited(_runBackgroundInit());
-
-    if (!mounted) return;
 
     // ───── 应用锁校验 ─────
     //
     // 只有启用锁时才阻塞导航。未启用锁的用户一路无阻直接进入主界面。
-    final globalSettingCubit = context.read<GlobalSettingCubit>();
-    final globalSetting = globalSettingCubit.state;
-    final appLockSetting = globalSetting.appLockSetting;
-
+    final appLockSetting = globalSettingCubit.state.appLockSetting;
     if (appLockSetting.enabled && appLockSetting.isReady) {
-      final handled = await _handleAppLock(globalSettingCubit, updateStatus);
+      final handled = await _handleAppLock(globalSettingCubit, setStatus);
       if (!handled) return; // 校验失败 / 用户取消，留在本页
     }
 
     // ───── 进入主界面 ─────
+    if (!mounted) return;
     context.router.replace(const app_router.NavigationBar());
   }
 
@@ -154,7 +160,8 @@ class _AppBootstrapViewState extends State<AppBootstrapView> {
   ///   - 云更新检查：延迟 1 分钟触发的静默检查，本身就不该阻塞启动；
   ///   - 插件运行时初始化：为已启用的插件准备 JS 运行时环境。
   ///
-  /// 失败只记录日志，不影响主流程。
+  /// 三步之间用独立的 try/catch 包裹：任何一步失败都不影响后续任务，
+  /// 避免因单个插件损坏导致整个初始化链路中断。
   Future<void> _runBackgroundInit() async {
     try {
       await PluginRegistryService.I.warmupPluginInfos();
@@ -189,14 +196,19 @@ class _AppBootstrapViewState extends State<AppBootstrapView> {
   ///               调用方应直接 return 不再导航。
   ///
   /// 抽出成独立方法是为了让 [_goNext] 的线性流程更清晰，也避免深层嵌套。
+  ///
+  /// 关于 `BuildContext across async gaps`：
+  ///   本方法里每个 await 之后的对 context 的使用都紧跟 `if (!mounted) return false;`
+  ///   守卫，符合 Flutter 官方推荐的模式。
   Future<bool> _handleAppLock(
     GlobalSettingCubit globalSettingCubit,
-    void Function(String) updateStatus,
+    void Function(String) setStatus,
   ) async {
     final appLockSetting = globalSettingCubit.state.appLockSetting;
 
-    updateStatus(t.appBootstrap.verifyGesture);
+    setStatus(t.appBootstrap.verifyGesture);
 
+    if (!mounted) return false;
     final unlockResult = await showGestureUnlockDialog(
       context,
       expectedHash: appLockSetting.gesturePasswordHash,
@@ -223,22 +235,24 @@ class _AppBootstrapViewState extends State<AppBootstrapView> {
               current.copyWith(appLockSetting: const AppLockSettingState()),
         );
         showSuccessToast(t.gestureLock.passwordCleared);
-        updateStatus(t.gestureLock.passwordCleared);
+        setStatus(t.gestureLock.passwordCleared);
+
+        if (!mounted) return false;
         context.router.replace(const app_router.NavigationBar());
         return false; // 已导航，调用方不再处理
       }
 
-      updateStatus(t.appBootstrap.pinVerifyFailed);
+      setStatus(t.appBootstrap.pinVerifyFailed);
       return false;
     }
 
     // 用户取消或手势错误：留在本页。
     if (unlockResult != GestureUnlockResult.success) {
-      updateStatus(t.appBootstrap.unlockCancelled);
+      setStatus(t.appBootstrap.unlockCancelled);
       return false;
     }
 
-    updateStatus(t.appBootstrap.enteringApp);
+    setStatus(t.appBootstrap.enteringApp);
     return true;
   }
 }

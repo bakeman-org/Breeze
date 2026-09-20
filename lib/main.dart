@@ -6,11 +6,6 @@ import 'dart:ui' show AppExitResponse;
 
 import 'package:desktop_webview_linux/desktop_webview_linux.dart';
 import 'package:device_info_plus/device_info_plus.dart';
-// 说明：dynamic_color 依赖已从 pubspec.yaml 移除。
-// 原因：flutter_miuix 1.x 依赖 dynamic_color ^1.8.1，项目原本使用 ^2.1.0，
-// 两者存在大版本冲突无法调和。下方 build 方法里已经用 seedColor 直接
-// 生成 ColorScheme，不再需要 DynamicColorBuilder。
-// import 'package:dynamic_color/dynamic_color.dart';
 import 'package:event_bus/event_bus.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
@@ -18,6 +13,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:flutter_miuix/miuix.dart';
 import 'package:flutter_socks_proxy/socks_proxy.dart';
 import 'package:logger/logger.dart';
 import 'package:material_ui/material_ui.dart';
@@ -57,20 +53,19 @@ import 'package:zephyr/widgets/desktop/intent.dart';
 export 'package:zephyr/network/http/wind_http.dart'
     show WindHttp, FetchResponse, fetch, fetchDirect;
 
+// ─────────────────────────────────────────────────────────────────────
+// 全局单例
+// ─────────────────────────────────────────────────────────────────────
+
 ObjectBox? _objectbox;
 ObjectBox get objectbox => _objectbox!;
 set objectbox(ObjectBox value) => _objectbox = value;
 
 final appRouter = AppRouter();
 
-// 全局事件总线实例
 EventBus eventBus = EventBus();
 
-var logger = Logger(
-  printer: TersePrettyPrinter(),
-  // filter: MyAlwaysLogFilter(),
-  // output: RemoteOutput(),
-);
+var logger = Logger(printer: TersePrettyPrinter());
 
 List<String> cfIpList = [];
 
@@ -115,18 +110,19 @@ class RemoteOutput extends LogOutput {
 
 class MyAlwaysLogFilter extends LogFilter {
   @override
-  bool shouldLog(LogEvent event) => true; // 强制通过所有日志
+  bool shouldLog(LogEvent event) => true;
 }
 
+// ─────────────────────────────────────────────────────────────────────
+// 启动入口
+// ─────────────────────────────────────────────────────────────────────
+//
+// 关键优化：runApp 立刻执行，不 await 业务初始化。业务初始化改到
+// ZephyrApp 的闪屏阶段跑，用户首帧即可看到品牌图标，而不是白屏 2 秒。
 Future<void> main(List<String> args) async {
-  // 1. 基础初始化
   WidgetsFlutterBinding.ensureInitialized();
 
-  // 先生成本地同步设备 ID，后续文件夹/链接的版本向量会使用它
-  await ensureSyncDeviceId();
-
-  // desktop_webview_linux 必需的标题栏子进程入口
-  // 不添加会导致 Linux 下 WebView 窗口关闭时 segfault 崩溃
+  // desktop_webview_linux 必需的标题栏子进程入口，必须最先处理。
   if (!kIsWeb && Platform.isLinux && runWebViewTitleBarWidget(args)) {
     return;
   }
@@ -134,9 +130,7 @@ Future<void> main(List<String> args) async {
   const sentryDsn = String.fromEnvironment('sentry_dsn', defaultValue: '');
 
   if (sentryDsn.isEmpty) {
-    // 1. 如果是调试模式，配置 logger 捕获全局错误
-    if (kDebugMode || sentryDsn.isEmpty) {
-      // 捕获 Flutter 框架层错误（如 Widget 构建中的异常）
+    if (kDebugMode) {
       FlutterError.onError = (FlutterErrorDetails details) {
         logger.e(
           "Flutter Framework Error",
@@ -145,124 +139,254 @@ Future<void> main(List<String> args) async {
         );
       };
 
-      // 捕获异步错误和底层错误（如 Future.error, Timer 等）
       PlatformDispatcher.instance.onError = (Object error, StackTrace stack) {
         logger.e("Async/Platform Error", error: error, stackTrace: stack);
-        return true; // 表示错误已被处理
+        return true;
       };
     }
 
-    try {
-      // 2. 执行业务初始化
-      final (globalSettingCubit, pluginRegistryCubit) = await _initServices();
-
-      final comicFollowCubit = ComicFollowCubit();
-
-      runApp(
-        MultiBlocProvider(
-          providers: [
-            BlocProvider.value(value: globalSettingCubit),
-            BlocProvider.value(value: pluginRegistryCubit),
-            BlocProvider.value(value: comicFollowCubit),
-          ],
-          child: const MyApp(),
-        ),
-      );
-    } catch (e, stack) {
-      // 捕获初始化阶段（_initServices）可能抛出的异常
-      if (kDebugMode || sentryDsn.isEmpty) {
-        logger.e("App Setup Failed", error: e, stackTrace: stack);
-      }
-    }
-
+    runApp(const ZephyrApp(sentryDsn: ''));
     return;
   }
 
-  // 2. 使用 Sentry 包装整个应用生命周期
   await SentryFlutter.init(
     (options) {
       options.dsn = sentryDsn;
-
-      // 开启默认的个人信息采集（IP/Header），有助于分析用户分布
       options.sendDefaultPii = true;
-
-      // 仅在调试模式下打印 Sentry 内部日志
       options.debug = kDebugMode;
-
-      // --- Sentry Sponsored Business 特权配置 ---
-      // 性能追踪采样率
       options.tracesSampleRate = 1.0;
 
-      // sentry_flutter 10.0.0-alpha.5 暂不提供 Dart 侧性能剖析采样配置。
-
-      // Android 上暂时关闭 Replay，规避原生侧生命周期卡顿/ANR 风险。
       if (Platform.isAndroid) {
         options.replay.sessionSampleRate = 0.0;
         options.replay.onErrorSampleRate = 0.0;
       } else {
-        // 会话回放设置：平时抽样 10%，遇到错误时 100% 录制
         options.replay.sessionSampleRate = 0.1;
         options.replay.onErrorSampleRate = 1.0;
       }
 
-      // 附加线程信息和堆栈，增强原生层（Rust/C++）错误分析
       options.attachThreads = true;
       options.attachStacktrace = true;
     },
     appRunner: () async {
-      try {
-        final (globalSettingCubit, pluginRegistryCubit) = await _initServices();
-        final comicFollowCubit = ComicFollowCubit();
-
-        await addArchitectureTagsToSentry();
-
-        runApp(
-          SentryWidget(
-            child: MultiBlocProvider(
-              providers: [
-                BlocProvider.value(value: globalSettingCubit),
-                BlocProvider.value(value: pluginRegistryCubit),
-                BlocProvider.value(value: comicFollowCubit),
-              ],
-              child: MyApp(),
-            ),
-          ),
-        );
-      } catch (exception, stackTrace) {
-        await Sentry.captureException(exception, stackTrace: stackTrace);
-      }
+      runApp(ZephyrApp(sentryDsn: sentryDsn));
     },
   );
 }
 
+// ─────────────────────────────────────────────────────────────────────
+// ZephyrApp：顶层壳 + 闪屏
+// ─────────────────────────────────────────────────────────────────────
+
+/// 顶层应用壳：先渲染闪屏，业务初始化在后台跑完后再切到 MyApp。
+class ZephyrApp extends StatefulWidget {
+  const ZephyrApp({super.key, required this.sentryDsn});
+
+  /// 空字符串表示未启用 Sentry。
+  final String sentryDsn;
+
+  @override
+  State<ZephyrApp> createState() => _ZephyrAppState();
+}
+
+class _ZephyrAppState extends State<ZephyrApp> {
+  late final Future<_AppServices> _servicesFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _servicesFuture = _bootstrap();
+  }
+
+  Future<_AppServices> _bootstrap() async {
+    await ensureSyncDeviceId();
+
+    final (globalSettingCubit, pluginRegistryCubit) = await _initServices();
+    final comicFollowCubit = ComicFollowCubit();
+
+    if (widget.sentryDsn.isNotEmpty) {
+      await addArchitectureTagsToSentry();
+    }
+
+    return _AppServices(
+      globalSettingCubit: globalSettingCubit,
+      pluginRegistryCubit: pluginRegistryCubit,
+      comicFollowCubit: comicFollowCubit,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<_AppServices>(
+      future: _servicesFuture,
+      builder: (context, snapshot) {
+        if (snapshot.hasError) {
+          return _StartupErrorApp(
+            error: snapshot.error!,
+            stackTrace: snapshot.stackTrace,
+          );
+        }
+
+        final services = snapshot.data;
+        if (services == null) {
+          return const _StartupSplashApp();
+        }
+
+        Widget app = MultiBlocProvider(
+          providers: [
+            BlocProvider.value(value: services.globalSettingCubit),
+            BlocProvider.value(value: services.pluginRegistryCubit),
+            BlocProvider.value(value: services.comicFollowCubit),
+          ],
+          child: const MyApp(),
+        );
+
+        if (widget.sentryDsn.isNotEmpty) {
+          app = SentryWidget(child: app);
+        }
+
+        return app;
+      },
+    );
+  }
+}
+
+class _AppServices {
+  const _AppServices({
+    required this.globalSettingCubit,
+    required this.pluginRegistryCubit,
+    required this.comicFollowCubit,
+  });
+
+  final GlobalSettingCubit globalSettingCubit;
+  final PluginRegistryCubit pluginRegistryCubit;
+  final ComicFollowCubit comicFollowCubit;
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// 闪屏 & 错误页
+// ─────────────────────────────────────────────────────────────────────
+
+/// 启动闪屏。刻意不依赖 TranslationProvider / Bloc / MiuixTheme，
+/// 保证首帧即可渲染。
+class _StartupSplashApp extends StatelessWidget {
+  const _StartupSplashApp();
+
+  @override
+  Widget build(BuildContext context) {
+    return const MaterialApp(
+      debugShowCheckedModeBanner: false,
+      home: _SplashScreen(),
+    );
+  }
+}
+
+class _SplashScreen extends StatelessWidget {
+  const _SplashScreen();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(24),
+              child: Image.asset(
+                'asset/image/app-icon.png',
+                width: 88,
+                height: 88,
+                errorBuilder: (_, _, _) =>
+                    const SizedBox(width: 88, height: 88),
+              ),
+            ),
+            const SizedBox(height: 24),
+            const SizedBox(
+              width: 32,
+              height: 32,
+              child: CircularProgressIndicator(strokeWidth: 3),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// 初始化失败的兜底页。
+class _StartupErrorApp extends StatelessWidget {
+  const _StartupErrorApp({required this.error, this.stackTrace});
+
+  final Object error;
+  final StackTrace? stackTrace;
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      home: Scaffold(
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.error_outline,
+                  size: 56,
+                  color: Colors.redAccent,
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  '应用启动失败',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  '$error',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(fontSize: 13),
+                ),
+                if (kDebugMode && stackTrace != null) ...[
+                  const SizedBox(height: 16),
+                  const Text(
+                    '详细堆栈已打印到控制台。',
+                    style: TextStyle(fontSize: 12, color: Colors.grey),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// 业务初始化
+// ─────────────────────────────────────────────────────────────────────
+
 Future<(GlobalSettingCubit, PluginRegistryCubit)> _initServices() async {
-  // 初始化rust
   await initRustLib();
 
-  // 初始化 i18n：先设置默认中文，待 GlobalSettingCubit 加载后再根据用户设置或系统语言切换。
   LocaleSettings.setLocale(AppLocale.enUs);
   I18nHelper.setRustErrorLanguage(AppLocale.enUs);
 
-  // 初始化工作线程
   await workerManager.init(isolatesCount: Platform.numberOfProcessors);
 
-  // 关掉rust端，主要是anyhow的堆栈调用信息
   enableStacktrace(enabled: false);
-
   enableRustLog(enabled: kDebugMode);
 
   if (kDebugMode) {
     setQjsErrorStackEnabled(enabled: true);
-    // 配置http代理，方便开发测试
     await _tryApplyHttpProxyFromEnv();
   } else {
     setQjsErrorStackEnabled(enabled: false);
   }
 
-  // 初始化前台任务
   FlutterForegroundTask.initCommunicationPort();
 
-  // 重采样触控刷新率
   GestureBinding.instance.resamplingEnabled = true;
 
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
@@ -277,11 +401,9 @@ Future<(GlobalSettingCubit, PluginRegistryCubit)> _initServices() async {
   final isWin = Platform.isWindows;
   final cache = PaintingBinding.instance.imageCache;
 
-  // 设置图片缓存数量和内存占用大小（桌面端设置的稍微大点）
   cache.maximumSizeBytes = 200 * 1024 * 1024 * (isWin ? 3 : 1);
   cache.maximumSize = 50 * (isWin ? 3 : 1);
 
-  // 如果是手机的话就固定为只能使用横屏模式
   if (!isTabletWithOutContext()) {
     await SystemChrome.setPreferredOrientations([
       DeviceOrientation.portraitUp,
@@ -301,7 +423,6 @@ Future<(GlobalSettingCubit, PluginRegistryCubit)> _initServices() async {
     blocked: globalSettingCubit.state.blockRustHttpRequests,
   );
 
-  // 根据用户设置或系统语言初始化应用语言
   if (globalSettingCubit.state.localeFollowsSystem) {
     final systemInfo = await SystemLocaleService.getInfo();
     await globalSettingCubit.setSystemLocale(systemInfo.locale);
@@ -328,7 +449,6 @@ Future<(GlobalSettingCubit, PluginRegistryCubit)> _initServices() async {
             ? proxyAddress
             : 'http://$proxyAddress';
         setHttpProxy(proxy: proxyUrl);
-        // Dart 侧纯 dart:io HttpClient（如 minio / S3 同步）也走 HTTP 代理
         SocksProxy.initProxy(proxy: 'PROXY ${_stripProxyScheme(proxyUrl)}');
       case ProxyType.socks5:
         SocksProxy.initProxy(proxy: 'SOCKS5 $proxyAddress');
@@ -336,7 +456,6 @@ Future<(GlobalSettingCubit, PluginRegistryCubit)> _initServices() async {
     }
   }
 
-  // 设置日志转发（包含flutter和qjs的日志）
   final logAddress = globalSettingCubit.state.logAddress;
 
   if (logAddress.isNotEmpty) {
@@ -351,12 +470,9 @@ Future<(GlobalSettingCubit, PluginRegistryCubit)> _initServices() async {
     setQjsErrorStackEnabled(enabled: true);
   }
 
-  // 关掉缓存定时清理(rust端)
   setHostCacheGcEnabled(enabled: false);
-
   setTlsVerifyEnabled(enabled: false);
 
-  // Rust 已在本函数开头初始化；快照查询和 Brotli 压缩均在后台执行。
   unawaited(saveStartupDatabaseSnapshot());
 
   return (globalSettingCubit, pluginRegistryCubit);
@@ -379,7 +495,6 @@ Future<void> _tryApplyHttpProxyFromEnv() async {
   setHttpProxy(proxy: proxyUrl);
 }
 
-/// 去掉代理地址的协议前缀，得到 `host:port`，供 Dart 侧 HttpClient 使用。
 String _stripProxyScheme(String url) {
   var value = url.trim();
   for (final prefix in const ['https://', 'http://']) {
@@ -466,6 +581,10 @@ Future<void> addArchitectureTagsToSentry() async {
   }
 }
 
+// ─────────────────────────────────────────────────────────────────────
+// MyApp
+// ─────────────────────────────────────────────────────────────────────
+
 class MyApp extends StatefulWidget with WindowListener {
   const MyApp({super.key});
 
@@ -479,6 +598,7 @@ class _MyAppState extends State<MyApp>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+
     if (Platform.isWindows || Platform.isMacOS || Platform.isLinux) {
       windowManager.addListener(this);
       _init();
@@ -497,7 +617,6 @@ class _MyAppState extends State<MyApp>
       });
     }
 
-    // 启动命名管道监听，用于接收外部退出信号（仅 Windows）
     if (Platform.isWindows) {
       rust_system.startShutdownListener().listen((shouldExit) {
         if (shouldExit) {
@@ -541,7 +660,6 @@ class _MyAppState extends State<MyApp>
     WindowLogic.saveWindowStateImmediately(context);
   }
 
-  /// 应用级退出请求不一定经过窗口关闭回调，退出前补存一次窗口状态。
   @override
   Future<AppExitResponse> didRequestAppExit() async {
     if (Platform.isWindows || Platform.isMacOS || Platform.isLinux) {
@@ -550,15 +668,12 @@ class _MyAppState extends State<MyApp>
     return AppExitResponse.exit;
   }
 
-  /// 立即隐藏窗口再退出，让用户感知不到 Dart VM 清理的延迟
   Future<void> _forceExit() async {
     await WindowLogic.saveWindowStateImmediately(context);
-    // 强杀，降低延迟
-    // nuclearKillProcess();
     if (Platform.isWindows) {
-      NativeWindow.hide(); // 同步 Win32 调用，零延迟
+      NativeWindow.hide();
     } else {
-      windowManager.hide(); // 其他桌面平台
+      windowManager.hide();
     }
     objectbox.close();
     nuclearKillProcess();
@@ -594,12 +709,14 @@ class _MyAppState extends State<MyApp>
       if (Platform.isLinux) {
         await windowManager.show();
       }
+
       final dialogContext = appRouter.navigatorKey.currentContext;
       if (dialogContext == null || !dialogContext.mounted) {
         await _forceExit();
         return;
       }
-      showDialog(
+
+      await showDialog(
         context: dialogContext,
         builder: (context) {
           var rememberChoice = false;
@@ -628,9 +745,7 @@ class _MyAppState extends State<MyApp>
                 actions: [
                   TextButton(
                     child: const Text('取消'),
-                    onPressed: () {
-                      Navigator.of(context).pop();
-                    },
+                    onPressed: () => Navigator.of(context).pop(),
                   ),
                   TextButton(
                     child: const Text('关闭'),
@@ -667,7 +782,6 @@ class _MyAppState extends State<MyApp>
     }
   }
 
-  /// 隐藏窗口到任务栏托盘，不退出程序
   Future<void> _hideWindow() async {
     await WindowLogic.saveWindowStateImmediately(context);
     if (Platform.isWindows) {
@@ -702,7 +816,6 @@ class _MyAppState extends State<MyApp>
     if (menuItem.key == 'show_window') {
       showMainWindow();
     } else if (menuItem.key == 'exit_app') {
-      // 真正退出：清理资源后退出
       _performGracefulExit();
     }
   }
@@ -721,29 +834,6 @@ class _MyAppState extends State<MyApp>
         animation: FontProfileController.instance,
         builder: (context, _) {
           final globalSettingState = context.watch<GlobalSettingCubit>().state;
-
-          // ─────────────────────────────────────────────────────────────
-          // 关于动态取色的说明
-          // ─────────────────────────────────────────────────────────────
-          // 原先这里用 dynamic_color 包的 DynamicColorBuilder 读取系统壁纸
-          // 动态色（Android Material You / macOS 系统色）。因为 flutter_miuix
-          // 1.x 依赖 dynamic_color ^1.8.1，而项目原本依赖 ^2.1.0，二者存在
-          // 大版本冲突，无法通过版本协商解决，所以这里直接移除了 dynamic_color。
-          //
-          // 现在的做法：
-          //  - 直接使用用户在「外观设置」里配置的 seedColor 作为种子；
-          //  - 分别生成亮色 / 暗色两套 ColorScheme，交给 MaterialApp.router。
-          //
-          // 如果以后想恢复「跟随壁纸自动取色」，推荐使用 flutter_miuix 自带
-          // 的 miuixColorsFromSeed + MiuixTheme（见 theming showcase 里
-          // _DynamicThemePage 的用法），它不依赖 dynamic_color 2.x，而且能给
-          // MiuixNavigationBar 等 Miuix 组件同时提供配色。
-          //
-          // 同时请注意：当前 MaterialApp 外层没有 MiuixTheme 祖先，若之后
-          // 在页面里使用 MiuixNavigationBar / MiuixTabRow 等 Miuix 组件，
-          // 需要在 MaterialApp 的 builder 里再包一层 MiuixTheme，否则这些
-          // 组件会因找不到 MiuixTheme 而抛异常。
-          // ─────────────────────────────────────────────────────────────
           final primary = globalSettingState.seedColor;
 
           final ColorScheme lightColorScheme = ColorScheme.fromSeed(
@@ -774,8 +864,6 @@ class _MyAppState extends State<MyApp>
           }
 
           return MaterialApp.router(
-            // HACK: even on andorid debug build still no banner
-            // TODO: failed with zero_inspector_kit integrate, I don't know why
             debugShowCheckedModeBanner: false,
             routerConfig: appRouter.config(),
             scrollBehavior: const AppScrollBehavior(),
@@ -784,8 +872,6 @@ class _MyAppState extends State<MyApp>
                 actions: <Type, Action<Intent>>{
                   EscapeIntent: CallbackAction<EscapeIntent>(
                     onInvoke: (intent) {
-                      // 先让当前焦点失焦，避免 pop 时 InputDecorator 才第一次变 dirty；
-                      // 再把 pop 推迟到下一帧，让失焦引发的重建在当前帧完成。
                       FocusManager.instance.primaryFocus?.unfocus();
                       WidgetsBinding.instance.addPostFrameCallback((_) {
                         appRouter.maybePop();
@@ -828,10 +914,34 @@ class _MyAppState extends State<MyApp>
                   },
                 );
               }
-              // 第三方依赖仍有 legacy Material widget，需要这个桥接层提供旧主题
-              // 与本地化上下文；待依赖迁移后可移除。
-              // ignore: deprecated_member_use
-              return MaterialUiCompatibilityBridge(child: content);
+
+              // ─────────────────────────────────────────────────────
+              // Miuix 主题桥接
+              // ─────────────────────────────────────────────────────
+              // Miuix 组件读的是 MiuixTheme，不是 MaterialApp.theme。
+              // 缺少这一层，MiuixScaffold / MiuixCard / MiuixSmallTitle
+              // 只会走内部 fallback 配色，不跟随 seedColor 变化。放在
+              // builder 里而不是 MyApp 最外层，是为了能直接读取
+              // Theme.of(context).brightness，保证 Miuix 的亮暗跟随
+              // Material 主题的 themeMode。
+              final brightness = Theme.of(context).brightness;
+              final miuixColors = miuixColorsFromSeed(
+                seed: primary,
+                paletteStyle: MiuixThemePaletteStyle.tonalSpot,
+                dark: brightness == Brightness.dark,
+              );
+
+              return MiuixTheme(
+                data: MiuixThemeData(
+                  colors: miuixColors,
+                  // 当前树里还没有 MiuixTheme 祖先，of() 返回内部 fallback
+                  // 的默认 textStyles；把它作为新主题的 textStyles，保证
+                  // 文字风格不被重置。
+                  textStyles: MiuixTheme.of(context).textStyles,
+                  brightness: brightness,
+                ),
+                child: MaterialUiCompatibilityBridge(child: content),
+              );
             },
             locale: TranslationProvider.of(context).flutterLocale,
             title: appName,
