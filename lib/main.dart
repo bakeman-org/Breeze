@@ -49,6 +49,7 @@ import 'package:zephyr/util/manage_cache.dart';
 import 'package:zephyr/util/rust_loader.dart';
 import 'package:zephyr/widgets/desktop/custom_title_bar.dart';
 import 'package:zephyr/widgets/desktop/intent.dart';
+import 'package:zero_inspector_kit/zero_inspector_kit.dart';
 
 export 'package:zephyr/network/http/wind_http.dart'
     show WindHttp, FetchResponse, fetch, fetchDirect;
@@ -153,8 +154,8 @@ Future<void> main(List<String> args) async {
       final (globalSettingCubit, pluginRegistryCubit) = await _initServices();
 
       final comicFollowCubit = ComicFollowCubit();
-
-      runApp(
+      // HACK: integrate with debug
+      ZeroInspectorKit.runAppWithInspector(
         MultiBlocProvider(
           providers: [
             BlocProvider.value(value: globalSettingCubit),
@@ -769,6 +770,7 @@ class _MyAppState extends State<MyApp>
 
               return MaterialApp.router(
                 // HACK: even on andorid debug build still no banner
+                // TODO: failed with zero_inspector_kit integrate, I don't know why
                 debugShowCheckedModeBanner: false,
                 routerConfig: appRouter.config(),
                 scrollBehavior: const AppScrollBehavior(),

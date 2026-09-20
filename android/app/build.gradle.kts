@@ -87,6 +87,15 @@ android {
     }
 
     buildTypes {
+        // Distinct applicationId so a debug build installs alongside the
+        // (differently-signed) release without a signature-mismatch conflict.
+        // HACK: this idea get from qplayer
+        debug {
+            applicationIdSuffix = ".debug"
+            versionNameSuffix = "-debug"
+            manifestPlaceholders["appLabel"] = "Breeze (debug)"
+        }
+
         release {
             signingConfig = signingConfigs["release"]
             proguardFiles(
