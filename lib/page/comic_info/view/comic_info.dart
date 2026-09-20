@@ -10,15 +10,23 @@ import 'package:path/path.dart' as p;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:zephyr/config/global/global_setting.dart';
 import 'package:zephyr/config/router/router.dart';
+import 'package:zephyr/config/router/router.gr.dart' as app_router;
 import 'package:zephyr/cubit/string_select.dart';
 import 'package:zephyr/i18n/strings.g.dart';
 import 'package:zephyr/main.dart';
 import 'package:zephyr/page/comic_follow/cubit/comic_follow_cubit.dart';
 import 'package:zephyr/page/comic_info/comic_info.dart';
 import 'package:zephyr/page/comic_info/json/normal/normal_comic_all_info.dart';
-import 'package:zephyr/page/comic_read/bloc/page_bloc.dart';
-import 'package:zephyr/page/comic_read/json/common_ep_info_json/common_ep_info_json.dart';
-import 'package:zephyr/page/comic_read/type/chapter_extern.dart';
+import 'package:zephyr/page/comic_info/models/preview_prefs.dart';
+import 'package:zephyr/page/comic_info/widgets/comic_info_fabs.dart';
+import 'package:zephyr/page/comic_info/widgets/episode_list_section.dart';
+import 'package:zephyr/page/comic_info/widgets/inline_preview_grid.dart';
+import 'package:zephyr/page/comic_info/widgets/preview_controls.dart';
+import 'package:zephyr/page/comic_info/widgets/section_widgets.dart';
+// ★ 新增：查 objectbox 下载记录。
+import 'package:zephyr/object_box/objectbox.g.dart';
+// ★ 新增：构造 UnifiedComicDownloadInfo 传给下载页。
+import 'package:zephyr/page/download/models/unified_comic_download.dart';
 import 'package:zephyr/type/enum.dart';
 import 'package:zephyr/type/pipe.dart';
 import 'package:zephyr/util/context/context_extensions.dart';
@@ -30,21 +38,9 @@ import 'package:zephyr/util/text/chinese_convert.dart';
 import 'package:zephyr/widgets/comic_entry/models/models.dart';
 import 'package:zephyr/widgets/error_view.dart';
 import 'package:zephyr/widgets/fluent_dropdown.dart';
-import 'package:zephyr/widgets/picture_bloc/bloc/picture_bloc.dart';
-import 'package:zephyr/widgets/picture_bloc/models/picture_info.dart';
 import 'package:zephyr/widgets/toast.dart';
 
 enum MenuOption { export, cloudCollect, follow }
-
-/// 预览模式：前 N 张 / 后 N 张 / 起止区间。
-enum _PreviewMode { top, tail, range }
-
-/// 预览选择的持久化 key。
-const String _kShowPreviewPrefKey = 'comic_info_show_preview';
-const String _kPreviewModePrefKey = 'comic_info_preview_mode';
-const String _kPreviewCountPrefKey = 'comic_info_preview_count';
-const String _kPreviewStartPrefKey = 'comic_info_preview_start';
-const String _kPreviewEndPrefKey = 'comic_info_preview_end';
 
 @RoutePage()
 class ComicInfoPage extends StatelessWidget {
@@ -123,6 +119,9 @@ class _ComicInfoState extends State<_ComicInfo>
   @override
   bool get wantKeepAlive => true;
 
+  /// 用于「回到顶部」FAB 的滚动控制器。
+  final ScrollController _scrollController = ScrollController();
+
   dynamic comicInfoDyn;
   late ComicEntryType _type;
   late String _comicId;
@@ -135,12 +134,12 @@ class _ComicInfoState extends State<_ComicInfo>
   bool _isLocalCollected = false;
   String _localCollectSyncedFor = '';
 
-  // ---- 预览相关状态（全部持久化） ----
+  // 预览状态（全部持久化）。
   bool _showPreview = false;
-  _PreviewMode _previewMode = _PreviewMode.top;
-  int _previewCount = 20; // top / tail 共用
-  int _previewStart = 1; // range 用
-  int _previewEnd = 20; // range 用
+  PreviewMode _previewMode = PreviewMode.top;
+  int _previewCount = 20;
+  int _previewStart = 1;
+  int _previewEnd = 20;
   int _previewTotalPages = 0;
   int _previewReloadKey = 0;
 
@@ -154,7 +153,26 @@ class _ComicInfoState extends State<_ComicInfo>
 
   @override
   void dispose() {
+    _scrollController.dispose();
     super.dispose();
+  }
+
+  /// 当前漫画是否已在 objectbox 里有下载记录。
+  ///
+  /// 每次 build 时同步查询一次：objectbox 的本地查询是内存操作，微秒级，
+  /// 比引入 RouteObserver + setState 更简单可靠（下载完成后回到本页
+  /// 会自动反映最新状态）。
+  bool get _isDownloaded {
+    try {
+      final uniqueKey = '${widget.from.trim()}:$_comicId';
+      return objectbox.unifiedDownloadBox
+              .query(UnifiedComicDownload_.uniqueKey.equals(uniqueKey))
+              .build()
+              .findFirst() !=
+          null;
+    } catch (_) {
+      return false;
+    }
   }
 
   Future<void> _loadPreviewPrefs() async {
@@ -162,22 +180,22 @@ class _ComicInfoState extends State<_ComicInfo>
       final prefs = await SharedPreferences.getInstance();
       if (!mounted) return;
 
-      final show = prefs.getBool(_kShowPreviewPrefKey) ?? false;
-      final modeIdx = prefs.getInt(_kPreviewModePrefKey) ?? 0;
-      final count = prefs.getInt(_kPreviewCountPrefKey) ?? 20;
-      final start = prefs.getInt(_kPreviewStartPrefKey) ?? 1;
-      final end = prefs.getInt(_kPreviewEndPrefKey) ?? 20;
+      final show = prefs.getBool(PreviewPrefsKeys.show) ?? false;
+      final modeIdx = prefs.getInt(PreviewPrefsKeys.mode) ?? 0;
+      final count = prefs.getInt(PreviewPrefsKeys.count) ?? 20;
+      final start = prefs.getInt(PreviewPrefsKeys.start) ?? 1;
+      final end = prefs.getInt(PreviewPrefsKeys.end) ?? 20;
 
       setState(() {
         _showPreview = show;
-        _previewMode = _PreviewMode
-            .values[modeIdx.clamp(0, _PreviewMode.values.length - 1)];
+        _previewMode =
+            PreviewMode.values[modeIdx.clamp(0, PreviewMode.values.length - 1)];
         _previewCount = count.clamp(1, 9999);
         _previewStart = start.clamp(1, 9999);
         _previewEnd = end.clamp(1, 9999);
       });
     } catch (_) {
-      // 读失败就保持默认，不影响页面。
+      // 读失败保持默认。
     }
   }
 
@@ -186,14 +204,12 @@ class _ComicInfoState extends State<_ComicInfo>
     setState(() => _showPreview = next);
     try {
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setBool(_kShowPreviewPrefKey, next);
-    } catch (_) {
-      // 写失败就只在本次会话生效。
-    }
+      await prefs.setBool(PreviewPrefsKeys.show, next);
+    } catch (_) {}
   }
 
   Future<void> _persistPreviewSelection({
-    required _PreviewMode mode,
+    required PreviewMode mode,
     required int count,
     required int start,
     required int end,
@@ -206,13 +222,11 @@ class _ComicInfoState extends State<_ComicInfo>
     });
     try {
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setInt(_kPreviewModePrefKey, mode.index);
-      await prefs.setInt(_kPreviewCountPrefKey, count);
-      await prefs.setInt(_kPreviewStartPrefKey, start);
-      await prefs.setInt(_kPreviewEndPrefKey, end);
-    } catch (_) {
-      // 忽略写入失败。
-    }
+      await prefs.setInt(PreviewPrefsKeys.mode, mode.index);
+      await prefs.setInt(PreviewPrefsKeys.count, count);
+      await prefs.setInt(PreviewPrefsKeys.start, start);
+      await prefs.setInt(PreviewPrefsKeys.end, end);
+    } catch (_) {}
   }
 
   @override
@@ -222,6 +236,14 @@ class _ComicInfoState extends State<_ComicInfo>
         .watch<GlobalSettingCubit>()
         .state
         .cloudFavoritePreferred;
+    final leftHandMode = context
+        .watch<GlobalSettingCubit>()
+        .state
+        .leftHandModeEnabled;
+
+    // 每次 build 时算一次下载状态。
+    final isDownloaded = _isDownloaded;
+
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
@@ -235,7 +257,6 @@ class _ComicInfoState extends State<_ComicInfo>
             onPressed: () => popToRoot(context),
           ),
           Expanded(child: Container()),
-          // ---- 预览显隐切换（文字按钮，偏好持久化） ----
           TextButton.icon(
             onPressed: _togglePreview,
             icon: Icon(
@@ -298,7 +319,8 @@ class _ComicInfoState extends State<_ComicInfo>
                 ),
               ];
 
-              if (_type == ComicEntryType.download) {
+              // 已下载 → 菜单里保留导出入口（方便快速导出）。
+              if (isDownloaded) {
                 menuItems.add(
                   FluentPopupMenuItem<MenuOption>(
                     value: MenuOption.export,
@@ -338,7 +360,7 @@ class _ComicInfoState extends State<_ComicInfo>
           switch (state.status) {
             case GetComicInfoStatus.initial:
               _cloudFavoriteStateOverridden = false;
-              return Center(child: CircularProgressIndicator());
+              return const Center(child: CircularProgressIndicator());
             case GetComicInfoStatus.failure:
               if (state.result.contains("under review") &&
                   state.result.contains("1014")) {
@@ -350,7 +372,7 @@ class _ComicInfoState extends State<_ComicInfo>
                         t.comicInfo.discontinued,
                         style: const TextStyle(fontSize: 20),
                       ),
-                      SizedBox(height: 10),
+                      const SizedBox(height: 10),
                       ElevatedButton(
                         onPressed: () => context.pop(),
                         child: Text(t.comicInfo.back),
@@ -392,16 +414,21 @@ class _ComicInfoState extends State<_ComicInfo>
           }
         },
       ),
-      floatingActionButtonLocation:
-          context.watch<GlobalSettingCubit>().state.leftHandModeEnabled
+      floatingActionButtonLocation: leftHandMode
           ? FloatingActionButtonLocation.startFloat
           : FloatingActionButtonLocation.endFloat,
       floatingActionButton: _loadingComplete
           ? BlocBuilder<StringSelectCubit, String>(
               builder: (context, stringSelectDate) {
-                return _ReadActionButton(
+                return ComicInfoFabGroup(
+                  scrollController: _scrollController,
                   hasHistory: stringSelectDate.isNotEmpty,
-                  onPressed: () => goToComicRead(
+                  isLeftHanded: leftHandMode,
+                  // ★ 关键：已下载 → 导出；未下载 → 下载。
+                  isDownloaded: isDownloaded,
+                  onDownload: _handleDownload,
+                  onExport: _handleExport,
+                  onRead: () => goToComicRead(
                     context,
                     _comicId,
                     widget.type,
@@ -437,7 +464,7 @@ class _ComicInfoState extends State<_ComicInfo>
     return BlocSelector<StringSelectCubit, String, bool>(
       selector: (state) => state.isNotEmpty,
       builder: (context, hasHistory) {
-        final refreshable = RefreshIndicator(
+        return RefreshIndicator(
           onRefresh: () async {
             _type = ComicEntryType.normal;
             _isReversed = false;
@@ -455,6 +482,7 @@ class _ComicInfoState extends State<_ComicInfo>
             });
           },
           child: CustomScrollView(
+            controller: _scrollController,
             physics: const AlwaysScrollableScrollPhysics(),
             slivers: [
               SliverPadding(
@@ -498,7 +526,7 @@ class _ComicInfoState extends State<_ComicInfo>
                         if (comicInfo.metadata.isNotEmpty ||
                             comicInfo.description.trim().isNotEmpty) ...[
                           _buildDivider(context),
-                          _SectionCard(
+                          SectionCard(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
@@ -511,7 +539,7 @@ class _ComicInfoState extends State<_ComicInfo>
                                   const SizedBox(height: 6),
                                 ],
                                 if (comicInfo.description.trim().isNotEmpty)
-                                  _DescriptionCard(
+                                  DescriptionCard(
                                     description: comicInfo.description.let(
                                       convertChineseForDisplay,
                                     ),
@@ -523,7 +551,7 @@ class _ComicInfoState extends State<_ComicInfo>
                         if (comicInfo.creator.name.trim().isNotEmpty ||
                             comicInfo.creator.avatar.url.trim().isNotEmpty) ...[
                           _buildDivider(context),
-                          _SectionCard(
+                          SectionCard(
                             child: Align(
                               alignment: Alignment.centerLeft,
                               child: ConstrainedBox(
@@ -540,16 +568,16 @@ class _ComicInfoState extends State<_ComicInfo>
                           ),
                         ],
                         _buildDivider(context),
-                        _SectionCard(
+                        SectionCard(
                           title: t.comicInfo.chapterList,
-                          trailing: _EpisodeHeaderBadge(
+                          trailing: EpisodeHeaderBadge(
                             label: t.comicInfo.episodeCount(
                               count: normalComicAllInfo.eps.length,
                             ),
                             icon: _isReversed ? Icons.south : Icons.north,
                             onTap: _toggleOrder,
                           ),
-                          child: _EpisodeListSection(
+                          child: EpisodeListSection(
                             episodes: displayEps,
                             allInfo: comicInfoDyn,
                             epsLength: normalComicAllInfo.eps.length,
@@ -559,14 +587,11 @@ class _ComicInfoState extends State<_ComicInfo>
                             isReversed: _isReversed,
                           ),
                         ),
-                        // ====================================================
-                        // 内嵌预览图区块（可选显示，偏好持久化）
-                        // ====================================================
                         if (_showPreview) ...[
                           _buildDivider(context),
-                          _SectionCard(
+                          SectionCard(
                             title: t.comicInfo.preview,
-                            trailing: _PreviewControls(
+                            trailing: PreviewControls(
                               mode: _previewMode,
                               count: _previewCount,
                               start: _previewStart,
@@ -582,7 +607,7 @@ class _ComicInfoState extends State<_ComicInfo>
                               onRefresh: () =>
                                   setState(() => _previewReloadKey++),
                             ),
-                            child: _InlinePreviewGrid(
+                            child: InlinePreviewGrid(
                               key: ValueKey(
                                 'preview:$_comicId:$_previewReloadKey',
                               ),
@@ -610,7 +635,7 @@ class _ComicInfoState extends State<_ComicInfo>
                               normalComicAllInfo.recommend,
                             ).isNotEmpty) ...[
                           _buildDivider(context),
-                          _SectionCard(
+                          SectionCard(
                             title: t.comicInfo.related,
                             child: RecommendWidget(
                               comicList: _resolveRecommendItems(
@@ -631,8 +656,6 @@ class _ComicInfoState extends State<_ComicInfo>
             ],
           ),
         );
-
-        return refreshable;
       },
     );
   }
@@ -661,6 +684,55 @@ class _ComicInfoState extends State<_ComicInfo>
       ),
     );
   }
+
+  // ─────────────────────────────────────────────────────────────────
+  // 下载
+  // ─────────────────────────────────────────────────────────────────
+
+  /// 点击「下载」FAB：构造 UnifiedComicDownloadInfo 并跳转到下载页。
+  ///
+  Future<void> _handleDownload() async {
+    final info = _currentInfo;
+    if (info == null) {
+      showErrorToast(t.comicInfo.detailsNotLoaded);
+      return;
+    }
+    try {
+      // 把 List<Ep> 转成 List<UnifiedComicDownloadChapter>。
+      // 字段映射与 UnifiedComicDownloadInfo.fromString 内部保持一致。
+      final chapters = info.eps.map((ep) {
+        final id = ep.id.trim();
+        return UnifiedComicDownloadChapter(
+          id: id.isNotEmpty ? id : info.comicInfo.id,
+          title: ep.name,
+          order: ep.order,
+          requestId: ep.requestId.trim(),
+          storageChapterId: ep.storageChapterId.trim(),
+          logicalKey: ep.logicalKey.trim(),
+          extern: Map<String, dynamic>.from(ep.extern),
+        );
+      }).toList();
+
+      final downloadInfo = UnifiedComicDownloadInfo(
+        source: widget.from,
+        comicId: info.comicInfo.id,
+        title: info.comicInfo.title,
+        chapters: chapters,
+      );
+
+      context.pushRoute(app_router.DownloadRoute(downloadInfo: downloadInfo));
+    } catch (e, s) {
+      logger.e('打开下载页失败', error: e, stackTrace: s);
+      if (!mounted) return;
+      showErrorToast(
+        t.error.operationFailed,
+        duration: const Duration(seconds: 3),
+      );
+    }
+  }
+  // ─────────────────────────────────────────────────────────────────
+  // 导出
+  // ─────────────────────────────────────────────────────────────────
 
   String _buildZipFileName() {
     final rawName = _title.trim().isEmpty ? _comicId : _title.trim();
@@ -699,18 +771,12 @@ class _ComicInfoState extends State<_ComicInfo>
   Future<String?> _pickExportDirectory() async => getDirectoryPath();
 
   Future<String?> _resolveExportDirectory() async {
-    if (Platform.isIOS) {
-      return getCachePath();
-    }
+    if (Platform.isIOS) return getCachePath();
     final customPath = globalSetting.customExportPath.trim();
-    if (customPath.isNotEmpty) {
-      return customPath;
-    }
+    if (customPath.isNotEmpty) return customPath;
     if (Platform.isAndroid) {
       final granted = await requestExportPermission();
-      if (!granted) {
-        throw StateError(t.comicInfo.exportPermissionDenied);
-      }
+      if (!granted) throw StateError(t.comicInfo.exportPermissionDenied);
       return createDownloadDir();
     }
     return _pickExportDirectory();
@@ -723,7 +789,6 @@ class _ComicInfoState extends State<_ComicInfo>
         Platform.isLinux)) {
       return;
     }
-
     final displayPath = Platform.isAndroid
         ? _simplifyAndroidPathForLog(path)
         : path;
@@ -746,7 +811,6 @@ class _ComicInfoState extends State<_ComicInfo>
         Platform.isLinux)) {
       return;
     }
-
     final exportDirectory = exportType == ExportType.zip
         ? p.dirname(exportedPath)
         : exportedPath;
@@ -773,8 +837,7 @@ class _ComicInfoState extends State<_ComicInfo>
       final targetZipPath = p.join(exportDir, zipFileName);
 
       if (Platform.isIOS) {
-        final iosZipPath = targetZipPath;
-        final iosZipFile = File(iosZipPath);
+        final iosZipFile = File(targetZipPath);
         if (await iosZipFile.exists()) {
           await iosZipFile.delete();
         }
@@ -783,12 +846,12 @@ class _ComicInfoState extends State<_ComicInfo>
           _comicId,
           ExportType.zip,
           widget.from,
-          path: iosZipPath,
+          path: targetZipPath,
         );
 
-        await OpenFile.open(iosZipPath);
+        await OpenFile.open(targetZipPath);
         showSuccessToast(t.comicInfo.exportSuccess);
-        _logExportPath(iosZipPath);
+        _logExportPath(targetZipPath);
         return;
       }
 
@@ -814,6 +877,10 @@ class _ComicInfoState extends State<_ComicInfo>
     }
   }
 
+  // ─────────────────────────────────────────────────────────────────
+  // 其它交互
+  // ─────────────────────────────────────────────────────────────────
+
   void _toggleOrder() => setState(() => _isReversed = !_isReversed);
 
   Future<void> _toggleFollow(bool isFollowing) async {
@@ -822,21 +889,17 @@ class _ComicInfoState extends State<_ComicInfo>
       showErrorToast(t.comicInfo.detailsNotLoaded);
       return;
     }
-
     if (isFollowing) {
       await _confirmAndRemoveFollow(info.comicInfo.title);
       return;
     }
-
     await context.read<ComicFollowCubit>().addOrUpdateFollow(
       source: widget.from,
       comicId: _comicId,
       info: info,
       lastChapterCount: info.eps.length,
     );
-    if (mounted) {
-      showSuccessToast(t.comicInfo.followed);
-    }
+    if (mounted) showSuccessToast(t.comicInfo.followed);
   }
 
   Future<void> _toggleFollowFromMenu() async {
@@ -853,17 +916,11 @@ class _ComicInfoState extends State<_ComicInfo>
   }
 
   Future<void> _autoFollowIfEnabled() async {
-    if (!context.read<GlobalSettingCubit>().state.autoFollowOnCollect) {
-      return;
-    }
+    if (!context.read<GlobalSettingCubit>().state.autoFollowOnCollect) return;
     final info = _currentInfo;
-    if (info == null) {
-      return;
-    }
+    if (info == null) return;
     final followCubit = context.read<ComicFollowCubit>();
-    if (followCubit.isFollowing(widget.from, _comicId)) {
-      return;
-    }
+    if (followCubit.isFollowing(widget.from, _comicId)) return;
     await followCubit.addOrUpdateFollow(
       source: widget.from,
       comicId: _comicId,
@@ -890,16 +947,10 @@ class _ComicInfoState extends State<_ComicInfo>
         ],
       ),
     );
-    if (confirmed != true) {
-      return;
-    }
-    if (!mounted) {
-      return;
-    }
+    if (confirmed != true) return;
+    if (!mounted) return;
     await context.read<ComicFollowCubit>().removeFollow(widget.from, _comicId);
-    if (mounted) {
-      showSuccessToast(t.comicInfo.unfollowed);
-    }
+    if (mounted) showSuccessToast(t.comicInfo.unfollowed);
   }
 
   List<UnifiedComicListItem> _resolveRecommendItems(List<Recommend> recommend) {
@@ -916,20 +967,14 @@ class _ComicInfoState extends State<_ComicInfo>
 
   Future<void> _syncLocalCollectStatus(NormalComicAllInfo info) async {
     final comicId = info.comicInfo.id;
-    if (_localCollectSyncedFor == comicId) {
-      return;
-    }
+    if (_localCollectSyncedFor == comicId) return;
     _localCollectSyncedFor = comicId;
     final collected = await isLocalComicCollected(
       from: widget.from,
       comicId: comicId,
     );
-    if (!mounted) {
-      return;
-    }
-    setState(() {
-      _isLocalCollected = collected;
-    });
+    if (!mounted) return;
+    setState(() => _isLocalCollected = collected);
   }
 
   Future<void> _toggleLocalCollectFromMenu() async {
@@ -941,33 +986,23 @@ class _ComicInfoState extends State<_ComicInfo>
     try {
       if (_isLocalCollected) {
         final confirmed = await _showLocalUncollectConfirmDialog();
-        if (!confirmed) {
-          return;
-        }
+        if (!confirmed) return;
       }
 
       final next = await toggleLocalComicFavorite(
         from: widget.from,
         normalInfo: info,
       );
-      if (!mounted) {
-        return;
-      }
-      setState(() {
-        _isLocalCollected = next;
-      });
-      if (next) {
-        await _autoFollowIfEnabled();
-      }
+      if (!mounted) return;
+      setState(() => _isLocalCollected = next);
+      if (next) await _autoFollowIfEnabled();
       showSuccessToast(
         next
             ? t.comicInfo.addedToCollection
             : t.comicInfo.removedFromCollection,
       );
     } catch (e) {
-      if (!mounted) {
-        return;
-      }
+      if (!mounted) return;
       showErrorToast(
         t.comicInfo.localCollectFailed(error: normalizeSearchErrorMessage(e)),
         duration: const Duration(seconds: 5),
@@ -978,22 +1013,20 @@ class _ComicInfoState extends State<_ComicInfo>
   Future<bool> _showLocalUncollectConfirmDialog() async {
     final result = await showDialog<bool>(
       context: context,
-      builder: (dialogContext) {
-        return AlertDialog(
-          title: Text(t.comicInfo.confirmUncollectTitle),
-          content: Text(t.comicInfo.confirmUncollectContent),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(false),
-              child: Text(t.common.cancel),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.of(dialogContext).pop(true),
-              child: Text(t.common.confirm),
-            ),
-          ],
-        );
-      },
+      builder: (dialogContext) => AlertDialog(
+        title: Text(t.comicInfo.confirmUncollectTitle),
+        content: Text(t.comicInfo.confirmUncollectContent),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: Text(t.common.cancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: Text(t.common.confirm),
+          ),
+        ],
+      ),
     );
     return result == true;
   }
@@ -1019,25 +1052,19 @@ class _ComicInfoState extends State<_ComicInfo>
         collectionTargetId: widget.collectionTargetId,
         collectionTargetName: widget.collectionTargetName,
       );
-      if (!mounted) {
-        return;
-      }
+      if (!mounted) return;
       setState(() {
         _isCloudCollected = next;
         _cloudFavoriteStateOverridden = true;
       });
-      if (next) {
-        await _autoFollowIfEnabled();
-      }
+      if (next) await _autoFollowIfEnabled();
       showSuccessToast(
         next
             ? t.comicInfo.cloudCollectSuccess
             : t.comicInfo.cloudUncollectSuccess,
       );
     } on FavoriteWorkflowUnsupportedException {
-      if (mounted) {
-        showInfoToast(t.comicInfo.cloudCollectDisabled);
-      }
+      if (mounted) showInfoToast(t.comicInfo.cloudCollectDisabled);
     } on FavoriteWorkflowIncompleteException catch (error) {
       if (mounted) {
         showInfoToast(error.result.message ?? '云端收藏操作未完成');
@@ -1045,1394 +1072,5 @@ class _ComicInfoState extends State<_ComicInfo>
     } catch (e) {
       showErrorToast(t.error.operationFailed);
     }
-  }
-}
-
-// ============================================================================
-// 预览区块控件：模式/参数选择 + 刷新
-// ============================================================================
-class _PreviewControls extends StatelessWidget {
-  const _PreviewControls({
-    required this.mode,
-    required this.count,
-    required this.start,
-    required this.end,
-    required this.totalPages,
-    required this.onSelectionChanged,
-    required this.onRefresh,
-  });
-
-  final _PreviewMode mode;
-  final int count;
-  final int start;
-  final int end;
-  final int totalPages;
-
-  /// (mode, count, start, end)
-  final void Function(_PreviewMode mode, int count, int start, int end)
-  onSelectionChanged;
-  final VoidCallback onRefresh;
-
-  String get _label {
-    switch (mode) {
-      case _PreviewMode.top:
-        return '前 $count 张';
-      case _PreviewMode.tail:
-        return '后 $count 张';
-      case _PreviewMode.range:
-        return '$start-$end';
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = context.theme;
-
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        // ---- 预览范围胶囊 ----
-        InkWell(
-          borderRadius: BorderRadius.circular(999),
-          onTap: () async {
-            final result = await showDialog<_PreviewSelection>(
-              context: context,
-              builder: (_) => _PreviewPickerDialog(
-                initialMode: mode,
-                initialCount: count,
-                initialStart: start,
-                initialEnd: end,
-                maxPages: totalPages,
-              ),
-            );
-            if (result != null) {
-              onSelectionChanged(
-                result.mode,
-                result.count,
-                result.start,
-                result.end,
-              );
-            }
-          },
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.surfaceContainerLow,
-              borderRadius: BorderRadius.circular(999),
-              border: Border.all(
-                color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
-              ),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.tune, size: 14),
-                const SizedBox(width: 4),
-                Text(
-                  _label,
-                  style: theme.textTheme.labelLarge?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(width: 2),
-                const Icon(Icons.arrow_drop_down, size: 18),
-              ],
-            ),
-          ),
-        ),
-        IconButton(
-          visualDensity: VisualDensity.compact,
-          tooltip: '刷新预览',
-          icon: const Icon(Icons.refresh, size: 20),
-          onPressed: onRefresh,
-        ),
-      ],
-    );
-  }
-}
-
-/// 对话框返回值。
-class _PreviewSelection {
-  const _PreviewSelection({
-    required this.mode,
-    required this.count,
-    required this.start,
-    required this.end,
-  });
-
-  final _PreviewMode mode;
-  final int count;
-  final int start;
-  final int end;
-}
-
-/// 预览参数选择对话框。
-///
-/// - 顶部分段选择模式：前 N / 后 N / 起止范围
-/// - 根据模式显示对应输入框
-/// - [maxPages] 为 0 表示总页数未知，此时跳过上界校验
-class _PreviewPickerDialog extends StatefulWidget {
-  const _PreviewPickerDialog({
-    required this.initialMode,
-    required this.initialCount,
-    required this.initialStart,
-    required this.initialEnd,
-    required this.maxPages,
-  });
-
-  final _PreviewMode initialMode;
-  final int initialCount;
-  final int initialStart;
-  final int initialEnd;
-  final int maxPages;
-
-  @override
-  State<_PreviewPickerDialog> createState() => _PreviewPickerDialogState();
-}
-
-class _PreviewPickerDialogState extends State<_PreviewPickerDialog> {
-  late _PreviewMode _mode;
-  late final TextEditingController _countController;
-  late final TextEditingController _startController;
-  late final TextEditingController _endController;
-  String? _error;
-
-  @override
-  void initState() {
-    super.initState();
-    _mode = widget.initialMode;
-    _countController = TextEditingController(
-      text: widget.initialCount.toString(),
-    );
-    _startController = TextEditingController(
-      text: widget.initialStart.toString(),
-    );
-    _endController = TextEditingController(text: widget.initialEnd.toString());
-  }
-
-  @override
-  void dispose() {
-    _countController.dispose();
-    _startController.dispose();
-    _endController.dispose();
-    super.dispose();
-  }
-
-  void _applyCountPreset(int n) {
-    setState(() {
-      _countController.text = n.toString();
-      _error = null;
-    });
-  }
-
-  void _applyRangePreset(int start, int end) {
-    setState(() {
-      _startController.text = start.toString();
-      _endController.text = end.toString();
-      _error = null;
-    });
-  }
-
-  void _submit() {
-    final maxPages = widget.maxPages;
-
-    if (_mode == _PreviewMode.top || _mode == _PreviewMode.tail) {
-      final n = int.tryParse(_countController.text.trim());
-      if (n == null) {
-        setState(() => _error = '请输入有效数字');
-        return;
-      }
-      if (n < 1) {
-        setState(() => _error = '数量不能小于 1');
-        return;
-      }
-      if (maxPages > 0 && n > maxPages) {
-        // 用户给了比总页数还大的数，直接 clamp 而不是报错
-        // 让用户"输入 999 就是全部"更顺手。
-        Navigator.of(context).pop(
-          _PreviewSelection(
-            mode: _mode,
-            count: maxPages,
-            start: widget.initialStart,
-            end: widget.initialEnd,
-          ),
-        );
-        return;
-      }
-      Navigator.of(context).pop(
-        _PreviewSelection(
-          mode: _mode,
-          count: n,
-          start: widget.initialStart,
-          end: widget.initialEnd,
-        ),
-      );
-      return;
-    }
-
-    // range
-    final start = int.tryParse(_startController.text.trim());
-    final end = int.tryParse(_endController.text.trim());
-    if (start == null || end == null) {
-      setState(() => _error = '请输入有效数字');
-      return;
-    }
-    if (start < 1) {
-      setState(() => _error = '起始页不能小于 1');
-      return;
-    }
-    if (end < start) {
-      setState(() => _error = '结束页不能小于起始页');
-      return;
-    }
-    if (maxPages > 0 && start > maxPages) {
-      setState(() => _error = '起始页不能超过总页数 $maxPages');
-      return;
-    }
-    Navigator.of(context).pop(
-      _PreviewSelection(
-        mode: _mode,
-        count: widget.initialCount,
-        start: start,
-        end: end,
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return AlertDialog(
-      title: const Text('预览范围'),
-      content: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (widget.maxPages > 0)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: Text(
-                  '本章共 ${widget.maxPages} 页',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ),
-            // ---- 模式分段选择 ----
-            SegmentedButton<_PreviewMode>(
-              segments: const [
-                ButtonSegment(
-                  value: _PreviewMode.top,
-                  label: Text('前 N 张'),
-                  icon: Icon(Icons.vertical_align_top, size: 16),
-                ),
-                ButtonSegment(
-                  value: _PreviewMode.tail,
-                  label: Text('后 N 张'),
-                  icon: Icon(Icons.vertical_align_bottom, size: 16),
-                ),
-                ButtonSegment(
-                  value: _PreviewMode.range,
-                  label: Text('范围'),
-                  icon: Icon(Icons.tune, size: 16),
-                ),
-              ],
-              selected: {_mode},
-              showSelectedIcon: false,
-              onSelectionChanged: (s) {
-                setState(() {
-                  _mode = s.first;
-                  _error = null;
-                });
-              },
-            ),
-            const SizedBox(height: 16),
-
-            // ---- 输入区（根据模式切换） ----
-            if (_mode == _PreviewMode.top || _mode == _PreviewMode.tail) ...[
-              Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _countController,
-                      autofocus: true,
-                      keyboardType: TextInputType.number,
-                      decoration: InputDecoration(
-                        labelText: _mode == _PreviewMode.top
-                            ? '前 N 张'
-                            : '后 N 张',
-                        isDense: true,
-                        suffixText: '张',
-                      ),
-                      onSubmitted: (_) => _submit(),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  _countChip(20),
-                  _countChip(50),
-                  _countChip(100),
-                  if (widget.maxPages > 0)
-                    ActionChip(
-                      label: Text('全部 (${widget.maxPages})'),
-                      onPressed: () => _applyCountPreset(widget.maxPages),
-                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      visualDensity: VisualDensity.compact,
-                    )
-                  else
-                    _countChip(200),
-                ],
-              ),
-            ] else ...[
-              Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _startController,
-                      autofocus: true,
-                      keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(
-                        labelText: '从（页）',
-                        isDense: true,
-                      ),
-                    ),
-                  ),
-                  const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 8),
-                    child: Text('—'),
-                  ),
-                  Expanded(
-                    child: TextField(
-                      controller: _endController,
-                      keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(
-                        labelText: '到（页）',
-                        isDense: true,
-                      ),
-                      onSubmitted: (_) => _submit(),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  _rangeChip('1-20', 1, 20),
-                  _rangeChip('1-50', 1, 50),
-                  _rangeChip('1-100', 1, 100),
-                  if (widget.maxPages > 0)
-                    _rangeChip('全部 (1-${widget.maxPages})', 1, widget.maxPages),
-                ],
-              ),
-            ],
-
-            if (_error != null) ...[
-              const SizedBox(height: 10),
-              Text(
-                _error!,
-                style: TextStyle(color: colorScheme.error, fontSize: 12),
-              ),
-            ],
-          ],
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: Text(t.common.cancel),
-        ),
-        FilledButton(onPressed: _submit, child: Text(t.common.ok)),
-      ],
-    );
-  }
-
-  Widget _countChip(int n) {
-    return ActionChip(
-      label: Text('$n'),
-      onPressed: () => _applyCountPreset(n),
-      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-      visualDensity: VisualDensity.compact,
-    );
-  }
-
-  Widget _rangeChip(String label, int start, int end) {
-    return ActionChip(
-      label: Text(label),
-      onPressed: () => _applyRangePreset(start, end),
-      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-      visualDensity: VisualDensity.compact,
-    );
-  }
-}
-
-// ============================================================================
-// 内嵌预览图组件
-//
-// 走和阅读器相同的图片管线：
-//   PageBloc  → 取章节 docs
-//   PictureBloc → GetPicture(PictureInfo) → getCachePicture
-//               完成分片还原并落地为本地文件
-//   Image.file  → 从本地文件渲染
-//
-// 直接用 Image.network(fileServer) 会看到错位（JMComic 图是分片重排的）。
-// ============================================================================
-class _InlinePreviewGrid extends StatefulWidget {
-  const _InlinePreviewGrid({
-    super.key,
-    required this.comicId,
-    required this.from,
-    required this.type,
-    required this.comicInfo,
-    required this.firstEp,
-    this.mode = _PreviewMode.top,
-    this.count = 20,
-    this.startPage = 1,
-    this.endPage = 20,
-    this.onTotalResolved,
-  });
-
-  final String comicId;
-  final String from;
-  final ComicEntryType type;
-  final dynamic comicInfo;
-  final dynamic firstEp;
-
-  /// 预览模式：前 N / 后 N / 起止范围。
-  final _PreviewMode mode;
-
-  /// 前 N / 后 N 使用的数量。
-  final int count;
-
-  /// 起止范围（1-indexed，闭区间）。
-  final int startPage;
-  final int endPage;
-
-  /// 首次拿到 docs 时回调总页数。
-  final ValueChanged<int>? onTotalResolved;
-
-  @override
-  State<_InlinePreviewGrid> createState() => _InlinePreviewGridState();
-}
-
-class _InlinePreviewGridState extends State<_InlinePreviewGrid> {
-  int _lastReportedTotal = -1;
-
-  @override
-  Widget build(BuildContext context) {
-    final firstEp = widget.firstEp;
-
-    if (firstEp == null) {
-      return _buildGrid(context, const <Doc>[]);
-    }
-
-    final dynamic ep = firstEp;
-    final int epsId = _asInt(_tryRead(ep, 'order'), 0);
-    final String chapterId = _asString(_tryRead(ep, 'id'), '');
-    final dynamic rawExtern = _tryRead(ep, 'extern');
-    final Map<String, dynamic> epExtern = rawExtern is Map
-        ? Map<String, dynamic>.from(rawExtern)
-        : const <String, dynamic>{};
-    final String requestId = _asString(epExtern['requestId'], '');
-    final String storageChapterId = _asString(epExtern['storageChapterId'], '');
-    final String logicalKey = _asString(epExtern['logicalKey'], '');
-    final ChapterExtern chapterExtern =
-        (epExtern['chapterExtern'] as ChapterExtern?) ??
-        const <String, dynamic>{};
-
-    return BlocProvider(
-      key: ValueKey('inline-preview:${widget.from}:${widget.comicId}'),
-      create: (_) {
-        return PageBloc()..add(
-          PageEvent(
-            widget.comicId,
-            epsId,
-            chapterId,
-            requestId,
-            storageChapterId,
-            logicalKey,
-            chapterExtern,
-            widget.from,
-            widget.type,
-            comicInfo: widget.comicInfo,
-          ),
-        );
-      },
-      child: BlocBuilder<PageBloc, PageState>(
-        builder: (context, state) {
-          switch (state.status) {
-            case PageStatus.initial:
-            case PageStatus.failure:
-              return _buildGrid(context, const <Doc>[]);
-            case PageStatus.success:
-              final docs = state.epInfo?.docs ?? const <Doc>[];
-              _maybeReportTotal(docs.length);
-              return _buildGrid(context, docs);
-          }
-        },
-      ),
-    );
-  }
-
-  void _maybeReportTotal(int total) {
-    if (total <= 0) return;
-    if (_lastReportedTotal == total) return;
-    _lastReportedTotal = total;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      widget.onTotalResolved?.call(total);
-    });
-  }
-
-  /// 根据 mode 从完整 docs 里切出要预览的部分。
-  ///
-  /// - top  : 取前 N 张（N = count）
-  /// - tail : 取后 N 张（N = count）
-  /// - range: 取 [start, end] 闭区间（1-indexed）
-  /// N 或 start/end 超出总数时自动 clamp，不崩溃。
-  List<Doc> _sliceDocs(List<Doc> all) {
-    if (all.isEmpty) return const <Doc>[];
-    final total = all.length;
-
-    switch (widget.mode) {
-      case _PreviewMode.top:
-        final n = widget.count.clamp(1, total);
-        return all.take(n).toList(growable: false);
-      case _PreviewMode.tail:
-        final n = widget.count.clamp(1, total);
-        return all.skip(total - n).toList(growable: false);
-      case _PreviewMode.range:
-        final start = widget.startPage.clamp(1, total);
-        final end = widget.endPage < start
-            ? start
-            : widget.endPage.clamp(start, total);
-        return all.sublist(start - 1, end);
-    }
-  }
-
-  String _buildInfoText(List<Doc> docs, List<Doc> sliced, bool hasData) {
-    if (!hasData) return '正在加载章节数据…';
-    final totalInChapter = docs.length;
-    if (sliced.isEmpty) {
-      return '所选范围超出本章页数（共 $totalInChapter 页）';
-    }
-    switch (widget.mode) {
-      case _PreviewMode.top:
-        return '前 ${sliced.length} 张 / 共 $totalInChapter 页';
-      case _PreviewMode.tail:
-        return '后 ${sliced.length} 张 / 共 $totalInChapter 页';
-      case _PreviewMode.range:
-        final first = _displayIndex(sliced.first, docs) + 1;
-        final last = _displayIndex(sliced.last, docs) + 1;
-        return '第 $first-$last 页 / 共 $totalInChapter 页';
-    }
-  }
-
-  Widget _buildGrid(BuildContext context, List<Doc> docs) {
-    final hasData = docs.isNotEmpty;
-    final sliced = _sliceDocs(docs);
-    final shownCount = sliced.length;
-
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        // 窄屏 2 列、宽屏 3 列。
-        final crossAxisCount = constraints.maxWidth >= 720 ? 3 : 2;
-
-        const spacing = 12.0;
-        final tileWidth =
-            (constraints.maxWidth - (crossAxisCount - 1) * spacing) /
-            crossAxisCount;
-
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // ---- 页数信息 ----
-            Padding(
-              padding: const EdgeInsets.only(bottom: 10),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.photo_library_outlined,
-                    size: 14,
-                    color: context.textColor.withValues(alpha: 0.6),
-                  ),
-                  const SizedBox(width: 6),
-                  Expanded(
-                    child: Text(
-                      _buildInfoText(docs, sliced, hasData),
-                      style: context.theme.textTheme.bodySmall?.copyWith(
-                        color: context.textColor.withValues(alpha: 0.7),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            // ---- 图片网格 ----
-            if (!hasData || shownCount == 0)
-              // 数据未到 或 范围取不到 → 用若干占位撑一下高度
-              Wrap(
-                spacing: spacing,
-                runSpacing: spacing,
-                children: [
-                  for (int i = 0; i < _placeholderCount(); i++)
-                    SizedBox(
-                      width: tileWidth,
-                      child: const _PreviewPlaceholderTile(),
-                    ),
-                ],
-              )
-            else
-              Wrap(
-                spacing: spacing,
-                runSpacing: spacing,
-                children: [
-                  for (int i = 0; i < sliced.length; i++)
-                    SizedBox(
-                      width: tileWidth,
-                      child: _PreviewTile(
-                        key: ValueKey(
-                          '${sliced[i].storageChapterId}|${sliced[i].fileServer}|${sliced[i].path}',
-                        ),
-                        doc: sliced[i],
-                        comicId: widget.comicId,
-                        from: widget.from,
-                        onTap: () => _openFullViewer(sliced, i),
-                      ),
-                    ),
-                ],
-              ),
-          ],
-        );
-      },
-    );
-  }
-
-  /// 打开全屏查看器，支持在 [sliced] 范围内左右滑动切换上一张/下一张。
-  void _openFullViewer(List<Doc> sliced, int initialIndex) {
-    if (sliced.isEmpty) return;
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => _FullImageViewer(
-          docs: sliced,
-          initialIndex: initialIndex.clamp(0, sliced.length - 1),
-          comicId: widget.comicId,
-          from: widget.from,
-        ),
-      ),
-    );
-  }
-
-  int _placeholderCount() {
-    int want;
-    switch (widget.mode) {
-      case _PreviewMode.top:
-      case _PreviewMode.tail:
-        want = widget.count;
-        break;
-      case _PreviewMode.range:
-        want = widget.endPage - widget.startPage + 1;
-        break;
-    }
-    if (want <= 0) return 4;
-    return want.clamp(1, 20);
-  }
-
-  /// 找到 doc 在 all 中的下标；找不到返回 0。
-  int _displayIndex(Doc doc, List<Doc> all) {
-    final idx = all.indexOf(doc);
-    return idx < 0 ? 0 : idx;
-  }
-
-  static dynamic _tryRead(dynamic target, String name) {
-    try {
-      switch (name) {
-        case 'order':
-          return target.order;
-        case 'id':
-          return target.id;
-        case 'extern':
-          return target.extern;
-      }
-    } catch (_) {
-      return null;
-    }
-    return null;
-  }
-
-  static int _asInt(dynamic v, int fallback) {
-    if (v is int) return v;
-    if (v is num) return v.toInt();
-    return fallback;
-  }
-
-  static String _asString(dynamic v, String fallback) {
-    if (v is String) return v;
-    return fallback;
-  }
-}
-
-// ----------------------------------------------------------------------------
-// 单张预览图（网格里的缩略图）
-//
-// 走和阅读器完全相同的管线：
-//   PictureBloc → GetPicture(PictureInfo) → getCachePicture
-//   → 拿到已还原的本地文件路径 → Image.file 显示。
-//
-// 图片宽度撑满格子、高度按真实比例撑开：无留白、无裁切。
-// 点击进入全屏查看器（由父级传入 onTap 回调）。
-// ----------------------------------------------------------------------------
-class _PreviewTile extends StatelessWidget {
-  const _PreviewTile({
-    super.key,
-    required this.doc,
-    required this.comicId,
-    required this.from,
-    this.onTap,
-  });
-
-  final Doc doc;
-  final String comicId;
-  final String from;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final resolvedChapterId = doc.storageChapterId.trim().isNotEmpty
-        ? doc.storageChapterId
-        : comicId;
-
-    final pictureInfo = PictureInfo(
-      from: from,
-      url: doc.fileServer,
-      path: doc.path,
-      cartoonId: comicId,
-      chapterId: resolvedChapterId,
-      pictureType: PictureType.page,
-      extern: doc.extern,
-    );
-
-    return BlocProvider(
-      create: (_) => PictureBloc()..add(GetPicture(pictureInfo)),
-      child: BlocBuilder<PictureBloc, PictureLoadState>(
-        builder: (context, state) {
-          Widget content;
-          switch (state.status) {
-            case PictureLoadStatus.initial:
-            case PictureLoadStatus.failure:
-              content = const _PreviewPlaceholderTile();
-              break;
-            case PictureLoadStatus.success:
-              final imagePath = state.imagePath;
-              if (imagePath == null || imagePath.isEmpty) {
-                content = const _PreviewPlaceholderTile();
-              } else {
-                content = ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: Image.file(
-                    File(imagePath),
-                    // 宽度撑满格子，高度按真实比例撑开（不给 height）。
-                    fit: BoxFit.fitWidth,
-                    gaplessPlayback: true,
-                    errorBuilder: (_, __, ___) =>
-                        const _PreviewPlaceholderTile(),
-                  ),
-                );
-              }
-              break;
-          }
-
-          return GestureDetector(
-            onTap: onTap,
-            behavior: HitTestBehavior.opaque,
-            child: content,
-          );
-        },
-      ),
-    );
-  }
-}
-
-// ----------------------------------------------------------------------------
-// 预览图占位块
-//
-// 用 AspectRatio 给一个稳定的占位比例，避免加载前布局塌陷。
-// ----------------------------------------------------------------------------
-class _PreviewPlaceholderTile extends StatelessWidget {
-  const _PreviewPlaceholderTile();
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = context.theme;
-    return AspectRatio(
-      aspectRatio: 0.7,
-      child: Container(
-        decoration: BoxDecoration(
-          color: theme.colorScheme.surfaceContainerLow,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(
-            color: theme.colorScheme.outlineVariant.withValues(alpha: 0.4),
-          ),
-        ),
-        child: Center(
-          child: Icon(
-            Icons.image_outlined,
-            size: 28,
-            color: context.textColor.withValues(alpha: 0.35),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// ----------------------------------------------------------------------------
-// 全屏图片查看器（支持左右滑动切换上一张/下一张）
-//
-// 手势交互：
-//   - 左右滑动：切换上一张 / 下一张
-//   - 双指缩放、单指拖动：放大查看细节
-//   - 双击：以双击点为中心放大到 2.5 倍；再次双击还原
-//   - 放大状态下禁用 PageView 滚动，避免和拖拽冲突
-// ----------------------------------------------------------------------------
-class _FullImageViewer extends StatefulWidget {
-  const _FullImageViewer({
-    required this.docs,
-    required this.initialIndex,
-    required this.comicId,
-    required this.from,
-  });
-
-  final List<Doc> docs;
-  final int initialIndex;
-  final String comicId;
-  final String from;
-
-  @override
-  State<_FullImageViewer> createState() => _FullImageViewerState();
-}
-
-class _FullImageViewerState extends State<_FullImageViewer> {
-  late final PageController _pageController;
-  late int _currentIndex;
-
-  /// 当前页面是否处于放大状态（用于禁用 PageView 滚动）。
-  bool _currentPageZoomed = false;
-
-  @override
-  void initState() {
-    super.initState();
-    final total = widget.docs.length;
-    _currentIndex = total == 0 ? 0 : widget.initialIndex.clamp(0, total - 1);
-    _pageController = PageController(initialPage: _currentIndex);
-  }
-
-  @override
-  void dispose() {
-    _pageController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final total = widget.docs.length;
-
-    return Scaffold(
-      backgroundColor: Colors.black,
-      appBar: AppBar(
-        backgroundColor: Colors.black,
-        foregroundColor: Colors.white,
-        elevation: 0,
-        title: Text(
-          total == 0 ? '' : '${_currentIndex + 1} / $total',
-          style: const TextStyle(fontSize: 15),
-        ),
-      ),
-      body: total == 0
-          ? const Center(
-              child: Icon(Icons.broken_image_outlined, color: Colors.white54),
-            )
-          : PageView.builder(
-              controller: _pageController,
-              itemCount: total,
-              physics: _currentPageZoomed
-                  ? const NeverScrollableScrollPhysics()
-                  : const PageScrollPhysics(),
-              onPageChanged: (i) {
-                setState(() {
-                  _currentIndex = i;
-                  _currentPageZoomed = false;
-                });
-              },
-              itemBuilder: (context, index) {
-                final doc = widget.docs[index];
-                return _FullImageViewerItem(
-                  key: ValueKey(
-                    'full:${doc.storageChapterId}|${doc.fileServer}|${doc.path}',
-                  ),
-                  doc: doc,
-                  comicId: widget.comicId,
-                  from: widget.from,
-                  onZoomChanged: (zoomed) {
-                    if (!mounted || index != _currentIndex) return;
-                    if (_currentPageZoomed == zoomed) return;
-                    setState(() => _currentPageZoomed = zoomed);
-                  },
-                );
-              },
-            ),
-    );
-  }
-}
-
-/// 查看器中的单页：负责加载图片 + 缩放交互。
-class _FullImageViewerItem extends StatelessWidget {
-  const _FullImageViewerItem({
-    super.key,
-    required this.doc,
-    required this.comicId,
-    required this.from,
-    required this.onZoomChanged,
-  });
-
-  final Doc doc;
-  final String comicId;
-  final String from;
-  final ValueChanged<bool> onZoomChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    final resolvedChapterId = doc.storageChapterId.trim().isNotEmpty
-        ? doc.storageChapterId
-        : comicId;
-
-    final pictureInfo = PictureInfo(
-      from: from,
-      url: doc.fileServer,
-      path: doc.path,
-      cartoonId: comicId,
-      chapterId: resolvedChapterId,
-      pictureType: PictureType.page,
-      extern: doc.extern,
-    );
-
-    return BlocProvider(
-      create: (_) => PictureBloc()..add(GetPicture(pictureInfo)),
-      child: BlocBuilder<PictureBloc, PictureLoadState>(
-        builder: (context, state) {
-          switch (state.status) {
-            case PictureLoadStatus.initial:
-              return const Center(
-                child: CircularProgressIndicator(color: Colors.white54),
-              );
-            case PictureLoadStatus.failure:
-              return const Center(
-                child: Icon(Icons.broken_image_outlined, color: Colors.white54),
-              );
-            case PictureLoadStatus.success:
-              final imagePath = state.imagePath;
-              if (imagePath == null || imagePath.isEmpty) {
-                return const Center(
-                  child: Icon(
-                    Icons.broken_image_outlined,
-                    color: Colors.white54,
-                  ),
-                );
-              }
-              return _ZoomableImage(
-                imagePath: imagePath,
-                onZoomChanged: onZoomChanged,
-              );
-          }
-        },
-      ),
-    );
-  }
-}
-
-/// 可缩放的单张图片。
-///
-/// - 双击：以双击点为中心放大到 2.5 倍；再次双击还原
-/// - 缩放 > 1 时启用拖动，并把缩放状态上报父级
-/// - 缩放为 1 时禁用拖动，让 PageView 接收左右滑动手势
-class _ZoomableImage extends StatefulWidget {
-  const _ZoomableImage({required this.imagePath, required this.onZoomChanged});
-
-  final String imagePath;
-  final ValueChanged<bool> onZoomChanged;
-
-  @override
-  State<_ZoomableImage> createState() => _ZoomableImageState();
-}
-
-class _ZoomableImageState extends State<_ZoomableImage> {
-  static const double _doubleTapScale = 2.5;
-  static const double _resetThreshold = 1.01;
-
-  final TransformationController _controller = TransformationController();
-  TapDownDetails? _doubleTapDetails;
-  bool _isZoomed = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller.addListener(_onTransformChanged);
-  }
-
-  @override
-  void dispose() {
-    _controller.removeListener(_onTransformChanged);
-    _controller.dispose();
-    super.dispose();
-  }
-
-  void _onTransformChanged() {
-    final scale = _controller.value.getMaxScaleOnAxis();
-    final zoomed = scale > _resetThreshold;
-    if (zoomed == _isZoomed) return;
-    setState(() => _isZoomed = zoomed);
-    widget.onZoomChanged(zoomed);
-  }
-
-  void _handleDoubleTap() {
-    // 已经放大 → 双击还原
-    if (_isZoomed) {
-      _controller.value = Matrix4.identity();
-      return;
-    }
-
-    // 未放大 → 以双击位置为锚点放大
-    final details = _doubleTapDetails;
-    final renderBox = context.findRenderObject() as RenderBox?;
-    if (details == null || renderBox == null || !renderBox.hasSize) {
-      return;
-    }
-
-    final localPosition = renderBox.globalToLocal(details.globalPosition);
-    final matrix = Matrix4.identity()
-      ..translateByDouble(
-        renderBox.size.width / 2 - localPosition.dx * _doubleTapScale,
-        renderBox.size.height / 2 - localPosition.dy * _doubleTapScale,
-        0,
-        1,
-      )
-      ..scaleByDouble(_doubleTapScale, _doubleTapScale, 1, 1);
-
-    _controller.value = matrix;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onDoubleTapDown: (details) => _doubleTapDetails = details,
-      onDoubleTap: _handleDoubleTap,
-      child: InteractiveViewer(
-        transformationController: _controller,
-        minScale: 1.0,
-        maxScale: 5.0,
-        // 未放大时禁用拖动，让 PageView 处理左右滑动手势。
-        panEnabled: _isZoomed,
-        scaleEnabled: true,
-        child: Center(
-          child: Image.file(
-            File(widget.imagePath),
-            fit: BoxFit.contain,
-            gaplessPlayback: true,
-            errorBuilder: (_, __, ___) => const Center(
-              child: Icon(Icons.broken_image_outlined, color: Colors.white54),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _SectionCard extends StatelessWidget {
-  const _SectionCard({required this.child, this.title, this.trailing});
-
-  final String? title;
-  final Widget child;
-  final Widget? trailing;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: 12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (title != null) ...[
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Expanded(
-                  child: Text(
-                    title!,
-                    style: context.theme.textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                ),
-                if (trailing != null) ...[const SizedBox(width: 10), trailing!],
-              ],
-            ),
-            const SizedBox(height: 12),
-          ],
-          child,
-        ],
-      ),
-    );
-  }
-}
-
-class _EpisodeHeaderBadge extends StatelessWidget {
-  const _EpisodeHeaderBadge({
-    required this.label,
-    required this.icon,
-    this.onTap,
-  });
-
-  final String label;
-  final IconData icon;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(999),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          decoration: BoxDecoration(
-            color: context.theme.colorScheme.surfaceContainerLow,
-            borderRadius: BorderRadius.circular(999),
-            border: Border.all(
-              color: context.theme.colorScheme.outlineVariant.withValues(
-                alpha: 0.3,
-              ),
-            ),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                icon,
-                size: 18,
-                color: context.textColor.withValues(alpha: 0.75),
-              ),
-              const SizedBox(width: 6),
-              Text(
-                label,
-                style: context.theme.textTheme.labelLarge?.copyWith(
-                  fontWeight: FontWeight.w700,
-                  color: context.textColor.withValues(alpha: 0.82),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _DescriptionCard extends StatefulWidget {
-  const _DescriptionCard({required this.description});
-
-  final String description;
-
-  @override
-  State<_DescriptionCard> createState() => _DescriptionCardState();
-}
-
-class _DescriptionCardState extends State<_DescriptionCard> {
-  bool _expanded = false;
-
-  @override
-  Widget build(BuildContext context) {
-    final descriptionStyle = context.theme.textTheme.bodyMedium?.copyWith(
-      height: 1.65,
-      color: context.textColor.withValues(alpha: 0.9),
-    );
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.only(top: 8, bottom: 8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            t.comicInfo.description,
-            style: context.theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 10),
-          SelectableText(
-            widget.description,
-            style: descriptionStyle,
-            maxLines: _expanded ? null : 5,
-          ),
-          if (widget.description.length > 90) ...[
-            const SizedBox(height: 10),
-            TextButton.icon(
-              onPressed: () => setState(() => _expanded = !_expanded),
-              icon: Icon(_expanded ? Icons.expand_less : Icons.expand_more),
-              label: Text(
-                _expanded ? t.comicInfo.collapse : t.comicInfo.expandFullText,
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-class _EpisodeListSection extends StatelessWidget {
-  const _EpisodeListSection({
-    required this.episodes,
-    required this.allInfo,
-    required this.epsLength,
-    required this.type,
-    required this.comicId,
-    required this.from,
-    required this.isReversed,
-  });
-
-  final List<dynamic> episodes;
-  final dynamic allInfo;
-  final int epsLength;
-  final ComicEntryType type;
-  final String comicId;
-  final String from;
-  final bool isReversed;
-
-  @override
-  Widget build(BuildContext context) {
-    if (episodes.isEmpty) {
-      return Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(vertical: 18),
-        child: Text(
-          t.comicInfo.noChapters,
-          style: context.theme.textTheme.bodyMedium,
-        ),
-      );
-    }
-
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        if (constraints.maxWidth < 560) {
-          return Column(
-            children: [
-              for (var i = 0; i < episodes.length; i++)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 10),
-                  child: EpButtonWidget(
-                    doc: episodes[i] as Ep,
-                    allInfo: allInfo,
-                    epsLength: epsLength,
-                    type: type,
-                    comicId: comicId,
-                    from: from,
-                    index: i,
-                    isReversed: isReversed,
-                  ),
-                ),
-            ],
-          );
-        }
-
-        final isDesktop = constraints.maxWidth >= 960;
-        if (isDesktop) {
-          return Center(
-            child: Wrap(
-              spacing: 12,
-              runSpacing: 12,
-              children: [
-                for (var i = 0; i < episodes.length; i++)
-                  SizedBox(
-                    width: 280,
-                    child: Padding(
-                      padding: const EdgeInsets.only(bottom: 10),
-                      child: EpButtonWidget(
-                        doc: episodes[i] as Ep,
-                        allInfo: allInfo,
-                        epsLength: epsLength,
-                        type: type,
-                        comicId: comicId,
-                        from: from,
-                        index: i,
-                        isReversed: isReversed,
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-          );
-        }
-
-        final isWide = constraints.maxWidth >= 720;
-        return GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: episodes.length,
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: isWide ? 2 : 1,
-            crossAxisSpacing: 12,
-            mainAxisSpacing: 12,
-            mainAxisExtent: EpButtonWidget.fixedHeight,
-          ),
-          itemBuilder: (context, index) {
-            final e = episodes[index] as Ep;
-            return EpButtonWidget(
-              doc: e,
-              allInfo: allInfo,
-              epsLength: epsLength,
-              type: type,
-              comicId: comicId,
-              from: from,
-              index: index,
-              isReversed: isReversed,
-            );
-          },
-        );
-      },
-    );
-  }
-}
-
-class _ReadActionButton extends StatelessWidget {
-  const _ReadActionButton({required this.hasHistory, required this.onPressed});
-
-  final bool hasHistory;
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    return FloatingActionButton.extended(
-      onPressed: onPressed,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-      icon: Icon(
-        hasHistory ? Icons.history_rounded : Icons.menu_book_rounded,
-        size: 18,
-      ),
-      label: Text(
-        hasHistory ? t.comicInfo.continueRead : t.comicInfo.startRead,
-      ),
-    );
   }
 }
