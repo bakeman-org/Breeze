@@ -49,7 +49,6 @@ import 'package:zephyr/util/manage_cache.dart';
 import 'package:zephyr/util/rust_loader.dart';
 import 'package:zephyr/widgets/desktop/custom_title_bar.dart';
 import 'package:zephyr/widgets/desktop/intent.dart';
-import 'package:zero_inspector_kit/zero_inspector_kit.dart';
 
 export 'package:zephyr/network/http/wind_http.dart'
     show WindHttp, FetchResponse, fetch, fetchDirect;
@@ -154,30 +153,17 @@ Future<void> main(List<String> args) async {
       final (globalSettingCubit, pluginRegistryCubit) = await _initServices();
 
       final comicFollowCubit = ComicFollowCubit();
-      // HACK: integrate with debug
-      if (kDebugMode) {
-        ZeroInspectorKit.runAppWithInspector(
-          MultiBlocProvider(
-            providers: [
-              BlocProvider.value(value: globalSettingCubit),
-              BlocProvider.value(value: pluginRegistryCubit),
-              BlocProvider.value(value: comicFollowCubit),
-            ],
-            child: const MyApp(),
-          ),
-        );
-      } else {
-        runApp(
-          MultiBlocProvider(
-            providers: [
-              BlocProvider.value(value: globalSettingCubit),
-              BlocProvider.value(value: pluginRegistryCubit),
-              BlocProvider.value(value: comicFollowCubit),
-            ],
-            child: const MyApp(),
-          ),
-        );
-      }
+
+      runApp(
+        MultiBlocProvider(
+          providers: [
+            BlocProvider.value(value: globalSettingCubit),
+            BlocProvider.value(value: pluginRegistryCubit),
+            BlocProvider.value(value: comicFollowCubit),
+          ],
+          child: const MyApp(),
+        ),
+      );
     } catch (e, stack) {
       // 捕获初始化阶段（_initServices）可能抛出的异常
       if (kDebugMode || sentryDsn.isEmpty) {
