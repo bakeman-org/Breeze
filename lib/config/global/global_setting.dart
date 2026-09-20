@@ -7,6 +7,7 @@ import 'package:zephyr/config/global/color_theme_types.dart';
 import 'package:zephyr/i18n/i18n_helper.dart';
 import 'package:zephyr/i18n/strings.g.dart';
 import 'package:zephyr/main.dart';
+import 'package:zephyr/service/app_theme/app_theme_cache.dart';
 import 'package:zephyr/util/json/converter.dart';
 
 part 'global_setting.freezed.dart';
@@ -305,12 +306,9 @@ abstract class BookshelfSettingState with _$BookshelfSettingState {
 }
 
 class GlobalSettingCubit extends Cubit<GlobalSettingState> {
-  // 构造函数，传入由 freezed 生成的默认 state
   GlobalSettingCubit() : super(const GlobalSettingState());
 
-  // 用于获取 freezed 中定义的默认值的便捷实例
   static const _defaults = GlobalSettingState();
-  // colorThemeList[6].color 是动态的，不能在 const 中，单独处理
   late final Color _defaultSeedColor = colorThemeList[6].color;
 
   Future<void> initBox() async {
@@ -365,11 +363,6 @@ class GlobalSettingCubit extends Cubit<GlobalSettingState> {
     );
   }
 
-  /// 设置应用显示语言。
-  ///
-  /// [locale] 为目标 Flutter Locale；[followsSystem] 为 true 时表示跟随系统。
-  /// 该方法会自动持久化、切换 slang 当前 locale，并同步 Rust 侧错误消息语言。
-  /// 如果 [locale] 无法匹配到已支持的语言，则回退到英文。
   Future<void> setLocale(Locale locale, {bool followsSystem = false}) async {
     final appLocale = I18nHelper.toAppLocale(locale) ?? AppLocale.enUs;
 
@@ -384,8 +377,6 @@ class GlobalSettingCubit extends Cubit<GlobalSettingState> {
     );
   }
 
-  /// 根据系统 locale 设置应用语言。
-  /// 无法匹配时由 [setLocale] 自动回退到英文。
   Future<void> setSystemLocale(Locale systemLocale) async {
     await setLocale(systemLocale, followsSystem: true);
   }
@@ -464,5 +455,11 @@ class GlobalSettingCubit extends Cubit<GlobalSettingState> {
     }
     dbSettings.globalSetting = toSave;
     userBox.put(dbSettings);
+
+    // ★ 新增：写入轻量缓存，供下次启动 main() 同步读 seedColor / themeMode。
+    AppThemeCache.write(
+      seedColor: toSave.seedColor,
+      themeMode: toSave.themeMode,
+    );
   }
 }

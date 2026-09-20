@@ -1,11 +1,9 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:ffi';
 import 'dart:io';
 import 'dart:ui' show AppExitResponse;
 
 import 'package:desktop_webview_linux/desktop_webview_linux.dart';
-import 'package:device_info_plus/device_info_plus.dart';
 import 'package:event_bus/event_bus.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
@@ -17,7 +15,6 @@ import 'package:flutter_miuix/miuix.dart';
 import 'package:flutter_socks_proxy/socks_proxy.dart';
 import 'package:logger/logger.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:tray_manager/tray_manager.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:worker_manager/worker_manager.dart';
@@ -36,6 +33,9 @@ import 'package:zephyr/page/comic_follow/cubit/comic_follow_cubit.dart';
 import 'package:zephyr/platform/desktop/native_window.dart';
 import 'package:zephyr/platform/desktop/system_tray.dart';
 import 'package:zephyr/platform/desktop/window_logic.dart';
+import 'package:zephyr/plugin/plugin_registry_service.dart';
+import 'package:zephyr/service/app_icon/app_icon_service.dart';
+import 'package:zephyr/service/app_theme/app_theme_cache.dart';
 import 'package:zephyr/service/reader/reader_desktop_fullscreen_service.dart';
 import 'package:zephyr/service/startup_database_snapshot_service.dart';
 import 'package:zephyr/src/rust/api/qjs.dart';
@@ -72,6 +72,12 @@ List<String> cfIpList = [];
 final flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
 
 final navigatorKey = GlobalKey<NavigatorState>();
+
+/// 闪屏主题的兜底种子色。
+///
+/// 只有「首次启动、缓存里还没有 seedColor」时才会用到。用 GlobalSettingState
+/// 的默认种子色，保证首次启动的闪屏色和主界面默认色一致。
+const Color _kFallbackSeedColor = Color(0xFFEF5350);
 
 class AppScrollBehavior extends MaterialScrollBehavior {
   const AppScrollBehavior();
@@ -116,73 +122,54 @@ class MyAlwaysLogFilter extends LogFilter {
 // ─────────────────────────────────────────────────────────────────────
 // 启动入口
 // ─────────────────────────────────────────────────────────────────────
-//
-// 关键优化：runApp 立刻执行，不 await 业务初始化。业务初始化改到
-// ZephyrApp 的闪屏阶段跑，用户首帧即可看到品牌图标，而不是白屏 2 秒。
+
+/// 启动入口。
+///
+/// 关键点：
+///   1. **移除 Sentry**。启动链路不再被 Sentry 包装。
+///   2. **`await AppIconService.ensureLoaded()`**：读当前生效的应用图标，
+///      让闪屏第一帧就显示正确图标（经典 / 现代）。
+///   3. **`await AppThemeCache.init()`**：读轻量缓存里的 seedColor / themeMode，
+///      让闪屏背景色和主界面一致，消除颜色跳变。
+///   4. **runApp 立刻执行**，业务初始化在 [ZephyrApp] 的闪屏阶段跑。
+///   5. **闪屏 UI 抽成公共 [AppSplashScreen]**，`AppBootstrapPage` 复用同一个。
 Future<void> main(List<String> args) async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // desktop_webview_linux 必需的标题栏子进程入口，必须最先处理。
   if (!kIsWeb && Platform.isLinux && runWebViewTitleBarWidget(args)) {
     return;
   }
 
-  const sentryDsn = String.fromEnvironment('sentry_dsn', defaultValue: '');
+  // 预热：应用图标状态（< 10ms，platform channel）。
+  await AppIconService.instance.ensureLoaded();
 
-  if (sentryDsn.isEmpty) {
-    if (kDebugMode) {
-      FlutterError.onError = (FlutterErrorDetails details) {
-        logger.e(
-          "Flutter Framework Error",
-          error: details.exception,
-          stackTrace: details.stack,
-        );
-      };
+  // 预热：主题缓存（SharedPreferences，一次性初始化）。
+  await AppThemeCache.init();
 
-      PlatformDispatcher.instance.onError = (Object error, StackTrace stack) {
-        logger.e("Async/Platform Error", error: error, stackTrace: stack);
-        return true;
-      };
-    }
+  if (kDebugMode) {
+    FlutterError.onError = (FlutterErrorDetails details) {
+      logger.e(
+        "Flutter Framework Error",
+        error: details.exception,
+        stackTrace: details.stack,
+      );
+    };
 
-    runApp(const ZephyrApp(sentryDsn: ''));
-    return;
+    PlatformDispatcher.instance.onError = (Object error, StackTrace stack) {
+      logger.e("Async/Platform Error", error: error, stackTrace: stack);
+      return true;
+    };
   }
 
-  await SentryFlutter.init(
-    (options) {
-      options.dsn = sentryDsn;
-      options.sendDefaultPii = true;
-      options.debug = kDebugMode;
-      options.tracesSampleRate = 1.0;
-
-      if (Platform.isAndroid) {
-        options.replay.sessionSampleRate = 0.0;
-        options.replay.onErrorSampleRate = 0.0;
-      } else {
-        options.replay.sessionSampleRate = 0.1;
-        options.replay.onErrorSampleRate = 1.0;
-      }
-
-      options.attachThreads = true;
-      options.attachStacktrace = true;
-    },
-    appRunner: () async {
-      runApp(ZephyrApp(sentryDsn: sentryDsn));
-    },
-  );
+  runApp(const ZephyrApp());
 }
 
 // ─────────────────────────────────────────────────────────────────────
 // ZephyrApp：顶层壳 + 闪屏
 // ─────────────────────────────────────────────────────────────────────
 
-/// 顶层应用壳：先渲染闪屏，业务初始化在后台跑完后再切到 MyApp。
 class ZephyrApp extends StatefulWidget {
-  const ZephyrApp({super.key, required this.sentryDsn});
-
-  /// 空字符串表示未启用 Sentry。
-  final String sentryDsn;
+  const ZephyrApp({super.key});
 
   @override
   State<ZephyrApp> createState() => _ZephyrAppState();
@@ -202,10 +189,6 @@ class _ZephyrAppState extends State<ZephyrApp> {
 
     final (globalSettingCubit, pluginRegistryCubit) = await _initServices();
     final comicFollowCubit = ComicFollowCubit();
-
-    if (widget.sentryDsn.isNotEmpty) {
-      await addArchitectureTagsToSentry();
-    }
 
     return _AppServices(
       globalSettingCubit: globalSettingCubit,
@@ -231,7 +214,7 @@ class _ZephyrAppState extends State<ZephyrApp> {
           return const _StartupSplashApp();
         }
 
-        Widget app = MultiBlocProvider(
+        return MultiBlocProvider(
           providers: [
             BlocProvider.value(value: services.globalSettingCubit),
             BlocProvider.value(value: services.pluginRegistryCubit),
@@ -239,12 +222,6 @@ class _ZephyrAppState extends State<ZephyrApp> {
           ],
           child: const MyApp(),
         );
-
-        if (widget.sentryDsn.isNotEmpty) {
-          app = SentryWidget(child: app);
-        }
-
-        return app;
       },
     );
   }
@@ -263,28 +240,20 @@ class _AppServices {
 }
 
 // ─────────────────────────────────────────────────────────────────────
-// 闪屏 & 错误页
+// 闪屏
 // ─────────────────────────────────────────────────────────────────────
 
-/// 启动闪屏。刻意不依赖 TranslationProvider / Bloc / MiuixTheme，
-/// 保证首帧即可渲染。
-class _StartupSplashApp extends StatelessWidget {
-  const _StartupSplashApp();
+/// 启动闪屏。
+///
+/// 公共 widget：[ZephyrApp] 业务初始化阶段和 [AppBootstrapPage] 都渲染它。
+/// 图标来源 [AppIconService.instance.value.assetPath]（main 里已 await 加载）。
+class AppSplashScreen extends StatelessWidget {
+  const AppSplashScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
-      debugShowCheckedModeBanner: false,
-      home: _SplashScreen(),
-    );
-  }
-}
+    final assetPath = AppIconService.instance.value.assetPath;
 
-class _SplashScreen extends StatelessWidget {
-  const _SplashScreen();
-
-  @override
-  Widget build(BuildContext context) {
     return Scaffold(
       body: Center(
         child: Column(
@@ -293,7 +262,7 @@ class _SplashScreen extends StatelessWidget {
             ClipRRect(
               borderRadius: BorderRadius.circular(24),
               child: Image.asset(
-                'asset/image/app-icon.png',
+                assetPath,
                 width: 88,
                 height: 88,
                 errorBuilder: (_, _, _) =>
@@ -309,6 +278,40 @@ class _SplashScreen extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// `_bootstrap` 阶段的闪屏宿主。
+///
+/// 主题来源：[AppThemeCache]，与主界面用同一份 seedColor / themeMode，
+/// 消除「闪屏色 → 主界面色」的跳变。
+class _StartupSplashApp extends StatelessWidget {
+  const _StartupSplashApp();
+
+  @override
+  Widget build(BuildContext context) {
+    final seed = AppThemeCache.seedColor ?? _kFallbackSeedColor;
+    final themeMode = AppThemeCache.themeMode ?? ThemeMode.system;
+
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      themeMode: themeMode,
+      theme: ThemeData.light().copyWith(
+        colorScheme: ColorScheme.fromSeed(seedColor: seed),
+        scaffoldBackgroundColor: ColorScheme.fromSeed(seedColor: seed).surface,
+      ),
+      darkTheme: ThemeData.dark().copyWith(
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: seed,
+          brightness: Brightness.dark,
+        ),
+        scaffoldBackgroundColor: ColorScheme.fromSeed(
+          seedColor: seed,
+          brightness: Brightness.dark,
+        ).surface,
+      ),
+      home: const AppSplashScreen(),
     );
   }
 }
@@ -373,42 +376,46 @@ Future<(GlobalSettingCubit, PluginRegistryCubit)> _initServices() async {
   LocaleSettings.setLocale(AppLocale.enUs);
   I18nHelper.setRustErrorLanguage(AppLocale.enUs);
 
-  await workerManager.init(isolatesCount: Platform.numberOfProcessors);
+  await Future.wait<void>([
+    workerManager.init(isolatesCount: Platform.numberOfProcessors),
+    () async {
+      enableStacktrace(enabled: false);
+      enableRustLog(enabled: kDebugMode);
 
-  enableStacktrace(enabled: false);
-  enableRustLog(enabled: kDebugMode);
+      if (kDebugMode) {
+        setQjsErrorStackEnabled(enabled: true);
+      } else {
+        setQjsErrorStackEnabled(enabled: false);
+      }
+
+      FlutterForegroundTask.initCommunicationPort();
+      GestureBinding.instance.resamplingEnabled = true;
+
+      SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+      SystemChrome.setSystemUIOverlayStyle(
+        const SystemUiOverlayStyle(
+          systemNavigationBarColor: Colors.transparent,
+          systemNavigationBarDividerColor: Colors.transparent,
+          statusBarColor: Colors.transparent,
+        ),
+      );
+
+      final isWin = Platform.isWindows;
+      final cache = PaintingBinding.instance.imageCache;
+      cache.maximumSizeBytes = 200 * 1024 * 1024 * (isWin ? 3 : 1);
+      cache.maximumSize = 50 * (isWin ? 3 : 1);
+
+      if (!isTabletWithOutContext()) {
+        await SystemChrome.setPreferredOrientations([
+          DeviceOrientation.portraitUp,
+          DeviceOrientation.portraitDown,
+        ]);
+      }
+    }(),
+  ]);
 
   if (kDebugMode) {
-    setQjsErrorStackEnabled(enabled: true);
     await _tryApplyHttpProxyFromEnv();
-  } else {
-    setQjsErrorStackEnabled(enabled: false);
-  }
-
-  FlutterForegroundTask.initCommunicationPort();
-
-  GestureBinding.instance.resamplingEnabled = true;
-
-  SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
-  SystemChrome.setSystemUIOverlayStyle(
-    const SystemUiOverlayStyle(
-      systemNavigationBarColor: Colors.transparent,
-      systemNavigationBarDividerColor: Colors.transparent,
-      statusBarColor: Colors.transparent,
-    ),
-  );
-
-  final isWin = Platform.isWindows;
-  final cache = PaintingBinding.instance.imageCache;
-
-  cache.maximumSizeBytes = 200 * 1024 * 1024 * (isWin ? 3 : 1);
-  cache.maximumSize = 50 * (isWin ? 3 : 1);
-
-  if (!isTabletWithOutContext()) {
-    await SystemChrome.setPreferredOrientations([
-      DeviceOrientation.portraitUp,
-      DeviceOrientation.portraitDown,
-    ]);
   }
 
   objectbox = await ObjectBox.create();
@@ -423,14 +430,17 @@ Future<(GlobalSettingCubit, PluginRegistryCubit)> _initServices() async {
     blocked: globalSettingCubit.state.blockRustHttpRequests,
   );
 
-  if (globalSettingCubit.state.localeFollowsSystem) {
-    final systemInfo = await SystemLocaleService.getInfo();
-    await globalSettingCubit.setSystemLocale(systemInfo.locale);
-  } else {
-    await globalSettingCubit.setLocale(globalSettingCubit.state.locale);
-  }
-
-  await FontProfileController.instance.init();
+  await Future.wait<void>([
+    () async {
+      if (globalSettingCubit.state.localeFollowsSystem) {
+        final systemInfo = await SystemLocaleService.getInfo();
+        await globalSettingCubit.setSystemLocale(systemInfo.locale);
+      } else {
+        await globalSettingCubit.setLocale(globalSettingCubit.state.locale);
+      }
+    }(),
+    FontProfileController.instance.init(),
+  ]);
 
   final pluginRegistryCubit = PluginRegistryCubit();
 
@@ -472,6 +482,11 @@ Future<(GlobalSettingCubit, PluginRegistryCubit)> _initServices() async {
 
   setHostCacheGcEnabled(enabled: false);
   setTlsVerifyEnabled(enabled: false);
+
+  // ★ 从 AppBootstrapPage 挪过来：插件注册表初始化不依赖 context，可以提前做。
+  //   这样 AppBootstrapPage 只剩「注册回调 + 数据库迁移 + 应用锁」，
+  //   1-2 帧内就能导航走，用户看不到第二次 loading。
+  await PluginRegistryService.I.init();
 
   unawaited(saveStartupDatabaseSnapshot());
 
@@ -533,51 +548,6 @@ Future<bool> _probeProxyWithTimeout(String proxyUrl) async {
     return response.status >= 200 && response.status < 500;
   } catch (_) {
     return false;
-  }
-}
-
-Future<void> addArchitectureTagsToSentry() async {
-  try {
-    final is64Bit = sizeOf<Pointer>() == 8;
-    final appArchitecture = is64Bit ? '64-bit' : '32-bit';
-
-    String deviceSupportedAbis = 'unknown';
-
-    if (Platform.isAndroid) {
-      final androidInfo = await DeviceInfoPlugin().androidInfo;
-      deviceSupportedAbis = androidInfo.supportedAbis.join(', ');
-    } else if (Platform.isIOS) {
-      final iosInfo = await DeviceInfoPlugin().iosInfo;
-      deviceSupportedAbis = 'arm64 (${iosInfo.utsname.machine})';
-    } else if (Platform.isWindows) {
-      deviceSupportedAbis =
-          Platform.environment['PROCESSOR_ARCHITECTURE'] ?? 'unknown';
-    } else if (Platform.isLinux) {
-      try {
-        final result = Process.runSync('uname', ['-m']);
-        deviceSupportedAbis = result.stdout.toString().trim();
-      } catch (_) {
-        deviceSupportedAbis = 'unknown';
-      }
-    } else if (Platform.isMacOS) {
-      final macInfo = await DeviceInfoPlugin().macOsInfo;
-      deviceSupportedAbis = macInfo.arch;
-    }
-
-    Sentry.configureScope((scope) {
-      scope.setTag('app_runtime_arch', appArchitecture);
-      scope.setTag('device_supported_abis', deviceSupportedAbis);
-
-      scope.addBreadcrumb(
-        Breadcrumb(
-          message:
-              'Architecture Info - App: $appArchitecture, Device: $deviceSupportedAbis',
-          category: 'system.architecture',
-        ),
-      );
-    });
-  } catch (e, stack) {
-    await Sentry.captureException(e, stackTrace: stack);
   }
 }
 
@@ -915,15 +885,8 @@ class _MyAppState extends State<MyApp>
                 );
               }
 
-              // ─────────────────────────────────────────────────────
-              // Miuix 主题桥接
-              // ─────────────────────────────────────────────────────
-              // Miuix 组件读的是 MiuixTheme，不是 MaterialApp.theme。
-              // 缺少这一层，MiuixScaffold / MiuixCard / MiuixSmallTitle
-              // 只会走内部 fallback 配色，不跟随 seedColor 变化。放在
-              // builder 里而不是 MyApp 最外层，是为了能直接读取
-              // Theme.of(context).brightness，保证 Miuix 的亮暗跟随
-              // Material 主题的 themeMode。
+              // Miuix 组件读 MiuixTheme 而非 MaterialApp.theme，
+              // 缺少这一层就只会走内部 fallback 配色，不跟随 seedColor。
               final brightness = Theme.of(context).brightness;
               final miuixColors = miuixColorsFromSeed(
                 seed: primary,
@@ -934,9 +897,6 @@ class _MyAppState extends State<MyApp>
               return MiuixTheme(
                 data: MiuixThemeData(
                   colors: miuixColors,
-                  // 当前树里还没有 MiuixTheme 祖先，of() 返回内部 fallback
-                  // 的默认 textStyles；把它作为新主题的 textStyles，保证
-                  // 文字风格不被重置。
                   textStyles: MiuixTheme.of(context).textStyles,
                   brightness: brightness,
                 ),
