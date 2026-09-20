@@ -1,9 +1,8 @@
 import 'dart:math' as math;
 
-import 'package:flutter/rendering.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:scrollview_observer/scrollview_observer.dart';
+import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 import 'package:zephyr/config/global/global_setting.dart';
 import 'package:zephyr/page/comic_read/controller/reader_volume_controller.dart';
 import 'package:zephyr/page/comic_read/cubit/reader_cubit.dart';
@@ -11,15 +10,21 @@ import 'package:zephyr/page/comic_read/widgets/layout/read_layout.dart';
 import 'package:zephyr/page/comic_read/widgets/modes/read_mode_slot_builder.dart';
 import 'package:zephyr/page/comic_read/widgets/modes/read_mode_transition_style.dart';
 import 'package:zephyr/page/comic_read/widgets/modes/read_mode_utils.dart';
-import 'package:zephyr/util/context/context_extensions.dart';
 
+/// 列模式列表。
+///
+/// 用 [ScrollablePositionedList] 而非 [ListView]：前者支持**按 index** 定位
+/// （`itemScrollController.jumpTo(index: 200)`），语义等同 Compose 的
+/// `LazyListState.scrollToItem(200)`——直接把锚点设到目标项，中间 199 项
+/// 完全不会构建。ListView 是像素定位（`jumpTo(offset)`），必须先从锚点
+/// 累加各项高度反推位置，跳页时会触发连锁构建，正是「流水式加载」的根源。
 class ColumnModeWidget extends StatefulWidget {
   final List<ReadModeEntry> entries;
   final bool enableDoublePage;
   final bool isRtl;
   final String comicId;
-  final ListObserverController observerController;
-  final ScrollController scrollController;
+  final ItemScrollController itemScrollController;
+  final ItemPositionsListener itemPositionsListener;
   final String from;
   final ScrollPhysics? parentPhysics;
   final bool disableScroll;
@@ -34,8 +39,8 @@ class ColumnModeWidget extends StatefulWidget {
     required this.enableDoublePage,
     required this.isRtl,
     required this.comicId,
-    required this.observerController,
-    required this.scrollController,
+    required this.itemScrollController,
+    required this.itemPositionsListener,
     required this.from,
     this.parentPhysics,
     this.disableScroll = false,
@@ -52,15 +57,55 @@ class ColumnModeWidget extends StatefulWidget {
 class _ColumnModeWidgetState extends State<ColumnModeWidget> {
   bool get _isDoublePage => widget.enableDoublePage;
 
+  /// 上次上报的全局槽位，用于去重。
+  int? _lastReportedIndex;
+
+  @override
+  void initState() {
+    super.initState();
+    widget.itemPositionsListener.itemPositions.addListener(_onPositionsChanged);
+  }
+
+  @override
+  void dispose() {
+    widget.itemPositionsListener.itemPositions.removeListener(
+      _onPositionsChanged,
+    );
+    super.dispose();
+  }
+
+  /// 可见项变化时同步当前槽位。
+  ///
+  /// 取「可见项中间那个」作为当前页——和旧版 ListViewObserver.onObserve
+  /// 的 `all[all.length ~/ 2]` 逻辑保持一致。
+  void _onPositionsChanged() {
+    if (!mounted) return;
+    final positions = widget.itemPositionsListener.itemPositions.value;
+    if (positions.isEmpty) return;
+
+    final sorted = positions.toList()
+      ..sort((a, b) => a.index.compareTo(b.index));
+    final middle = sorted[sorted.length ~/ 2];
+    final index = middle.index;
+
+    if (_lastReportedIndex == index) return;
+    _lastReportedIndex = index;
+
+    widget.onGlobalSlotChanged(index);
+
+    final cubit = context.read<ReaderCubit>();
+    if (cubit.state.currentSlot != index) {
+      cubit.updateCurrentSlot(index);
+    }
+
+    if (cubit.state.isMenuVisible) {
+      cubit.updateMenuVisible(visible: false);
+      widget.volumeController.enableInterception();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final basePhysics = widget.parentPhysics != null
-        ? widget.parentPhysics!.applyTo(const AlwaysScrollableScrollPhysics())
-        : const AlwaysScrollableScrollPhysics();
-    final physics = widget.disableScroll
-        ? const NeverScrollableScrollPhysics()
-        : basePhysics;
-
     return LayoutBuilder(
       builder: (context, constraints) {
         final hideTop = context.select(
@@ -110,36 +155,11 @@ class _ColumnModeWidgetState extends State<ColumnModeWidget> {
           shortEdge: viewportShortEdge,
         );
 
-        final listView = ListView.builder(
-          padding: EdgeInsets.only(top: topPadding, bottom: bottomPadding),
-          physics: physics,
-          itemCount: slotCount,
-          itemBuilder: (ctx, index) => buildReadModeSlot(
-            context: ctx,
-            slotIndex: index,
-            singleItem: _isDoublePage
-                ? null
-                : ReadModeSlotItem(
-                    entryIndex: index,
-                    entry: widget.entries[index],
-                  ),
-            doublePageSlot: _isDoublePage ? doublePageSlots[index] : null,
-            axis: ReadModeAxis.column,
-            containerWidth: containerWidth,
-            contentWidth: contentWidth,
-            backgroundColor: backgroundColor,
-            isRtl: widget.isRtl,
-            comicId: widget.comicId,
-            from: widget.from,
-            onTransitionAction: widget.onTransitionAction,
-            transitionStyle: transitionStyle,
-          ),
-          scrollCacheExtent: ScrollCacheExtent.pixels(context.screenHeight * 2),
-          controller: widget.scrollController,
-          addRepaintBoundaries: false,
-        );
+        final physics = widget.disableScroll
+            ? const NeverScrollableScrollPhysics()
+            : widget.parentPhysics;
 
-        // 维护"用户正在滚动"标记：仅由真实拖拽（dragDetails 非空）开始，
+        // 维护「用户正在滚动」标记：仅由真实拖拽（dragDetails 非空）开始，
         // 直到松手后的惯性/回弹完全结束（ScrollEnd）才复位，供自动滚动让位。
         return NotificationListener<ScrollNotification>(
           onNotification: (notification) {
@@ -151,29 +171,32 @@ class _ColumnModeWidgetState extends State<ColumnModeWidget> {
             }
             return false;
           },
-          child: ListViewObserver(
-            controller: widget.observerController,
-            onObserve: (resultMap) {
-              final all = resultMap.displayingChildIndexList;
-              if (all.isEmpty) return;
-
-              final int middleValue = all[all.length ~/ 2];
-              if (slotCount <= 0) return;
-
-              final clampedPageIndex = middleValue.clamp(0, slotCount - 1);
-              widget.onGlobalSlotChanged(clampedPageIndex);
-
-              final cubit = context.read<ReaderCubit>();
-              if (cubit.state.currentSlot != clampedPageIndex) {
-                cubit.updateCurrentSlot(clampedPageIndex);
-              }
-
-              if (cubit.state.isMenuVisible) {
-                cubit.updateMenuVisible(visible: false);
-                widget.volumeController.enableInterception();
-              }
-            },
-            child: listView,
+          child: ScrollablePositionedList.builder(
+            itemScrollController: widget.itemScrollController,
+            itemPositionsListener: widget.itemPositionsListener,
+            physics: physics,
+            padding: EdgeInsets.only(top: topPadding, bottom: bottomPadding),
+            itemCount: slotCount,
+            itemBuilder: (ctx, index) => buildReadModeSlot(
+              context: ctx,
+              slotIndex: index,
+              singleItem: _isDoublePage
+                  ? null
+                  : ReadModeSlotItem(
+                      entryIndex: index,
+                      entry: widget.entries[index],
+                    ),
+              doublePageSlot: _isDoublePage ? doublePageSlots[index] : null,
+              axis: ReadModeAxis.column,
+              containerWidth: containerWidth,
+              contentWidth: contentWidth,
+              backgroundColor: backgroundColor,
+              isRtl: widget.isRtl,
+              comicId: widget.comicId,
+              from: widget.from,
+              onTransitionAction: widget.onTransitionAction,
+              transitionStyle: transitionStyle,
+            ),
           ),
         );
       },

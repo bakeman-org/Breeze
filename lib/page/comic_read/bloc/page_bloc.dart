@@ -1,3 +1,4 @@
+// lib/page/comic_read/bloc/page_bloc.dart
 import 'package:bloc/bloc.dart';
 import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:equatable/equatable.dart';
@@ -44,17 +45,35 @@ class PageBloc extends Bloc<PageEvent, PageState> {
           event.epsId,
         );
       } else {
-        result = await getPluginReadSnapshot(
-          event.comicId,
-          event.epsId,
-          event.from,
-          event.comicInfo,
-          event.chapterId,
-          event.requestId,
-          event.logicalKey,
-          event.storageChapterId,
-          event.chapterExtern,
-        );
+        // ★ 快路径：非下载入口也先试本地。
+        //   已下载章节直接从 objectbox 拿 docs，省掉一次插件网络往返。
+        //   未下载时 getPluginInfoFromLocal 会抛 StateError，捕获后回退。
+        NormalComicEpInfo? localResult;
+        try {
+          localResult = await getPluginInfoFromLocal(
+            event.from,
+            event.comicId,
+            event.epsId,
+          );
+        } catch (_) {
+          localResult = null;
+        }
+
+        if (localResult != null && localResult.docs.isNotEmpty) {
+          result = localResult;
+        } else {
+          result = await getPluginReadSnapshot(
+            event.comicId,
+            event.epsId,
+            event.from,
+            event.comicInfo,
+            event.chapterId,
+            event.requestId,
+            event.logicalKey,
+            event.storageChapterId,
+            event.chapterExtern,
+          );
+        }
       }
 
       emit(state.copyWith(status: PageStatus.success, epInfo: result));

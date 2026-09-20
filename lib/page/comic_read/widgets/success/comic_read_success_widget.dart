@@ -1,3 +1,4 @@
+// lib/page/comic_read/widgets/success/comic_read_success_widget.dart
 import 'dart:async';
 
 import 'package:material_ui/material_ui.dart';
@@ -6,7 +7,6 @@ import 'package:zephyr/config/global/global_setting.dart';
 import 'package:zephyr/page/comic_read/cubit/image_size_cubit.dart';
 import 'package:zephyr/page/comic_read/cubit/reader_seamless_cubit.dart';
 import 'package:zephyr/page/comic_read/cubit/reader_seamless_state.dart';
-import 'package:zephyr/page/comic_read/method/image_size_cache_store.dart';
 import 'package:zephyr/page/comic_read/method/prefetch_image_sizes.dart';
 import 'package:zephyr/page/comic_read/cubit/reader_cubit.dart';
 import 'package:zephyr/page/comic_read/model/normal_comic_ep_info.dart';
@@ -52,114 +52,107 @@ class ComicReadSuccessWidget extends StatefulWidget {
 
 class _ComicReadSuccessWidgetState extends State<ComicReadSuccessWidget> {
   late final List<String> _pageKeys;
-  late final Future<Map<int, Size>> _persistedSizeFuture;
   bool _initialPrefetchStarted = false;
 
   @override
   void initState() {
     super.initState();
     _pageKeys = _buildPageKeys();
-    _persistedSizeFuture = ImageSizeCacheStore(
-      sourceTag: widget.from,
-      pageKeys: _pageKeys,
-    ).readIndexedSizes(pageKeys: _pageKeys, count: widget.epInfo.length);
   }
 
   @override
   Widget build(BuildContext context) {
     final width = context.screenWidth;
-    return FutureBuilder<Map<int, Size>>(
-      future: _persistedSizeFuture,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState != ConnectionState.done) {
-          return const Center(child: CircularProgressIndicator());
-        }
 
-        final persistedSize = snapshot.data ?? const <int, Size>{};
-        return BlocProvider(
-          create: (_) => ImageSizeCubit.create(
-            defaultWidth: width,
-            count: widget.epInfo.length,
-            sourceTag: widget.from,
-            pageKeys: _pageKeys,
-            chapterOrder: widget.chapterOrder,
-            persistedCache: persistedSize,
-          ),
-          child: Builder(
-            builder: (innerContext) {
-              _scheduleInitialPrefetch(innerContext);
-              final cubit = innerContext.read<ReaderCubit>();
-              final readMode = innerContext.select(
-                (GlobalSettingCubit c) => c.state.readSetting.readMode,
-              );
-              final readSetting = innerContext.select(
-                (GlobalSettingCubit c) => c.state.readSetting,
-              );
-              final backgroundColor = readSetting.resolveReaderBackgroundColor(
-                Theme.of(innerContext).brightness,
-              );
-              final isDarkMode =
-                  Theme.of(innerContext).brightness == Brightness.dark;
-              final filterOpacityPercent = readSetting.readFilterOpacityPercent
-                  .clamp(0, 100)
-                  .toDouble();
-              final enableReaderFilter =
-                  isDarkMode &&
-                  readSetting.readFilterEnabled &&
-                  filterOpacityPercent > 0;
+    // ★ 关键改动：不再用 FutureBuilder 等尺寸缓存。
+    // persistedCache 传 null → ImageSizeCubit 走 hydrateOnInit: true，
+    // 先在内存里用 _kDefaultAspect (1.42) 兜底，读到磁盘后 emit 新 state，
+    // BlocSelector 自动重绘，用户无感知。
+    return BlocProvider(
+      create: (_) => ImageSizeCubit.create(
+        defaultWidth: width,
+        count: widget.epInfo.length,
+        sourceTag: widget.from,
+        pageKeys: _pageKeys,
+        chapterOrder: widget.chapterOrder,
+        persistedCache: null,
+      ),
+      child: Builder(
+        builder: (innerContext) {
+          _scheduleInitialPrefetch(innerContext);
+          final cubit = innerContext.read<ReaderCubit>();
+          final readMode = innerContext.select(
+            (GlobalSettingCubit c) => c.state.readSetting.readMode,
+          );
+          final readSetting = innerContext.select(
+            (GlobalSettingCubit c) => c.state.readSetting,
+          );
+          final backgroundColor = readSetting.resolveReaderBackgroundColor(
+            Theme.of(innerContext).brightness,
+          );
+          final isDarkMode =
+              Theme.of(innerContext).brightness == Brightness.dark;
+          final filterOpacityPercent = readSetting.readFilterOpacityPercent
+              .clamp(0, 100)
+              .toDouble();
+          final enableReaderFilter =
+              isDarkMode &&
+              readSetting.readFilterEnabled &&
+              filterOpacityPercent > 0;
 
-              final totalSlots = getReadModeSlotCount(
-                imageCount: widget.epInfo.length,
-                enableDoublePage: readSetting.doublePageMode,
-                insertLeadingBlank:
-                    readSetting.doublePageMode &&
-                    readSetting.doublePageLeadingBlank,
-              );
-              final resolvedTotalSlots =
-                  widget.resolveTotalSlots?.call(readSetting) ?? totalSlots;
-              cubit.updateTotalSlots(resolvedTotalSlots);
-              widget.onReady(innerContext, readSetting, readMode);
+          final totalSlots = getReadModeSlotCount(
+            imageCount: widget.epInfo.length,
+            enableDoublePage: readSetting.doublePageMode,
+            insertLeadingBlank:
+                readSetting.doublePageMode &&
+                readSetting.doublePageLeadingBlank,
+          );
+          final resolvedTotalSlots =
+              widget.resolveTotalSlots?.call(readSetting) ?? totalSlots;
+          cubit.updateTotalSlots(resolvedTotalSlots);
+          widget.onReady(innerContext, readSetting, readMode);
 
-              return BlocListener<ReaderSeamlessCubit, ReaderSeamlessState>(
-                listenWhen: (previous, current) =>
-                    previous.loadedChapters.length !=
-                    current.loadedChapters.length,
-                listener: _onSeamlessChaptersChanged,
-                child: Container(
-                  color: backgroundColor,
-                  child: Stack(
-                    children: [
-                      Positioned.fill(
-                        child: widget.buildInteractiveViewer(innerContext),
-                      ),
-                      if (enableReaderFilter)
-                        Positioned.fill(
-                          child: IgnorePointer(
-                            ignoring: true,
-                            child: Container(
-                              color: Colors.black.withValues(
-                                alpha: filterOpacityPercent / 100,
-                              ),
-                            ),
+          return BlocListener<ReaderSeamlessCubit, ReaderSeamlessState>(
+            listenWhen: (previous, current) =>
+                previous.loadedChapters.length != current.loadedChapters.length,
+            listener: _onSeamlessChaptersChanged,
+            child: Container(
+              color: backgroundColor,
+              child: Stack(
+                children: [
+                  Positioned.fill(
+                    child: widget.buildInteractiveViewer(innerContext),
+                  ),
+                  if (enableReaderFilter)
+                    Positioned.fill(
+                      child: IgnorePointer(
+                        ignoring: true,
+                        child: Container(
+                          color: Colors.black.withValues(
+                            alpha: filterOpacityPercent / 100,
                           ),
                         ),
-                      widget.buildPageCount(innerContext),
-                      widget.buildAppBar(innerContext),
-                      widget.buildBottom(innerContext),
-                      widget.buildAutoReadControl(innerContext),
-                    ],
-                  ),
-                ),
-              );
-            },
-          ),
-        );
-      },
+                      ),
+                    ),
+                  widget.buildPageCount(innerContext),
+                  widget.buildAppBar(innerContext),
+                  widget.buildBottom(innerContext),
+                  widget.buildAutoReadControl(innerContext),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
     );
   }
 
   // 章节就绪后在后台预解析本地图片尺寸，让列表项高度提前就位，
   // 减少阅读过程中占位高度 → 真实高度的布局跳变。
+  //
+  // ★ 注意：这里不再读 ImageSizeCubit 的当前状态做前置判断，
+  //   prefetchChapterImageSizes 内部会对每张图独立判重，hydrate
+  //   完成前后都能正确跳过已缓存项，无需额外协调。
   void _scheduleInitialPrefetch(BuildContext innerContext) {
     if (_initialPrefetchStarted) return;
     _initialPrefetchStarted = true;

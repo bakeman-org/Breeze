@@ -1,3 +1,4 @@
+//lib/page/comic_read/view/comic_read.dart
 import 'dart:async';
 import 'dart:io';
 
@@ -5,7 +6,7 @@ import 'package:auto_route/auto_route.dart';
 import 'package:flutter/foundation.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:scrollview_observer/scrollview_observer.dart';
+import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 import 'package:zephyr/config/global/global_setting.dart';
 import 'package:zephyr/cubit/string_select.dart';
 import 'package:zephyr/i18n/strings.g.dart';
@@ -22,15 +23,10 @@ import 'package:zephyr/page/comic_read/type/chapter_extern.dart';
 import 'package:zephyr/util/context/context_extensions.dart';
 import 'package:zephyr/type/enum.dart';
 
-// 自动阅读相关：计时器、暂停/继续、悬浮按钮。
 part 'parts/comic_read_auto_read_part.dart';
-// 初始化与释放：控制器、订阅、历史记录、启动收尾。
 part 'parts/comic_read_init_part.dart';
-// 交互相关：手势、缩放、指针事件、阅读模式容器。
 part 'parts/comic_read_interaction_part.dart';
-// 系统 UI 与音量键拦截相关。
 part 'parts/comic_read_system_ui_part.dart';
-// 页面拼装与历史定位相关。
 part 'parts/comic_read_view_part.dart';
 
 @RoutePage()
@@ -122,7 +118,7 @@ class _ComicReadPage extends StatefulWidget {
   final String storageChapterId;
   final String logicalKey;
   final ChapterExtern chapterExtern;
-  final int epsNumber; // 这个的意思是一共有多少章
+  final int epsNumber;
   final String from;
   final ComicEntryType type;
   final dynamic comicInfo;
@@ -151,28 +147,33 @@ class _ComicReadPageState extends State<_ComicReadPage>
   String get comicId => widget.comicId;
 
   late final ComicEntryType _type;
-  late bool isSkipped = false; // 是否跳转过
-  final _pageController = PageController(initialPage: 0); // 横版阅读器
-  late JumpChapter _jumpChapter; // 用来跳转章节的通用类
-  late final ReaderActionController _actionController; // 统一动作控制器
-  late final ReaderVolumeController _volumeController; // 音量键翻页控制器
-  late final ReaderHistoryController _historyController; // 历史记录控制器
-  late final ReaderAutoReadController _autoReadController; // 自动阅读控制器
-  late final ReaderSystemUiController _systemUiController; // 系统 UI 控制器
-  late final ReaderLifecycleController _lifecycleController; // 生命周期控制器
+  late bool isSkipped = false;
+  final _pageController = PageController(initialPage: 0);
+
+  /// 列模式的按索引滚动控制器。跳页直接 `jumpTo(index)`，O(1)。
+  final _itemScrollController = ItemScrollController();
+
+  /// 列模式的可见项监听器。取代原 ListViewObserver 的 onObserve。
+  final _itemPositionsListener = ItemPositionsListener.create();
+
+  late JumpChapter _jumpChapter;
+  late final ReaderActionController _actionController;
+  late final ReaderVolumeController _volumeController;
+  late final ReaderHistoryController _historyController;
+  late final ReaderAutoReadController _autoReadController;
+  late final ReaderSystemUiController _systemUiController;
+  late final ReaderLifecycleController _lifecycleController;
   late final ReaderOrientationController _orientationController;
-  late final ReaderInputController _inputController; // 输入控制器
+  late final ReaderInputController _inputController;
   final _imagePrefetchController = ReaderImagePrefetchController();
-  NormalComicEpInfo epInfo = NormalComicEpInfo(); // 通用漫画章节信息
+  NormalComicEpInfo epInfo = NormalComicEpInfo();
   NormalComicEpInfo _initialEpInfo = NormalComicEpInfo();
-  late final ListObserverController observerController; // 列表观察控制器
-  final scrollController = ScrollController(); // 列表滚动控制器
   BuildContext? _imageSizeContext;
   final TransformationController _transformationController =
       TransformationController();
   StreamSubscription<bool>? _volumeKeyPageTurnSubscription;
   bool _isScrollLockedByMultiTouch = false;
-  bool _isUserScrollActive = false; // 用户是否正在拖拽/惯性滚动列表
+  bool _isUserScrollActive = false;
 
   bool get _isHistory =>
       _type == ComicEntryType.history ||
@@ -181,7 +182,6 @@ class _ComicReadPageState extends State<_ComicReadPage>
   @override
   void initState() {
     super.initState();
-    observerController = ListObserverController(controller: scrollController);
     _type = widget.type;
 
     _initAutoReadController();
@@ -233,7 +233,6 @@ class _ComicReadPageState extends State<_ComicReadPage>
         if (order != null && order != _jumpChapter.order) {
           _syncJumpChapterState(order: order);
         }
-        // 章节加载/卸载会改变总槽位和条目，触发重建以同步 ReaderCubit.totalSlots。
         setState(() {});
       },
       child: BlocBuilder<PageBloc, PageState>(
@@ -266,11 +265,16 @@ class _ComicReadPageState extends State<_ComicReadPage>
                     .read<GlobalSettingCubit>()
                     .state
                     .readSetting;
-                context.read<ReaderSeamlessCubit>().bootstrap(
-                  epInfo,
-                  widget.order,
-                  readSetting,
-                );
+                final seamlessCubit = context.read<ReaderSeamlessCubit>();
+                seamlessCubit.bootstrap(epInfo, widget.order, readSetting);
+
+                // ★ 立刻预取首章前 N 张图片：
+                //   不等 ComicReadSuccessWidget 搭好、不等尺寸缓存读完，
+                //   把「PageBloc 返回」到「网络拉图」之间的等待窗口清零。
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (!mounted) return;
+                  _prefetchImagesAroundSlot(0, readSetting);
+                });
               }
               return ComicReadSuccessWidget(
                 comicId: comicId,
@@ -304,6 +308,7 @@ class _ComicReadPageState extends State<_ComicReadPage>
       ),
     ),
   );
+
   @override
   void didChangeMetrics() {
     _lifecycleController.didChangeMetrics();
@@ -315,11 +320,16 @@ class _ComicReadPageState extends State<_ComicReadPage>
   }
 
   void _refreshState(VoidCallback fn) {
-    // 统一走这里触发刷新，避免在异步回调中误调用 setState。
     if (!mounted) return;
     setState(fn);
   }
 
+  /// 跳到目标全局槽位。
+  ///
+  /// 列模式：直接 `itemScrollController.jumpTo(index: safeTarget)`——
+  /// 按索引定位，一步到位，不依赖高度估算。中间项不会被构建。
+  ///
+  /// 行模式：`pageController.jumpToPage(safeTarget)`（原逻辑）。
   Future<void> _jumpToGlobalSlot(
     int targetGlobalSlot, {
     int prependedSlotCount = 0,
@@ -337,45 +347,9 @@ class _ComicReadPageState extends State<_ComicReadPage>
 
     final readMode = readSetting.readMode;
     if (isColumnReadMode(readMode)) {
-      if (!scrollController.hasClients) return;
-
-      // 列模式：先根据已缓存/默认尺寸做粗略同步偏移，
-      // 再由 observerController.jumpTo 在 postFrame 做精确修正，
-      // 减弱历史恢复、滑动条跳转、章节拼接等场景的视觉跳变。
-      final imageContext = _imageSizeContext;
-      if (imageContext != null && imageContext.mounted) {
-        final imageSizeCubit = imageContext.read<ImageSizeCubit>();
-        final containerWidth = MediaQuery.of(context).size.width;
-        final contentWidth = getConstrainedImageWidth(
-          containerWidth: containerWidth,
-          enableSidePadding: readSetting.sidePaddingEnabled,
-          sidePaddingPercent: readSetting.sidePaddingPercent,
-        );
-        final estimatedHeight = seamlessCubit
-            .estimateColumnHeightBeforeGlobalSlot(
-              safeTarget,
-              readSetting,
-              imageSizeCubit,
-              contentWidth,
-            );
-        if (estimatedHeight > 0) {
-          final newOffset = estimatedHeight + getReaderTopOffset(context);
-          scrollController.jumpTo(
-            newOffset.clamp(
-              scrollController.position.minScrollExtent,
-              scrollController.position.maxScrollExtent,
-            ),
-          );
-        }
-      }
-
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted || !scrollController.hasClients) return;
-        observerController.jumpTo(
-          index: safeTarget,
-          offset: (offset) => getReaderTopOffset(context),
-        );
-      });
+      if (!_itemScrollController.isAttached) return;
+      // ★ 关键：按 index 跳，语义等同于 Compose 的 scrollToItem。
+      _itemScrollController.jumpTo(index: safeTarget, alignment: 0);
       return;
     }
 

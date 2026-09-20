@@ -1,3 +1,4 @@
+// lib/main.dart
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -400,10 +401,15 @@ Future<(GlobalSettingCubit, PluginRegistryCubit)> _initServices() async {
         ),
       );
 
-      final isWin = Platform.isWindows;
+      // ★ 调大图片解码缓存。
+      //   默认 100MB / 1000 张，对 1080p 漫画页（单张解码 ~6MB）只够 16 张，
+      //   翻页 / 预取时 LRU 频繁驱逐，导致每张图重新走解码路径。
+      //   这里：移动端 ~320MB / 150 张；桌面端 ~768MB / 400 张。
+      final isDesktop =
+          Platform.isWindows || Platform.isMacOS || Platform.isLinux;
       final cache = PaintingBinding.instance.imageCache;
-      cache.maximumSizeBytes = 200 * 1024 * 1024 * (isWin ? 3 : 1);
-      cache.maximumSize = 50 * (isWin ? 3 : 1);
+      cache.maximumSizeBytes = (isDesktop ? 768 : 320) * 1024 * 1024;
+      cache.maximumSize = isDesktop ? 400 : 150;
 
       if (!isTabletWithOutContext()) {
         await SystemChrome.setPreferredOrientations([

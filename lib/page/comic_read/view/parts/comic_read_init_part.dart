@@ -4,7 +4,6 @@ extension _ComicReadInitPart on _ComicReadPageState {
   bool get _isDesktopPlatform =>
       !kIsWeb && (Platform.isWindows || Platform.isLinux || Platform.isMacOS);
 
-  // 初始化输入控制器：键盘、手势、缩放。
   void _initInputController() {
     _inputController = ReaderInputController(
       context: context,
@@ -26,28 +25,23 @@ extension _ComicReadInitPart on _ComicReadPageState {
     );
   }
 
-  // 初始化阅读动作控制器：键盘、点击、自动阅读、音量键共用入口。
   void _initActionController() {
     _actionController = ReaderActionController(
       context: context,
-      scrollController: scrollController,
       pageController: _pageController,
       onBeforeTurnPage: _inputController.restoreScaleBeforeTurnPage,
       isUserScrolling: () => _isUserScrollActive,
     );
   }
 
-  // 初始化自动阅读控制器。
   void _initAutoReadController() {
     _autoReadController = ReaderAutoReadController();
   }
 
-  // 初始化系统 UI 控制器。
   void _initSystemUiController() {
     _systemUiController = ReaderSystemUiController();
   }
 
-  // 初始化音量键翻页控制，并监听设置项热更新。
   void _initVolumeController() {
     _volumeController = ReaderVolumeController();
     _volumeController.listen();
@@ -69,10 +63,7 @@ extension _ComicReadInitPart on _ComicReadPageState {
         });
   }
 
-  // 初始化历史记录控制器，处理进度恢复与落盘。
   void _initHistoryController() {
-    // 周期性保存的回调可能在 widget 卸载后仍被触发一次，
-    // 因此在这里直接拿到 cubit 引用，避免闭包中继续使用 BuildContext。
     final globalSettingCubit = context.read<GlobalSettingCubit>();
     final readerCubit = context.read<ReaderCubit>();
     final seamlessCubit = context.read<ReaderSeamlessCubit>();
@@ -106,7 +97,6 @@ extension _ComicReadInitPart on _ComicReadPageState {
     unawaited(_historyController.init());
   }
 
-  // 初始化生命周期控制器，订阅菜单/设置变化并执行首帧同步。
   void _initLifecycleController() {
     _lifecycleController = ReaderLifecycleController(
       context: context,
@@ -127,7 +117,6 @@ extension _ComicReadInitPart on _ComicReadPageState {
     );
   }
 
-  // 根据当前章节 order 同步 JumpChapter 和 epInfo，供章节选择器/上下章跳转使用。
   void _syncJumpChapterState({required int order}) {
     final seamlessCubit = context.read<ReaderSeamlessCubit>();
     final ref = seamlessCubit.chapterRefByOrder(order);
@@ -149,7 +138,6 @@ extension _ComicReadInitPart on _ComicReadPageState {
     epInfo = chapter.epInfo;
   }
 
-  // 章节跳转器集中初始化，后续查找和替换更快。
   void _initJumpChapter(bool isMenuVisible) {
     _jumpChapter = JumpChapter.create(
       _type,

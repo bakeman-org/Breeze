@@ -5,22 +5,25 @@ import 'package:zephyr/page/comic_read/cubit/reader_cubit.dart';
 import 'package:zephyr/page/comic_read/widgets/layout/read_layout.dart';
 
 class ReaderActionController {
-  static const int _webtoonTapScrollPercent = 70;
-
   final BuildContext context;
-  final ScrollController scrollController;
   final PageController pageController;
   final bool Function(bool isNext)? onBeforeTurnPage;
-
-  /// 用户是否正在触摸拖拽/惯性滚动列表（由列表侧的滚动通知维护）。
   final bool Function()? isUserScrolling;
+
+  /// 列模式下「按像素滚动」的代理。
+  ///
+  /// 旧版用 ScrollController 直接 jumpTo/ animateTo；换成
+  /// ScrollablePositionedList 后没有 ScrollController，只能通过
+  /// index 跳。列模式下的「滚动」都改为整屏翻页——对阅读器而言，
+  /// 一屏一屏跳比按像素更符合直觉，也绕开了 SPL 不支持 offset 的问题。
+  final void Function({required int slotDelta})? onScrollBySlot;
 
   ReaderActionController({
     required this.context,
-    required this.scrollController,
     required this.pageController,
     this.onBeforeTurnPage,
     this.isUserScrolling,
+    this.onScrollBySlot,
   });
 
   ReadSettingState get _readSetting =>
@@ -34,62 +37,35 @@ class ReaderActionController {
 
   bool get _noAnimation => _readSetting.noAnimation;
 
-  int get _autoScrollColumnDistancePercent =>
-      _readSetting.autoScrollColumnDistancePercent;
-
-  bool get _autoScrollSmooth => _readSetting.autoScrollSmooth;
-
-  int get _autoScrollColumnIntervalMs =>
-      _readSetting.autoScrollColumnIntervalMs;
-
   bool get _volumeKeyPageTurnEnabled => _readSetting.volumeKeyPageTurn;
 
-  int get _volumeKeyPageTurnDistancePercent =>
-      _readSetting.volumeKeyPageTurnDistancePercent;
-
-  BuildContext get _activeContext => context;
-
-  // ================= 1. 键盘专用逻辑 (桌面体验) =================
-  // 特点：竖向模式下是“微调/平滑滚动”，模拟滚轮效果
-
   void onKeyScrollNext() {
-    final mode = _readMode;
-    if (mode == 0) {
-      // 竖向：只滚 200px (平滑小步)
-      _scrollVertical(offset: 200.0, durationMs: 100);
+    if (_readMode == 0) {
+      _scrollBySlot(1);
     } else {
-      // 横向：翻下一页
       _turnPage(isNext: true);
     }
   }
 
   void onKeyScrollPrev() {
-    final mode = _readMode;
-    if (mode == 0) {
-      // 竖向：回滚 200px
-      _scrollVertical(offset: -200.0, durationMs: 100);
+    if (_readMode == 0) {
+      _scrollBySlot(-1);
     } else {
-      // 横向：翻上一页
       _turnPage(isNext: false);
     }
   }
 
-  // ================= 2. 音量键/点击专用逻辑 (手机体验) =================
-  // 特点：竖向模式下按固定比例滚动，避免依赖漫画项分页定位。
-
   void onPageActionNext() {
-    final mode = _readMode;
-    if (mode == 0) {
-      _scrollVerticalByPercent(percent: _webtoonTapScrollPercent, next: true);
+    if (_readMode == 0) {
+      _scrollBySlot(1);
     } else {
       _turnPage(isNext: true);
     }
   }
 
   void onPageActionPrev() {
-    final mode = _readMode;
-    if (mode == 0) {
-      _scrollVerticalByPercent(percent: _webtoonTapScrollPercent, next: false);
+    if (_readMode == 0) {
+      _scrollBySlot(-1);
     } else {
       _turnPage(isNext: false);
     }
@@ -97,12 +73,8 @@ class ReaderActionController {
 
   void onVolumeActionNext() {
     if (!_volumeKeyPageTurnEnabled) return;
-    final mode = _readMode;
-    if (mode == 0) {
-      _scrollVerticalByPercent(
-        percent: _volumeKeyPageTurnDistancePercent,
-        next: true,
-      );
+    if (_readMode == 0) {
+      _scrollBySlot(1);
     } else {
       _turnPage(isNext: true);
     }
@@ -110,114 +82,24 @@ class ReaderActionController {
 
   void onVolumeActionPrev() {
     if (!_volumeKeyPageTurnEnabled) return;
-    final mode = _readMode;
-    if (mode == 0) {
-      _scrollVerticalByPercent(
-        percent: _volumeKeyPageTurnDistancePercent,
-        next: false,
-      );
+    if (_readMode == 0) {
+      _scrollBySlot(-1);
     } else {
       _turnPage(isNext: false);
     }
   }
 
   void onAutoReadTick({double? deltaMs}) {
-    final mode = _readMode;
-    if (mode == 0) {
-      _scrollVerticalAuto(deltaMs: deltaMs);
+    if (_readMode == 0) {
+      _scrollBySlot(1);
     } else {
       _turnPage(isNext: true);
     }
   }
 
-  // ================= 内部实现 =================
-
-  void _scrollVertical({double offset = 0, int durationMs = 0}) {
-    if (!scrollController.hasClients) return;
-
-    final double currentOffset = scrollController.offset;
-    final double targetOffset = currentOffset + offset;
-    final clampedOffset = targetOffset.clamp(
-      scrollController.position.minScrollExtent,
-      scrollController.position.maxScrollExtent,
-    );
-
-    if (_noAnimation) {
-      scrollController.jumpTo(clampedOffset);
-    } else {
-      scrollController.animateTo(
-        clampedOffset,
-        duration: Duration(milliseconds: durationMs),
-        curve: Curves.easeOutQuad,
-      );
-    }
-  }
-
-  void _scrollVerticalAuto({double? deltaMs}) {
-    if (!scrollController.hasClients) return;
-
-    // 用户触摸拖拽/惯性滚动期间让位，避免自动滚动与手势打架。
+  void _scrollBySlot(int delta) {
     if (isUserScrolling?.call() ?? false) return;
-
-    final viewportHeight = MediaQuery.of(_activeContext).size.height;
-    final distancePercent = _autoScrollColumnDistancePercent.clamp(10, 100);
-    final stepDistance = viewportHeight * (distancePercent / 100);
-
-    // 平滑模式：速度 = 步距/间隔，按真实帧间隔位移（与 vsync 对齐）。
-    if (_autoScrollSmooth && deltaMs != null && deltaMs > 0) {
-      final intervalMs = _autoScrollColumnIntervalMs.clamp(300, 5000);
-      final delta = stepDistance * (deltaMs / intervalMs);
-      final position = scrollController.position;
-      final clamped = (position.pixels + delta).clamp(
-        position.minScrollExtent,
-        position.maxScrollExtent,
-      );
-      if (clamped == position.pixels) return;
-      position.jumpTo(clamped);
-      return;
-    }
-
-    final targetOffset = scrollController.offset + stepDistance;
-    final clamped = targetOffset.clamp(
-      scrollController.position.minScrollExtent,
-      scrollController.position.maxScrollExtent,
-    );
-
-    if (_noAnimation) {
-      scrollController.jumpTo(clamped);
-    } else {
-      scrollController.animateTo(
-        clamped,
-        duration: kReaderSmoothScrollDuration,
-        curve: Curves.easeOutCubic,
-      );
-    }
-  }
-
-  void _scrollVerticalByPercent({required int percent, required bool next}) {
-    if (!scrollController.hasClients) return;
-
-    // 使用当前应用窗口的高度，不取屏幕尺寸或宽高中的较大值。
-    final windowHeight = MediaQuery.sizeOf(_activeContext).height;
-    final distancePercent = percent.clamp(10, 100);
-    final direction = next ? 1.0 : -1.0;
-    final targetOffset =
-        scrollController.offset +
-        windowHeight * (distancePercent / 100) * direction;
-    final clamped = targetOffset.clamp(
-      scrollController.position.minScrollExtent,
-      scrollController.position.maxScrollExtent,
-    );
-
-    if (_noAnimation) {
-      scrollController.jumpTo(clamped);
-    } else {
-      scrollController.animateTo(
-        clamped,
-        duration: kReaderSmoothScrollDuration,
-        curve: Curves.easeOutCubic,
-      );
-    }
+    onScrollBySlot?.call(slotDelta: delta);
   }
 
   void _turnPage({required bool isNext}) {

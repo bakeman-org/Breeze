@@ -98,6 +98,7 @@ dependencies:
   coreml_upscale: # MacOS/iOS 超分
     path: packages/coreml_upscale
   dynamic_app_icon_flutter_plus: ^2.2.1 # 切换APP图标
+  scrollable_positioned_list: ^0.3.8
 
 dev_dependencies:
   # 测试与规范

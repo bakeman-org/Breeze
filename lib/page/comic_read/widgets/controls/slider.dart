@@ -4,36 +4,32 @@ import 'dart:ui';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:scrollview_observer/scrollview_observer.dart';
+import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 import 'package:zephyr/config/global/global_setting.dart';
 import 'package:zephyr/main.dart';
-import 'package:zephyr/page/comic_read/cubit/image_size_cubit.dart';
 import 'package:zephyr/i18n/strings.g.dart';
 import 'package:zephyr/page/comic_read/cubit/reader_cubit.dart';
 import 'package:zephyr/page/comic_read/widgets/layout/read_layout.dart';
 import 'package:zephyr/util/context/context_extensions.dart';
 
 class SliderWidget extends StatefulWidget {
-  final ListObserverController observerController;
+  final ItemScrollController itemScrollController;
   final PageController pageController;
   final int Function()? getCurrentChapterSlotCount;
   final int Function(int globalSlot)? mapGlobalToLocalSlot;
   final int Function(int localSlot)? mapLocalToGlobalSlot;
   final bool Function(int globalSlot)? isTransitionSlot;
   final String transitionLabel;
-  final double Function(BuildContext context, int globalSlot)?
-  estimateColumnOffset;
 
   const SliderWidget({
     super.key,
-    required this.observerController,
+    required this.itemScrollController,
     required this.pageController,
     this.getCurrentChapterSlotCount,
     this.mapGlobalToLocalSlot,
     this.mapLocalToGlobalSlot,
     this.isTransitionSlot,
     this.transitionLabel = '',
-    this.estimateColumnOffset,
   });
 
   @override
@@ -41,17 +37,15 @@ class SliderWidget extends StatefulWidget {
 }
 
 class _SliderWidgetState extends State<SliderWidget> {
-  Timer? _sliderIsRollingTimer; // 用来控制滚动隐藏组件的操作
-  Timer? _comicRollingTimer; // 漫画本身是否在滚动
-  Timer? _secondCorrectionTimer; // 滑块跳转后延迟二次校正
-  OverlayEntry? _overlayEntry; // 用于存储 OverlayEntry
+  Timer? _sliderIsRollingTimer;
+  Timer? _comicRollingTimer;
+  OverlayEntry? _overlayEntry;
   int? _lastHapticStep;
 
   @override
   void dispose() {
     _sliderIsRollingTimer?.cancel();
     _comicRollingTimer?.cancel();
-    _secondCorrectionTimer?.cancel();
     _overlayEntry?.remove();
     super.dispose();
   }
@@ -87,10 +81,8 @@ class _SliderWidgetState extends State<SliderWidget> {
   void _showOverlayToast(String message) {
     final isNumeric = int.tryParse(message) != null;
     final fontSize = isNumeric ? 60.0 : 34.0;
-    // 移除之前的 Overlay
     _overlayEntry?.remove();
 
-    // 创建新的 OverlayEntry
     _overlayEntry = OverlayEntry(
       builder: (context) {
         return Stack(
@@ -101,7 +93,7 @@ class _SliderWidgetState extends State<SliderWidget> {
                 child: BackdropFilter(
                   filter: ImageFilter.blur(sigmaX: 10.0, sigmaY: 10.0),
                   child: Container(
-                    padding: EdgeInsets.symmetric(
+                    padding: const EdgeInsets.symmetric(
                       horizontal: 48.0,
                       vertical: 24.0,
                     ),
@@ -129,81 +121,17 @@ class _SliderWidgetState extends State<SliderWidget> {
       },
     );
 
-    // 插入 Overlay
     Overlay.of(context).insert(_overlayEntry!);
   }
 
-  void _jumpColumnWithOffsetThenCorrection(
-    int targetGlobalSlot,
-    ReadSettingState readSetting,
-  ) {
-    var jumpedByOffset = false;
-    final scrollController = widget.observerController.controller;
-    if (scrollController != null && scrollController.hasClients) {
-      try {
-        final double roughOffset;
-        final estimate = widget.estimateColumnOffset;
-        if (estimate != null) {
-          roughOffset = estimate(context, targetGlobalSlot);
-        } else {
-          final viewportWidth = MediaQuery.sizeOf(context).width;
-          final contentWidth = getConstrainedImageWidth(
-            containerWidth: viewportWidth,
-            enableSidePadding: readSetting.sidePaddingEnabled,
-            sidePaddingPercent: readSetting.sidePaddingPercent,
-          );
-          roughOffset = getOffset(
-            context,
-            targetGlobalSlot,
-            imageWidth: contentWidth,
-          );
-        }
-        final maxScrollExtent = scrollController.position.maxScrollExtent;
-        scrollController.jumpTo(roughOffset.clamp(0.0, maxScrollExtent));
-        jumpedByOffset = true;
-      } catch (e) {
-        logger.e(e);
-      }
-    }
-
-    if (!jumpedByOffset) {
-      _jumpColumnWithSecondCorrection(targetGlobalSlot);
-      return;
-    }
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      _jumpColumnWithSecondCorrection(targetGlobalSlot);
-    });
-  }
-
-  void _jumpColumnWithSecondCorrection(int targetGlobalSlot) {
-    void jumpNow() {
-      widget.observerController.jumpTo(
-        index: targetGlobalSlot,
-        offset: (offset) => getReaderTopOffset(context),
-      );
-    }
-
-    jumpNow();
-    _secondCorrectionTimer?.cancel();
-    _secondCorrectionTimer = Timer(const Duration(milliseconds: 260), () {
-      if (!mounted) return;
-      final readMode = context
-          .read<GlobalSettingCubit>()
-          .state
-          .readSetting
-          .readMode;
-      if (readMode != 0) return;
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted) return;
-        try {
-          jumpNow();
-        } catch (e) {
-          logger.e(e);
-        }
-      });
-    });
+  /// 列模式跳转：按 index 定位，O(1)。
+  ///
+  /// 旧版先估算像素偏移 jumpTo，再用 observerController 精修，两步都在
+  /// ListView 的「像素定位」框架里，跳 200 页要触发连锁构建。SPL 的
+  /// jumpTo(index) 直接把锚点设到目标项，中间 199 项根本不构建。
+  void _jumpColumn(int targetGlobalSlot) {
+    if (!widget.itemScrollController.isAttached) return;
+    widget.itemScrollController.jumpTo(index: targetGlobalSlot, alignment: 0);
   }
 }
 
@@ -341,10 +269,8 @@ class _SliderContents extends StatelessWidget {
 
               try {
                 if (globalSettingState.readSetting.readMode == 0) {
-                  owner._jumpColumnWithOffsetThenCorrection(
-                    targetGlobalSlot,
-                    globalSettingState.readSetting,
-                  );
+                  // ★ 直接按 index 定位，无估算，无二次校正
+                  owner._jumpColumn(targetGlobalSlot);
                 } else {
                   configuration.pageController.jumpToPage(targetGlobalSlot);
                 }
@@ -360,31 +286,4 @@ class _SliderContents extends StatelessWidget {
       ),
     );
   }
-}
-
-double getOffset(BuildContext context, int index, {double? imageWidth}) {
-  final sizeCubit = context.read<ImageSizeCubit>();
-
-  final targetListIndex = index;
-
-  double targetItemStartY = 0;
-  for (int i = 0; i < targetListIndex; i++) {
-    final cachedSize = sizeCubit.state.getSizeValue(i);
-    if (imageWidth != null &&
-        cachedSize.width > 0 &&
-        cachedSize.height > 0 &&
-        (cachedSize.width - imageWidth).abs() >= 0.1) {
-      final aspectRatio = cachedSize.height / cachedSize.width;
-      targetItemStartY += imageWidth * aspectRatio;
-    } else {
-      targetItemStartY += cachedSize.height;
-    }
-  }
-
-  double finalOffset = targetItemStartY - context.statusBarHeight;
-  if (finalOffset < 0) {
-    finalOffset = 0;
-  }
-
-  return finalOffset;
 }

@@ -1,3 +1,4 @@
+// lib/page/comic_read/widgets/image/image_display.dart
 import 'dart:async';
 import 'dart:io';
 
@@ -98,7 +99,13 @@ class _ImageDisplayState extends State<ImageDisplay> {
   }
 
   void _resolveImageMeta() {
-    final imageProvider = FileImage(File(widget.imagePath));
+    // ★ 用 128px 的小尺寸解码只为了拿宽高比，
+    //   实际显示解码交给 Image.file(cacheWidth:) 处理。
+    //   避免为了读宽高比付一次完整分辨率解码的代价。
+    final imageProvider = ResizeImage(
+      FileImage(File(widget.imagePath)),
+      width: 128,
+    );
     final newStream = imageProvider.resolve(ImageConfiguration.empty);
 
     final newListener = ImageStreamListener(
@@ -193,9 +200,17 @@ class _ImageDisplayState extends State<ImageDisplay> {
       _einkDelayFinished = true;
     }
 
+    // ★ 提前拿 devicePixelRatio，用于计算解码宽度。
+    final dpr = MediaQuery.maybeDevicePixelRatioOf(context) ?? 1.0;
+
     return LayoutBuilder(
       builder: (context, constraints) {
         final width = constraints.maxWidth;
+
+        // ★ 关键：按屏幕物理像素解码，而不是按原图分辨率。
+        //   与 ReaderImagePrefetchController 的 precacheImage 保持同一
+        //   cacheWidth，命中同一 ImageCache 条目。
+        final cacheWidth = (width * dpr).round();
 
         if (_rawWidth != null) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -208,6 +223,7 @@ class _ImageDisplayState extends State<ImageDisplay> {
           child: Image.file(
             File(widget.imagePath),
             width: width,
+            cacheWidth: cacheWidth,
             fit: isColumn ? BoxFit.fill : BoxFit.contain,
             alignment: widget.imageAlignment,
             gaplessPlayback: true,

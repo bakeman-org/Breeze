@@ -1,3 +1,4 @@
+// lib/page/comic_read/view/parts/comic_read_view_part.dart
 part of '../comic_read.dart';
 
 extension _ComicReadViewPart on _ComicReadPageState {
@@ -8,12 +9,23 @@ extension _ComicReadViewPart on _ComicReadPageState {
       readSetting: readSetting,
       count: readSetting.preloadImageCount.clamp(2, 10).toInt(),
     );
+
+    // ★ 与列/行模式渲染时同源的 contentWidth，保证 cacheWidth 一致。
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final contentWidth = getConstrainedImageWidth(
+      containerWidth: screenWidth,
+      enableSidePadding: readSetting.sidePaddingEnabled,
+      sidePaddingPercent: readSetting.sidePaddingPercent,
+    );
+
     unawaited(
       _imagePrefetchController.prefetch(
+        context: context,
         entries: entries,
         comicId: comicId,
         from: widget.from,
         count: entries.length,
+        targetWidth: contentWidth,
       ),
     );
   }
@@ -57,7 +69,7 @@ extension _ComicReadViewPart on _ComicReadPageState {
     final seamlessCubit = context.read<ReaderSeamlessCubit>();
     final seamlessEnabled = seamlessCubit.isSeamlessEnabled();
     final slider = SliderWidget(
-      observerController: observerController,
+      itemScrollController: _itemScrollController,
       pageController: _pageController,
       getCurrentChapterSlotCount: seamlessEnabled
           ? () => seamlessCubit.effectiveCurrentChapterSlotCount()
@@ -71,24 +83,6 @@ extension _ComicReadViewPart on _ComicReadPageState {
       isTransitionSlot: seamlessEnabled
           ? (globalSlot) =>
                 seamlessCubit.isTransitionSlot(globalSlot, readSetting)
-          : null,
-      estimateColumnOffset: seamlessEnabled
-          ? (context, globalSlot) {
-              final imageSizeCubit = context.read<ImageSizeCubit>();
-              final viewportWidth = MediaQuery.sizeOf(context).width;
-              final contentWidth = getConstrainedImageWidth(
-                containerWidth: viewportWidth,
-                enableSidePadding: readSetting.sidePaddingEnabled,
-                sidePaddingPercent: readSetting.sidePaddingPercent,
-              );
-              final height = seamlessCubit.estimateColumnHeightBeforeGlobalSlot(
-                globalSlot,
-                readSetting,
-                imageSizeCubit,
-                contentWidth,
-              );
-              return height + getReaderTopOffset(context);
-            }
           : null,
     );
 
