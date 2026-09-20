@@ -101,23 +101,54 @@ Future<GithubReleaseJson> getCloudVersion() async {
   }
 }
 
+// bool isUpdateAvailable(String cloudVersion, String localVersion) {
+//   logger.d('App version: $localVersion\nCloud version: $cloudVersion');
+
+//   cloudVersion = cloudVersion.replaceFirst('v', '');
+
+//   final cloudVersionParts = cloudVersion.split('.');
+//   final localVersionParts = localVersion.split('.');
+
+//   for (int i = 0; i < 3; i++) {
+//     final int cloudPart = int.parse(cloudVersionParts[i]);
+//     final int localPart = int.parse(localVersionParts[i]);
+
+//     if (cloudPart > localPart) {
+//       return true;
+//     } else if (cloudPart < localPart) {
+//       return false;
+//     }
+//   }
+
+//   return false;
+// }
+
 bool isUpdateAvailable(String cloudVersion, String localVersion) {
   logger.d('App version: $localVersion\nCloud version: $cloudVersion');
 
+  // 去掉可能的前缀 'v'
   cloudVersion = cloudVersion.replaceFirst('v', '');
+  localVersion = localVersion.replaceFirst('v', '');
 
-  final cloudVersionParts = cloudVersion.split('.');
-  final localVersionParts = localVersion.split('.');
+  // 按点分割，并只取每段中的数字部分
+  List<int> parseVersion(String version) {
+    return version.split('.').map((part) {
+      // 提取开头的连续数字，例如 "31-debug" -> 31
+      final match = RegExp(r'^\d+').firstMatch(part);
+      return match != null ? int.parse(match.group(0)!) : 0;
+    }).toList();
+  }
 
+  final cloudParts = parseVersion(cloudVersion);
+  final localParts = parseVersion(localVersion);
+
+  // 比较前三位（不足补 0）
   for (int i = 0; i < 3; i++) {
-    final int cloudPart = int.parse(cloudVersionParts[i]);
-    final int localPart = int.parse(localVersionParts[i]);
+    final cloudPart = i < cloudParts.length ? cloudParts[i] : 0;
+    final localPart = i < localParts.length ? localParts[i] : 0;
 
-    if (cloudPart > localPart) {
-      return true;
-    } else if (cloudPart < localPart) {
-      return false;
-    }
+    if (cloudPart > localPart) return true;
+    if (cloudPart < localPart) return false;
   }
 
   return false;

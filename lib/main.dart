@@ -155,16 +155,29 @@ Future<void> main(List<String> args) async {
 
       final comicFollowCubit = ComicFollowCubit();
       // HACK: integrate with debug
-      ZeroInspectorKit.runAppWithInspector(
-        MultiBlocProvider(
-          providers: [
-            BlocProvider.value(value: globalSettingCubit),
-            BlocProvider.value(value: pluginRegistryCubit),
-            BlocProvider.value(value: comicFollowCubit),
-          ],
-          child: const MyApp(),
-        ),
-      );
+      if (kDebugMode) {
+        ZeroInspectorKit.runAppWithInspector(
+          MultiBlocProvider(
+            providers: [
+              BlocProvider.value(value: globalSettingCubit),
+              BlocProvider.value(value: pluginRegistryCubit),
+              BlocProvider.value(value: comicFollowCubit),
+            ],
+            child: const MyApp(),
+          ),
+        );
+      } else {
+        runApp(
+          MultiBlocProvider(
+            providers: [
+              BlocProvider.value(value: globalSettingCubit),
+              BlocProvider.value(value: pluginRegistryCubit),
+              BlocProvider.value(value: comicFollowCubit),
+            ],
+            child: const MyApp(),
+          ),
+        );
+      }
     } catch (e, stack) {
       // 捕获初始化阶段（_initServices）可能抛出的异常
       if (kDebugMode || sentryDsn.isEmpty) {

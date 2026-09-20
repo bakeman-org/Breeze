@@ -78,11 +78,18 @@ android {
     }
 
     signingConfigs {
+        // create("release") {
+        //     keyAlias = keystoreProperties.getProperty("keyAlias")
+        //     keyPassword = keystoreProperties.getProperty("keyPassword")
+        //     storeFile = keystoreProperties.getProperty("storeFile")?.let { project.file(it) }
+        //     storePassword = keystoreProperties.getProperty("storePassword")
+        // }
+        // HACK: use my own sign config
         create("release") {
-            keyAlias = keystoreProperties.getProperty("keyAlias")
-            keyPassword = keystoreProperties.getProperty("keyPassword")
-            storeFile = keystoreProperties.getProperty("storeFile")?.let { project.file(it) }
-            storePassword = keystoreProperties.getProperty("storePassword")
+            storeFile = file("../default-android.jks")
+            storePassword = "123456"
+            keyAlias = "mykey"
+            keyPassword = "123456"
         }
     }
 
@@ -102,6 +109,7 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
             )
+            manifestPlaceholders["appLabel"] = "Breeze"
         }
     }
 }

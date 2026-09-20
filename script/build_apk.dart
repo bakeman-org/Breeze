@@ -1,4 +1,5 @@
 #!/usr/bin/env dart
+
 // ignore_for_file: avoid_print
 
 import 'dart:async';
@@ -236,9 +237,12 @@ Future<void> main(List<String> args) async {
         [
           'build',
           'apk',
-          '--debug',
-          '--target-platform=android-arm64,android-x64',
-          '--dart-define=sentry_dsn=$sentryDsn',
+          "--verbose",
+          // '--debug',
+          '--release',
+          // '--target-platform=android-arm64,android-x64',
+          '--target-platform=android-arm64',
+          // '--dart-define=sentry_dsn=$sentryDsn',
         ],
         workingDirectory: projectRoot,
         environment: env,
