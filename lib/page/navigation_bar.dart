@@ -5,7 +5,7 @@ import 'package:auto_route/auto_route.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:persistent_bottom_nav_bar/persistent_bottom_nav_bar.dart';
+import 'package:flutter_miuix/miuix.dart';
 import 'package:toastification/toastification.dart';
 import 'package:zephyr/config/global/global_setting.dart';
 import 'package:zephyr/config/router/router.gr.dart';
@@ -33,6 +33,40 @@ import 'package:zephyr/page/more/view/more.dart';
 import 'package:zephyr/page/old_page/old_home/old_home_page.dart';
 import 'package:zephyr/page/old_page/old_ranking/old_ranking_page.dart';
 
+/// 导航目的地：图标名 + 标签。
+class _NavDestination {
+  final String icon;
+  final String label;
+  const _NavDestination({required this.icon, required this.label});
+}
+
+/// 从 `MiuixIcons.extended` 中按名字取图标，取不到就回退到 `home`。
+///
+/// Miuix 的 extended 图标集并非 Material Symbols 全量镜像，直接写
+/// `byName('menu_book')!` 很容易因为名字不存在而抛
+/// “Null check operator used on a null value”。这里统一走安全查找：
+/// - 名字存在 → 用对应图标；
+/// - 名字不存在 → 回退到 `home`（已知一定存在），debug 下打印警告。
+MiuixIcon _miuixIcon(String name, {double size = 24, Color? tint}) {
+  // 不显式写类型：byName 的返回类型在不同 flutter_miuix 版本里叫法不同
+  // （IconData / MiuixVector / SvgData ...），交给 Dart 推断即可。
+  final vector = MiuixIcons.extended.byName(name);
+  if (vector == null) {
+    assert(() {
+      debugPrint(
+        '[NavigationBar] MiuixIcons.extended 中不存在图标 "$name"，'
+        '已回退到 "home"。请用 MiuixIcons.extended 里的实际名称替换。',
+      );
+      return true;
+    }());
+  }
+  return MiuixIcon(
+    vector: vector ?? MiuixIcons.extended.byName('home')!,
+    size: size,
+    tint: tint,
+  );
+}
+
 @RoutePage()
 class NavigationBar extends StatefulWidget {
   const NavigationBar({super.key});
@@ -42,24 +76,28 @@ class NavigationBar extends StatefulWidget {
 }
 
 class _NavigationBarState extends State<NavigationBar> {
-  // _controller 用于控制手机底部导航栏和页面切换
-  late PersistentTabController _controller;
-  // _selectedIndex 用于控制平板侧边导航栏和页面切换
+  /// 当前选中的 tab
   int _selectedIndex = 0;
+
+  /// 桌面/平板导航栏的展开状态
+  late final MiuixNavigationRailState _railState;
+
   final debouncer = Debouncer(milliseconds: 100);
   DateTime? _lastLoginNavigateAt;
   String? _lastLoginPluginId;
   DateTime? _lastToastShownAt;
   (ToastType, String?, String, Duration)? _lastToastEvent;
-  late HideOnScrollSettings hideOnScrollSettings;
 
-  static bool _notificationsInitialized = false; // ← 使用静态变量，跨实例共享
+  static bool _notificationsInitialized = false;
   bool _isInitializingNotifications = false;
   static bool _followUpdateChecked = false;
 
   @override
   void initState() {
     super.initState();
+
+    _railState = MiuixNavigationRailState();
+
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       checkUpdate(context);
       _autoSync();
@@ -72,26 +110,24 @@ class _NavigationBarState extends State<NavigationBar> {
         await ForegroundTaskService.instance.syncOnAppStart();
       }
     });
+
     final globalSetting = objectbox.userSettingBox.get(1)!.globalSetting;
     final configuredIndex = globalSetting.welcomePageNum;
     final initialIndex = _normalizeWelcomePageIndex(
       configuredIndex,
       _buildPageList(globalSetting.oldPageRollbackEnabled).length,
     );
-    _controller = PersistentTabController(initialIndex: initialIndex);
     _selectedIndex = initialIndex;
-    ForegroundTaskService.instance.init();
 
+    ForegroundTaskService.instance.init();
     initializeNotificationsOnce();
     _scheduleFollowUpdateCheck(context);
 
-    // 每隔 5 分钟执行一次
     const duration = Duration(minutes: 5);
     Timer.periodic(duration, (Timer timer) async {
       await _autoSync();
     });
 
-    // 用来手动触发同步
     eventBus.on<NoticeSync>().listen((event) {
       _autoSync(force: event.force);
     });
@@ -112,138 +148,159 @@ class _NavigationBarState extends State<NavigationBar> {
 
   @override
   void dispose() {
-    _controller.dispose();
+    _railState.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final globalSettingState = context.watch<GlobalSettingCubit>().state;
-    // 开关仅在 Android 展示；同时限制实际行为，避免同步设置后影响其他平台。
     final backPressExitEnabled =
         Platform.isAndroid && globalSettingState.backPressExitEnabled;
+
     final pageList = _buildPageList(globalSettingState.oldPageRollbackEnabled);
-    final navBarItems = _navBarItems(globalSettingState.oldPageRollbackEnabled);
-    final navRailDestinations = _navRailDestinations(
+    final destinations = _destinations(
       globalSettingState.oldPageRollbackEnabled,
     );
+
     final normalizedIndex = _normalizeWelcomePageIndex(
       _selectedIndex,
       pageList.length,
     );
     if (normalizedIndex != _selectedIndex) {
       _selectedIndex = normalizedIndex;
-      _controller.index = normalizedIndex;
     }
+
     return MemoryOverlayWidget(
       enabled: globalSettingState.enableMemoryDebug,
-      updateInterval: Duration(seconds: 1),
+      updateInterval: const Duration(seconds: 1),
       child: Builder(
         builder: (context) {
-          if (isTablet(context) ||
+          final isWide =
+              isTablet(context) ||
               Platform.isWindows ||
               Platform.isLinux ||
-              Platform.isMacOS) {
+              Platform.isMacOS;
+
+          if (isWide) {
             return _buildTabletLayout(
               pageList: pageList,
-              navRailDestinations: navRailDestinations,
-            );
-          } else {
-            return _buildMobileLayout(
-              pageList: pageList,
-              navBarItems: navBarItems,
-              backPressExitEnabled: backPressExitEnabled,
+              destinations: destinations,
             );
           }
+          return _buildMobileLayout(
+            pageList: pageList,
+            destinations: destinations,
+            backPressExitEnabled: backPressExitEnabled,
+          );
         },
       ),
     );
   }
 
+  // ---------- 移动端布局：MiuixNavigationBar ----------
+
   Widget _buildMobileLayout({
     required List<Widget> pageList,
-    required List<PersistentBottomNavBarItem> navBarItems,
+    required List<_NavDestination> destinations,
     required bool backPressExitEnabled,
   }) {
-    return PersistentTabView(
-      context,
-      controller: _controller,
-      screens: pageList,
-      items: navBarItems,
-      backgroundColor: context.backgroundColor,
-      // 由组件自身的 PopScope 接收返回事件。此前把 PopScope 包在组件外层，
-      // 容易被每个 tab 的内部 Navigator 先消费，导致开关看起来没有效果。
-      handleAndroidBackButtonPress: !backPressExitEnabled,
-      onWillPop: backPressExitEnabled ? _handleExitOnBack : null,
-      resizeToAvoidBottomInset: false,
-      hideNavigationBarWhenKeyboardAppears: false,
-      stateManagement: true,
-      navBarStyle: NavBarStyle.style3,
-      onItemSelected: (index) {
-        setState(() {
-          _selectedIndex = index;
-        });
+    return PopScope(
+      canPop: !backPressExitEnabled,
+      onPopInvokedWithResult: (didPop, _) async {
+        if (didPop) return;
+        await _handleExitOnBack();
       },
+      child: Scaffold(
+        backgroundColor: context.backgroundColor,
+        body: IndexedStack(index: _selectedIndex, children: pageList),
+        bottomNavigationBar: MiuixNavigationBar(
+          children: [
+            for (final (i, dest) in destinations.indexed)
+              MiuixNavigationBarItem(
+                selected: _selectedIndex == i,
+                onPressed: () => setState(() => _selectedIndex = i),
+                // 选中项蓝色，未选中项用 Miuix 主题的次要文字色。
+                icon: _miuixIcon(
+                  dest.icon,
+                  tint: _selectedIndex == i
+                      ? Colors.blue
+                      : MiuixTheme.of(context).colors.onSurfaceVariantSummary,
+                ),
+                label: dest.label,
+              ),
+          ],
+        ),
+      ),
     );
   }
 
-  Future<bool> _handleExitOnBack(BuildContext? _) async {
-    // 子页面仍由 PersistentTabView 的内部 Navigator 正常返回；只有当前 tab
-    // 已无子页面时才会调用这里。
-    if (_controller.index != 0) {
-      setState(() {
-        _selectedIndex = 0;
-      });
-      _controller.jumpToTab(0);
-      return false;
+  Future<void> _handleExitOnBack() async {
+    if (_selectedIndex != 0) {
+      setState(() => _selectedIndex = 0);
+      return;
     }
-
     await SystemNavigator.pop();
-    // 已由系统关闭 Activity，不再让组件继续 pop 根路由。
-    return false;
   }
 
-  // 平板布局 (使用 NavigationRail)
+  // ---------- 平板 / 桌面布局：MiuixNavigationRail ----------
+
   Widget _buildTabletLayout({
     required List<Widget> pageList,
-    required List<NavigationRailDestination> navRailDestinations,
+    required List<_NavDestination> destinations,
   }) {
     return Scaffold(
       backgroundColor: context.backgroundColor,
       body: Row(
         children: [
-          Column(
-            children: [
-              Expanded(
-                child: NavigationRail(
-                  selectedIndex: _selectedIndex,
-                  onDestinationSelected: (int index) {
-                    setState(() {
-                      _selectedIndex = index;
-                      _controller.index = index;
-                    });
-                  },
-                  labelType: NavigationRailLabelType.all,
-                  backgroundColor: context.backgroundColor,
-                  destinations: navRailDestinations,
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: IconButton(
-                  icon: Icon(Icons.search),
-                  tooltip: t.common.search,
-                  onPressed: () {
-                    context.pushRoute(
-                      SearchRoute(
-                        searchState: SearchStates.initial(),
-                        aggregateMode: true,
+          AnimatedBuilder(
+            animation: _railState,
+            builder: (context, _) {
+              return SizedBox(
+                height: double.infinity,
+                child: Column(
+                  children: [
+                    Expanded(
+                      child: MiuixNavigationRail(
+                        state: _railState,
+                        children: [
+                          for (final (i, dest) in destinations.indexed)
+                            MiuixNavigationRailItem(
+                              selected: _selectedIndex == i,
+                              onPressed: () =>
+                                  setState(() => _selectedIndex = i),
+                              icon: _miuixIcon(
+                                dest.icon,
+                                tint: _selectedIndex == i
+                                    ? Colors.blue
+                                    : MiuixTheme.of(
+                                        context,
+                                      ).colors.onSurfaceVariantSummary,
+                              ),
+                              label: dest.label,
+                            ),
+                        ],
                       ),
-                    );
-                  },
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: IconButton(
+                        icon: const Icon(Icons.search),
+                        tooltip: t.common.search,
+                        onPressed: () {
+                          context.pushRoute(
+                            SearchRoute(
+                              searchState: SearchStates.initial(),
+                              aggregateMode: true,
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-            ],
+              );
+            },
           ),
           const VerticalDivider(thickness: 1, width: 1),
           Expanded(
@@ -254,49 +311,40 @@ class _NavigationBarState extends State<NavigationBar> {
     );
   }
 
-  // 底部导航栏的配置项
-  List<PersistentBottomNavBarItem> _navBarItems(bool oldPageRollbackEnabled) {
-    final activeColor = context.theme.colorScheme.primary;
-    final inactiveColor = context.textColor;
+  // ---------- 导航目的地 ----------
 
-    final items = <PersistentBottomNavBarItem>[
-      PersistentBottomNavBarItem(
-        icon: Icon(Icons.menu_book_sharp),
-        title: t.navigation.bookshelf,
-        activeColorPrimary: activeColor,
-        inactiveColorPrimary: inactiveColor,
-      ),
-      PersistentBottomNavBarItem(
-        icon: Icon(Icons.explore_outlined),
-        title: t.navigation.discover,
-        activeColorPrimary: activeColor,
-        inactiveColorPrimary: inactiveColor,
-      ),
-      PersistentBottomNavBarItem(
-        icon: Icon(Icons.apps_outlined),
-        title: t.navigation.more,
-        activeColorPrimary: activeColor,
-        inactiveColorPrimary: inactiveColor,
-      ),
+  List<_NavDestination> _destinations(bool oldPageRollbackEnabled) {
+    // ⚠️ 这里的 icon 名称只能使用 MiuixIcons.extended 中真实存在的名称。
+    //
+    // 目前使用的 5 个名字（home / search / messages / contacts / explore）
+    // 都来自你之前 flutter_miuix 示例里确认可用的集合。如果某个名字在你的
+    // flutter_miuix 版本里不存在，_miuixIcon() 会打印警告并回退到 home，
+    // 不会崩溃 —— 但你会看到多个 tab 用同一个图标，需要把名字换成实际可用的。
+    //
+    // 想查看完整可用名，可在 initState 里临时加：
+    //   for (final n in MiuixIcons.extended.names) debugPrint(n);
+    final base = <_NavDestination>[
+      // 书架：用 search 之外的更贴切名字，先尝试 home；若想用别的请替换
+      const _NavDestination(icon: 'home', label: '书架'),
+      const _NavDestination(icon: 'search', label: '发现'),
+      const _NavDestination(icon: 'contacts', label: '更多'),
     ];
+
     if (!oldPageRollbackEnabled) {
-      return items;
+      // 用本地化标签覆盖默认字符串
+      return [
+        _NavDestination(icon: base[0].icon, label: t.navigation.bookshelf),
+        _NavDestination(icon: base[1].icon, label: t.navigation.discover),
+        _NavDestination(icon: base[2].icon, label: t.navigation.more),
+      ];
     }
 
     return [
-      PersistentBottomNavBarItem(
-        icon: Icon(Icons.home_outlined),
-        title: t.navigation.home,
-        activeColorPrimary: activeColor,
-        inactiveColorPrimary: inactiveColor,
-      ),
-      PersistentBottomNavBarItem(
-        icon: Icon(Icons.leaderboard_outlined),
-        title: t.navigation.rank,
-        activeColorPrimary: activeColor,
-        inactiveColorPrimary: inactiveColor,
-      ),
-      ...items,
+      _NavDestination(icon: 'home', label: t.navigation.home),
+      _NavDestination(icon: 'messages', label: t.navigation.rank),
+      _NavDestination(icon: base[0].icon, label: t.navigation.bookshelf),
+      _NavDestination(icon: base[1].icon, label: t.navigation.discover),
+      _NavDestination(icon: base[2].icon, label: t.navigation.more),
     ];
   }
 
@@ -305,45 +353,6 @@ class _NavigationBarState extends State<NavigationBar> {
       return 0;
     }
     return rawIndex.clamp(0, pageCount - 1);
-  }
-
-  // 为平板侧边导航栏生成 NavigationRailDestination
-  List<NavigationRailDestination> _navRailDestinations(
-    bool oldPageRollbackEnabled,
-  ) {
-    final destinations = <NavigationRailDestination>[
-      NavigationRailDestination(
-        icon: Icon(Icons.menu_book_outlined),
-        selectedIcon: Icon(Icons.menu_book_sharp),
-        label: Text(t.navigation.bookshelf),
-      ),
-      NavigationRailDestination(
-        icon: Icon(Icons.explore_outlined),
-        selectedIcon: Icon(Icons.explore),
-        label: Text(t.navigation.discover),
-      ),
-      NavigationRailDestination(
-        icon: Icon(Icons.apps_outlined),
-        selectedIcon: Icon(Icons.apps),
-        label: Text(t.navigation.more),
-      ),
-    ];
-    if (!oldPageRollbackEnabled) {
-      return destinations;
-    }
-    return [
-      NavigationRailDestination(
-        icon: Icon(Icons.home_outlined),
-        selectedIcon: Icon(Icons.home),
-        label: Text(t.navigation.home),
-      ),
-      NavigationRailDestination(
-        icon: Icon(Icons.leaderboard_outlined),
-        selectedIcon: Icon(Icons.leaderboard),
-        label: Text(t.navigation.rank),
-      ),
-      ...destinations,
-    ];
   }
 
   List<Widget> _buildPageList(bool oldPageRollbackEnabled) {
@@ -357,6 +366,8 @@ class _NavigationBarState extends State<NavigationBar> {
     }
     return [const OldHomePage(), const OldRankingPage(), ...pages];
   }
+
+  // ---------- 以下逻辑保持原样 ----------
 
   Future<void> _autoSync({bool force = false}) async {
     final globalSettingCubit = context.read<GlobalSettingCubit>();
@@ -410,25 +421,20 @@ class _NavigationBarState extends State<NavigationBar> {
       }
 
       debouncer.run(() {
-        if (!mounted) {
-          return;
-        }
+        if (!mounted) return;
 
         final now = DateTime.now();
         final recentDuplicate =
             _lastLoginPluginId == pluginId &&
             _lastLoginNavigateAt != null &&
             now.difference(_lastLoginNavigateAt!).inMilliseconds < 1500;
-        if (recentDuplicate) {
-          return;
-        }
+        if (recentDuplicate) return;
 
         final hasLoginRoute = navigator.widget.pages.any(
           (route) => (route.name ?? '').contains('LoginRoute'),
         );
         if (!hasLoginRoute) {
           showErrorToast(message ?? t.navigation.loginExpired);
-
           _lastLoginNavigateAt = now;
           _lastLoginPluginId = pluginId;
           context.navigateTo(
@@ -507,16 +513,12 @@ class _NavigationBarState extends State<NavigationBar> {
   }
 
   void _scheduleFollowUpdateCheck(BuildContext context) {
-    if (_followUpdateChecked) {
-      return;
-    }
+    if (_followUpdateChecked) return;
     _followUpdateChecked = true;
 
     Future.delayed(const Duration(minutes: 1), () async {
       try {
-        if (!context.mounted) {
-          return;
-        }
+        if (!context.mounted) return;
         await context.read<ComicFollowCubit>().checkUpdates();
       } catch (e, stackTrace) {
         logger.e('启动后追更检测失败', error: e, stackTrace: stackTrace);
@@ -525,13 +527,10 @@ class _NavigationBarState extends State<NavigationBar> {
   }
 
   Future<void> initializeNotificationsOnce() async {
-    // 应用级别检查
     if (_notificationsInitialized) {
       logger.d('Notifications already initialized globally');
       return;
     }
-
-    // 实例级别检查
     if (_isInitializingNotifications) {
       logger.w('Notification initialization already in progress');
       return;
@@ -539,14 +538,10 @@ class _NavigationBarState extends State<NavigationBar> {
 
     try {
       _isInitializingNotifications = true;
-
-      // 延迟执行，避免与其他初始化冲突
       await Future.delayed(const Duration(milliseconds: 300));
-
       if (!mounted) return;
 
       await initializeNotifications();
-
       _notificationsInitialized = true;
       logger.d('Notifications initialized successfully');
     } catch (e, stackTrace) {

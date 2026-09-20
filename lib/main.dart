@@ -6,7 +6,11 @@ import 'dart:ui' show AppExitResponse;
 
 import 'package:desktop_webview_linux/desktop_webview_linux.dart';
 import 'package:device_info_plus/device_info_plus.dart';
-import 'package:dynamic_color/dynamic_color.dart';
+// 说明：dynamic_color 依赖已从 pubspec.yaml 移除。
+// 原因：flutter_miuix 1.x 依赖 dynamic_color ^1.8.1，项目原本使用 ^2.1.0，
+// 两者存在大版本冲突无法调和。下方 build 方法里已经用 seedColor 直接
+// 生成 ColorScheme，不再需要 DynamicColorBuilder。
+// import 'package:dynamic_color/dynamic_color.dart';
 import 'package:event_bus/event_bus.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
@@ -718,154 +722,152 @@ class _MyAppState extends State<MyApp>
         builder: (context, _) {
           final globalSettingState = context.watch<GlobalSettingCubit>().state;
 
-          return DynamicColorBuilder(
-            builder: (ColorScheme? lightDynamic, ColorScheme? darkDynamic) {
-              ColorScheme lightColorScheme;
-              ColorScheme darkColorScheme;
+          // ─────────────────────────────────────────────────────────────
+          // 关于动态取色的说明
+          // ─────────────────────────────────────────────────────────────
+          // 原先这里用 dynamic_color 包的 DynamicColorBuilder 读取系统壁纸
+          // 动态色（Android Material You / macOS 系统色）。因为 flutter_miuix
+          // 1.x 依赖 dynamic_color ^1.8.1，而项目原本依赖 ^2.1.0，二者存在
+          // 大版本冲突，无法通过版本协商解决，所以这里直接移除了 dynamic_color。
+          //
+          // 现在的做法：
+          //  - 直接使用用户在「外观设置」里配置的 seedColor 作为种子；
+          //  - 分别生成亮色 / 暗色两套 ColorScheme，交给 MaterialApp.router。
+          //
+          // 如果以后想恢复「跟随壁纸自动取色」，推荐使用 flutter_miuix 自带
+          // 的 miuixColorsFromSeed + MiuixTheme（见 theming showcase 里
+          // _DynamicThemePage 的用法），它不依赖 dynamic_color 2.x，而且能给
+          // MiuixNavigationBar 等 Miuix 组件同时提供配色。
+          //
+          // 同时请注意：当前 MaterialApp 外层没有 MiuixTheme 祖先，若之后
+          // 在页面里使用 MiuixNavigationBar / MiuixTabRow 等 Miuix 组件，
+          // 需要在 MaterialApp 的 builder 里再包一层 MiuixTheme，否则这些
+          // 组件会因找不到 MiuixTheme 而抛异常。
+          // ─────────────────────────────────────────────────────────────
+          final primary = globalSettingState.seedColor;
 
-              if (globalSettingState.dynamicColor == true) {
-                lightColorScheme =
-                    lightDynamic ??
-                    ColorScheme.fromSeed(
-                      seedColor: globalSettingState.seedColor,
-                      brightness: Brightness.light,
-                    );
-                darkColorScheme =
-                    darkDynamic ??
-                    ColorScheme.fromSeed(
-                      seedColor: globalSettingState.seedColor,
-                      brightness: Brightness.dark,
-                    );
-              } else {
-                final primary = globalSettingState.seedColor;
+          final ColorScheme lightColorScheme = ColorScheme.fromSeed(
+            seedColor: primary,
+            brightness: Brightness.light,
+          );
+          final ColorScheme darkColorScheme = ColorScheme.fromSeed(
+            seedColor: primary,
+            brightness: Brightness.dark,
+          );
 
-                lightColorScheme = ColorScheme.fromSeed(
-                  seedColor: primary,
-                  brightness: Brightness.light,
-                );
-                darkColorScheme = ColorScheme.fromSeed(
-                  seedColor: primary,
-                  brightness: Brightness.dark,
-                );
-              }
+          final isLinuxDesktop = !kIsWeb && Platform.isLinux;
+          const linuxFontFamily = 'Noto Sans CJK SC';
+          const linuxFontFamilyFallback = <String>[
+            'WenQuanYi Micro Hei',
+            'Droid Sans Fallback',
+          ];
 
-              final isLinuxDesktop = !kIsWeb && Platform.isLinux;
-              const linuxFontFamily = 'Noto Sans CJK SC';
-              const linuxFontFamilyFallback = <String>[
-                'WenQuanYi Micro Hei',
-                'Droid Sans Fallback',
-              ];
+          TextTheme withConfiguredFonts(TextTheme base) {
+            var themed = base;
+            if (isLinuxDesktop) {
+              themed = themed.apply(
+                fontFamily: linuxFontFamily,
+                fontFamilyFallback: linuxFontFamilyFallback,
+              );
+            }
+            return FontProfileController.instance.applyToTextTheme(themed);
+          }
 
-              TextTheme withConfiguredFonts(TextTheme base) {
-                var themed = base;
-                if (isLinuxDesktop) {
-                  themed = themed.apply(
-                    fontFamily: linuxFontFamily,
-                    fontFamilyFallback: linuxFontFamilyFallback,
-                  );
-                }
-                return FontProfileController.instance.applyToTextTheme(themed);
-              }
-
-              return MaterialApp.router(
-                // HACK: even on andorid debug build still no banner
-                // TODO: failed with zero_inspector_kit integrate, I don't know why
-                debugShowCheckedModeBanner: false,
-                routerConfig: appRouter.config(),
-                scrollBehavior: const AppScrollBehavior(),
-                builder: (context, child) {
-                  Widget content = Actions(
-                    actions: <Type, Action<Intent>>{
-                      EscapeIntent: CallbackAction<EscapeIntent>(
-                        onInvoke: (intent) {
-                          // 先让当前焦点失焦，避免 pop 时 InputDecorator 才第一次变 dirty；
-                          // 再把 pop 推迟到下一帧，让失焦引发的重建在当前帧完成。
-                          FocusManager.instance.primaryFocus?.unfocus();
-                          WidgetsBinding.instance.addPostFrameCallback((_) {
-                            appRouter.maybePop();
-                          });
-                          return null;
-                        },
-                      ),
-                    },
-                    child: Shortcuts(
-                      shortcuts: <ShortcutActivator, Intent>{
-                        const SingleActivator(LogicalKeyboardKey.escape):
-                            const EscapeIntent(),
-                      },
-                      child: Focus(autofocus: true, child: child!),
-                    ),
-                  );
-
-                  content = Listener(
-                    onPointerDown: (PointerDownEvent event) {
-                      if (event.buttons & kBackMouseButton != 0) {
+          return MaterialApp.router(
+            // HACK: even on andorid debug build still no banner
+            // TODO: failed with zero_inspector_kit integrate, I don't know why
+            debugShowCheckedModeBanner: false,
+            routerConfig: appRouter.config(),
+            scrollBehavior: const AppScrollBehavior(),
+            builder: (context, child) {
+              Widget content = Actions(
+                actions: <Type, Action<Intent>>{
+                  EscapeIntent: CallbackAction<EscapeIntent>(
+                    onInvoke: (intent) {
+                      // 先让当前焦点失焦，避免 pop 时 InputDecorator 才第一次变 dirty；
+                      // 再把 pop 推迟到下一帧，让失焦引发的重建在当前帧完成。
+                      FocusManager.instance.primaryFocus?.unfocus();
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
                         appRouter.maybePop();
-                      }
+                      });
+                      return null;
                     },
-                    child: content,
-                  );
-
-                  if (Platform.isWindows ||
-                      Platform.isLinux ||
-                      Platform.isMacOS) {
-                    final desktopContent = content;
-                    content = ValueListenableBuilder<bool>(
-                      valueListenable: ReaderDesktopFullscreenService
-                          .instance
-                          .fullscreenNotifier,
-                      builder: (context, isReaderFullscreen, _) {
-                        return Column(
-                          children: [
-                            if (!isReaderFullscreen) const CustomTitleBar(),
-                            Expanded(child: desktopContent),
-                          ],
-                        );
-                      },
-                    );
-                  }
-                  // 第三方依赖仍有 legacy Material widget，需要这个桥接层提供旧主题
-                  // 与本地化上下文；待依赖迁移后可移除。
-                  // ignore: deprecated_member_use
-                  return MaterialUiCompatibilityBridge(child: content);
+                  ),
                 },
-                locale: TranslationProvider.of(context).flutterLocale,
-                title: appName,
-                themeMode: globalSettingState.themeMode,
-                supportedLocales: AppLocaleUtils.supportedLocales,
-                localizationsDelegates: GlobalMaterialLocalizations.delegates,
-                theme: ThemeData.light().copyWith(
-                  primaryColor: lightColorScheme.primary,
-                  colorScheme: lightColorScheme,
-                  scaffoldBackgroundColor: lightColorScheme.surface,
-                  cardColor: lightColorScheme.surfaceContainer,
-                  chipTheme: ChipThemeData(
-                    backgroundColor: lightColorScheme.surface,
-                  ),
-                  canvasColor: lightColorScheme.surfaceContainer,
-                  dialogTheme: DialogThemeData(
-                    backgroundColor: lightColorScheme.surfaceContainer,
-                  ),
-                  textTheme: withConfiguredFonts(ThemeData.light().textTheme),
-                  primaryTextTheme: withConfiguredFonts(
-                    ThemeData.light().primaryTextTheme,
-                  ),
-                ),
-                darkTheme: ThemeData.dark().copyWith(
-                  scaffoldBackgroundColor: globalSettingState.isAMOLED
-                      ? Colors.black
-                      : darkColorScheme.surface,
-                  tabBarTheme: const TabBarThemeData(
-                    dividerColor: Colors.transparent,
-                  ),
-                  colorScheme: darkColorScheme,
-                  textTheme: withConfiguredFonts(ThemeData.dark().textTheme),
-                  primaryTextTheme: withConfiguredFonts(
-                    ThemeData.dark().primaryTextTheme,
-                  ),
+                child: Shortcuts(
+                  shortcuts: <ShortcutActivator, Intent>{
+                    const SingleActivator(LogicalKeyboardKey.escape):
+                        const EscapeIntent(),
+                  },
+                  child: Focus(autofocus: true, child: child!),
                 ),
               );
+
+              content = Listener(
+                onPointerDown: (PointerDownEvent event) {
+                  if (event.buttons & kBackMouseButton != 0) {
+                    appRouter.maybePop();
+                  }
+                },
+                child: content,
+              );
+
+              if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
+                final desktopContent = content;
+                content = ValueListenableBuilder<bool>(
+                  valueListenable: ReaderDesktopFullscreenService
+                      .instance
+                      .fullscreenNotifier,
+                  builder: (context, isReaderFullscreen, _) {
+                    return Column(
+                      children: [
+                        if (!isReaderFullscreen) const CustomTitleBar(),
+                        Expanded(child: desktopContent),
+                      ],
+                    );
+                  },
+                );
+              }
+              // 第三方依赖仍有 legacy Material widget，需要这个桥接层提供旧主题
+              // 与本地化上下文；待依赖迁移后可移除。
+              // ignore: deprecated_member_use
+              return MaterialUiCompatibilityBridge(child: content);
             },
+            locale: TranslationProvider.of(context).flutterLocale,
+            title: appName,
+            themeMode: globalSettingState.themeMode,
+            supportedLocales: AppLocaleUtils.supportedLocales,
+            localizationsDelegates: GlobalMaterialLocalizations.delegates,
+            theme: ThemeData.light().copyWith(
+              primaryColor: lightColorScheme.primary,
+              colorScheme: lightColorScheme,
+              scaffoldBackgroundColor: lightColorScheme.surface,
+              cardColor: lightColorScheme.surfaceContainer,
+              chipTheme: ChipThemeData(
+                backgroundColor: lightColorScheme.surface,
+              ),
+              canvasColor: lightColorScheme.surfaceContainer,
+              dialogTheme: DialogThemeData(
+                backgroundColor: lightColorScheme.surfaceContainer,
+              ),
+              textTheme: withConfiguredFonts(ThemeData.light().textTheme),
+              primaryTextTheme: withConfiguredFonts(
+                ThemeData.light().primaryTextTheme,
+              ),
+            ),
+            darkTheme: ThemeData.dark().copyWith(
+              scaffoldBackgroundColor: globalSettingState.isAMOLED
+                  ? Colors.black
+                  : darkColorScheme.surface,
+              tabBarTheme: const TabBarThemeData(
+                dividerColor: Colors.transparent,
+              ),
+              colorScheme: darkColorScheme,
+              textTheme: withConfiguredFonts(ThemeData.dark().textTheme),
+              primaryTextTheme: withConfiguredFonts(
+                ThemeData.dark().primaryTextTheme,
+              ),
+            ),
           );
         },
       ),
