@@ -51,14 +51,21 @@ class SettingsWidget extends StatelessWidget {
           onTap: () => context.pushRoute(GlobalSettingRoute()),
         ),
         const SizedBox(height: 8),
-        const Divider(height: 1, thickness: 0.3),
-        _buildSectionTitle(context, t.more.others, Icons.more_horiz),
+        // const Divider(height: 1, thickness: 0.3),
+        // UI migrate: ... 其他 -> 关于与更多
+        _buildSectionTitle(
+          context,
+          t.settings.aboutAndMore,
+          Icons.info_outline,
+        ),
+        // 更新日志
         ListTile(
           leading: const Icon(Icons.history),
           title: Text(t.more.changelog),
           trailing: const Icon(Icons.chevron_right),
           onTap: () => context.pushRoute(ChangelogRoute()),
         ),
+        // 关于应用
         ListTile(
           leading: const Icon(Icons.info_outline),
           title: Text(t.about.title),

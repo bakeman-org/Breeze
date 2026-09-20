@@ -1,164 +1,309 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_miuix/miuix.dart';
 import 'package:zephyr/config/global/global_setting.dart';
 import 'package:zephyr/i18n/i18n_helper.dart';
 import 'package:zephyr/i18n/strings.g.dart';
 import 'package:zephyr/i18n/system_locale_service.dart';
 import 'package:zephyr/page/font_setting/view/font_setting_page.dart';
-import 'package:zephyr/page/setting/common/setting_ui.dart';
 import 'package:zephyr/page/setting/global/widgets.dart';
-import 'package:zephyr/widgets/fluent_dropdown.dart';
 import 'package:zephyr/widgets/toast.dart';
 
 @RoutePage()
 class AppearanceSettingPage extends StatelessWidget {
   const AppearanceSettingPage({super.key});
 
+  /// 分组卡片内 preference 项的紧凑内边距。
+  static const _itemMargin = EdgeInsets.symmetric(horizontal: 16, vertical: 14);
+
+  /// 构造起始图标：优先使用 Miuix 扩展图标，找不到回退到 Material Icon。
+  Widget _settingIcon(IconData fallback, String miuixName) {
+    final vector = MiuixIcons.extended.byName(miuixName);
+    if (vector != null) {
+      return MiuixIcon(vector: vector, size: 22);
+    }
+    return Icon(fallback, size: 22);
+  }
+
   @override
   Widget build(BuildContext context) {
     final cubit = context.watch<GlobalSettingCubit>();
     final state = cubit.state;
 
-    return SettingPageShell(
-      title: t.settings.appearance,
-      child: ListView(
-        children: [
-          settingSectionTitle(
-            context,
-            t.settings.appearance,
-            icon: Icons.palette_outlined,
+    return MiuixScaffold(
+      topBar: MiuixTopAppBar(
+        title: t.settings.appearance,
+        navigationIcon: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Center(
+            child: MiuixIconButton(
+              onPressed: () => context.router.maybePop(),
+              child: const Icon(Icons.arrow_back),
+            ),
           ),
-          _languageTile(context, state, cubit),
-          _systemTheme(state, cubit),
-          _dynamicColor(state, cubit),
-          if (!state.dynamicColor) changeThemeColor(context),
-          _comicReadTopContainer(state, cubit),
-          _isAMOLED(state, cubit),
-          _fontSettings(context),
-          const SizedBox(height: 32),
-        ],
+        ),
+      ),
+      content: (padding) => Material(
+        type: MaterialType.transparency,
+        child: ListView(
+          padding: padding.copyWith(bottom: 32),
+          children: [
+            MiuixSmallTitle(t.settings.appearance),
+            MiuixCard(
+              child: Column(
+                children: [
+                  // ───────── 语言 ─────────
+                  MiuixArrowPreference(
+                    title: t.settings.language,
+                    summary: _languageLabel(state),
+                    startAction: _settingIcon(
+                      Icons.language_outlined,
+                      'language',
+                    ),
+                    insideMargin: _itemMargin,
+                    onClick: () => _pickLanguage(context, state, cubit),
+                  ),
+                  const MiuixHorizontalDivider(),
+
+                  // ───────── 主题模式 ─────────
+                  MiuixArrowPreference(
+                    title: t.settings.theme,
+                    summary: _themeModeLabel(state.themeMode),
+                    startAction: _settingIcon(
+                      Icons.dark_mode_outlined,
+                      'dark_mode',
+                    ),
+                    insideMargin: _itemMargin,
+                    onClick: () => _pickThemeMode(context, state, cubit),
+                  ),
+                  const MiuixHorizontalDivider(),
+
+                  // ───────── 动态取色开关 ─────────
+                  MiuixSwitchPreference(
+                    title: t.settings.dynamicColor,
+                    summary: t.settings.dynamicColorSubtitle,
+                    startAction: _settingIcon(
+                      Icons.color_lens_outlined,
+                      'color_lens',
+                    ),
+                    value: state.dynamicColor,
+                    onChanged: (bool value) {
+                      cubit.updateState(
+                        (current) => current.copyWith(dynamicColor: value),
+                      );
+                    },
+                    insideMargin: _itemMargin,
+                  ),
+
+                  // 动态取色开启时隐藏种子色入口（与原逻辑一致）。
+                  if (!state.dynamicColor) ...[
+                    const MiuixHorizontalDivider(),
+                    changeThemeColor(context),
+                  ],
+
+                  const MiuixHorizontalDivider(),
+
+                  // ───────── AMOLED ─────────
+                  MiuixSwitchPreference(
+                    title: t.settings.amoled,
+                    summary: t.settings.amoledSubtitle,
+                    startAction: _settingIcon(
+                      Icons.contrast_outlined,
+                      'contrast',
+                    ),
+                    value: state.isAMOLED,
+                    onChanged: (bool value) {
+                      cubit.updateState(
+                        (current) => current.copyWith(isAMOLED: value),
+                      );
+                    },
+                    insideMargin: _itemMargin,
+                  ),
+                  const MiuixHorizontalDivider(),
+
+                  // ───────── 刘海屏适配 ─────────
+                  MiuixSwitchPreference(
+                    title: t.settings.notchAdaptation,
+                    summary: t.settings.notchAdaptationSubtitle,
+                    startAction: _settingIcon(
+                      Icons.smartphone_outlined,
+                      'smartphone',
+                    ),
+                    value: state.readSetting.comicReadTopContainer,
+                    onChanged: (bool value) {
+                      cubit.updateReadSetting(
+                        (current) =>
+                            current.copyWith(comicReadTopContainer: value),
+                      );
+                    },
+                    insideMargin: _itemMargin,
+                  ),
+                  const MiuixHorizontalDivider(),
+
+                  // ───────── 字体设置 ─────────
+                  MiuixArrowPreference(
+                    title: t.settings.fontSettings,
+                    summary: t.settings.fontSettingsSubtitle,
+                    startAction: _settingIcon(
+                      Icons.font_download_outlined,
+                      'font',
+                    ),
+                    insideMargin: _itemMargin,
+                    onClick: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const FontSettingPage(),
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _languageTile(
+  // ─────────── 标签文本 ───────────
+
+  String _languageLabel(GlobalSettingState state) {
+    if (state.localeFollowsSystem) return t.settings.followSystemLanguage;
+    for (final appLocale in AppLocale.values) {
+      if (I18nHelper.toFlutterLocale(appLocale) == state.locale) {
+        return I18nHelper.displayName(appLocale);
+      }
+    }
+    return state.locale.toLanguageTag();
+  }
+
+  String _themeModeLabel(ThemeMode mode) {
+    return switch (mode) {
+      ThemeMode.system => t.common.followSystem,
+      ThemeMode.light => t.common.lightMode,
+      ThemeMode.dark => t.common.darkMode,
+    };
+  }
+
+  // ─────────── 弹出选择：语言 ───────────
+
+  Future<void> _pickLanguage(
     BuildContext context,
     GlobalSettingState state,
     GlobalSettingCubit cubit,
-  ) {
-    final labels = {
+  ) async {
+    // 语言列表：null 表示跟随系统。
+    final labels = <Locale?, String>{
       null: t.settings.followSystemLanguage,
       for (final appLocale in AppLocale.values)
         I18nHelper.toFlutterLocale(appLocale): I18nHelper.displayName(
           appLocale,
         ),
     };
-
     final currentValue = state.localeFollowsSystem ? null : state.locale;
-    final currentLabel = labels[currentValue]!;
 
-    return ListTile(
-      leading: const Icon(Icons.language_outlined),
-      title: Text(t.settings.language),
-      subtitle: Text(t.settings.languageSubtitle),
-      trailing: FluentDropdown<Locale?>(
-        value: currentValue,
-        displayValue: currentLabel,
-        items: labels,
-        onChanged: (value) async {
-          if (value == currentValue) return;
-          if (value == null) {
-            final systemInfo = await SystemLocaleService.getInfo();
-            await cubit.setSystemLocale(systemInfo.locale);
-          } else {
-            await cubit.setLocale(value, followsSystem: false);
-          }
-          if (context.mounted) {
-            showInfoToast(t.settings.languageChangedRestartHint);
-          }
-        },
-      ),
+    // `picked == null` → 用户取消；`picked!.value == null` → 选中「跟随系统」。
+    final picked = await _showOptionSheet<Locale?>(
+      context: context,
+      title: t.settings.language,
+      labels: labels,
+      currentValue: currentValue,
     );
+    if (picked == null) return; // 取消
+    final selected = picked.value;
+    if (selected == currentValue) return;
+
+    if (selected == null) {
+      final systemInfo = await SystemLocaleService.getInfo();
+      await cubit.setSystemLocale(systemInfo.locale);
+    } else {
+      await cubit.setLocale(selected, followsSystem: false);
+    }
+    if (context.mounted) {
+      showInfoToast(t.settings.languageChangedRestartHint);
+    }
   }
 
-  Widget _systemTheme(GlobalSettingState state, GlobalSettingCubit cubit) {
-    final themeItems = <ThemeMode, String>{
+  // ─────────── 弹出选择：主题模式 ───────────
+
+  Future<void> _pickThemeMode(
+    BuildContext context,
+    GlobalSettingState state,
+    GlobalSettingCubit cubit,
+  ) async {
+    final labels = <ThemeMode, String>{
       ThemeMode.system: t.common.followSystem,
       ThemeMode.light: t.common.lightMode,
       ThemeMode.dark: t.common.darkMode,
     };
 
-    return ListTile(
-      leading: const Icon(Icons.dark_mode_outlined),
-      title: Text(t.settings.theme),
-      subtitle: Text(t.settings.themeSubtitle),
-      trailing: FluentDropdown<ThemeMode>(
-        value: state.themeMode,
-        displayValue: themeItems[state.themeMode]!,
-        items: themeItems,
-        onChanged: (ThemeMode value) {
-          cubit.updateState((current) => current.copyWith(themeMode: value));
-        },
-      ),
+    final picked = await _showOptionSheet<ThemeMode>(
+      context: context,
+      title: t.settings.theme,
+      labels: labels,
+      currentValue: state.themeMode,
     );
+    if (picked == null) return; // 取消
+    final selected = picked.value; // 收窄为 ThemeMode（非空）
+    if (selected == state.themeMode) return;
+
+    cubit.updateState((current) => current.copyWith(themeMode: selected));
   }
 
-  Widget _dynamicColor(GlobalSettingState state, GlobalSettingCubit cubit) {
-    return SwitchListTile(
-      secondary: const Icon(Icons.color_lens_outlined),
-      title: Text(t.settings.dynamicColor),
-      subtitle: Text(t.settings.dynamicColorSubtitle),
-      thumbIcon: kSettingSwitchThumbIcon,
-      value: state.dynamicColor,
-      onChanged: (bool value) {
-        cubit.updateState((current) => current.copyWith(dynamicColor: value));
-      },
-    );
-  }
-
-  Widget _fontSettings(BuildContext context) {
-    return ListTile(
-      leading: const Icon(Icons.font_download_outlined),
-      title: Text(t.settings.fontSettings),
-      subtitle: Text(t.settings.fontSettingsSubtitle),
-      trailing: const Icon(Icons.chevron_right),
-      onTap: () {
-        Navigator.of(
-          context,
-        ).push(MaterialPageRoute(builder: (_) => const FontSettingPage()));
-      },
-    );
-  }
-
-  Widget _isAMOLED(GlobalSettingState state, GlobalSettingCubit cubit) {
-    return SwitchListTile(
-      secondary: const Icon(Icons.contrast_outlined),
-      title: Text(t.settings.amoled),
-      subtitle: Text(t.settings.amoledSubtitle),
-      thumbIcon: kSettingSwitchThumbIcon,
-      value: state.isAMOLED,
-      onChanged: (bool value) {
-        cubit.updateState((current) => current.copyWith(isAMOLED: value));
-      },
-    );
-  }
-
-  Widget _comicReadTopContainer(
-    GlobalSettingState state,
-    GlobalSettingCubit cubit,
-  ) {
-    return SwitchListTile(
-      secondary: const Icon(Icons.smartphone_outlined),
-      title: Text(t.settings.notchAdaptation),
-      subtitle: Text(t.settings.notchAdaptationSubtitle),
-      thumbIcon: kSettingSwitchThumbIcon,
-      value: state.readSetting.comicReadTopContainer,
-      onChanged: (bool value) {
-        cubit.updateReadSetting(
-          (current) => current.copyWith(comicReadTopContainer: value),
+  /// 通用底部选择面板。
+  ///
+  /// 返回值语义：
+  ///   - `null`          → 用户取消（直接 dismiss 或没点任何项）
+  ///   - `_Picked(value)` → 用户选中了 `value`；`value` 本身可以是 null
+  ///                        （例如语言里的「跟随系统」）。
+  ///
+  /// 用 `_Picked` 包装而不用 sentinel 对象 + `as T?` 强转，是因为后者在
+  /// `T` 为非空类型（如 `ThemeMode`）时，一旦用户取消就会在运行时把
+  /// `Object` 强转成 `ThemeMode?` 而抛异常。
+  Future<_Picked<T>?> _showOptionSheet<T>({
+    required BuildContext context,
+    required String title,
+    required Map<T, String> labels,
+    required T currentValue,
+  }) {
+    return showModalBottomSheet<_Picked<T>>(
+      context: context,
+      builder: (sheetContext) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                child: MiuixSmallTitle(title),
+              ),
+              for (final entry in labels.entries)
+                ListTile(
+                  title: Text(entry.value),
+                  trailing: entry.key == currentValue
+                      ? const Icon(Icons.check)
+                      : null,
+                  onTap: () =>
+                      Navigator.of(sheetContext).pop(_Picked(entry.key)),
+                ),
+              const SizedBox(height: 8),
+            ],
+          ),
         );
       },
     );
   }
+}
+
+/// 把用户的选中值包一层，用来把「取消」(`null`) 和「选中了 null」
+/// (`_Picked(null)`) 区分开。
+///
+/// 之所以不用 sentinel + `as T?`：当 `T` 是非空类型时，把 sentinel 强转
+/// 成 `T?` 会在运行时抛异常。用包装类后，泛型只作用在 `.value` 上，类型
+/// 安全由编译器保证。
+class _Picked<T> {
+  final T value;
+  const _Picked(this.value);
 }

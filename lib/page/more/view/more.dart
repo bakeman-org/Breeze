@@ -28,6 +28,8 @@ class MorePage extends StatelessWidget {
   }
 
   Widget _buildHeader(BuildContext context) {
+    // TODO: hack do I really need this unchanable breeze with its icon
+    // or migrate this behavior to like haka_comic's change application icon
     return Column(
       children: [
         ClipRRect(

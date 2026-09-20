@@ -10,15 +10,29 @@ import 'package:zephyr/src/rust/api/qjs.dart';
 import 'package:zephyr/widgets/fluent_dropdown.dart';
 import 'package:zephyr/widgets/toast.dart';
 
+/// 把 Material 的 ListTile / SwitchListTile 包一层透明 Material。
+///
+/// 背景：MiuixCard 等容器内部是带背景色的 DecoratedBox，会遮住 ListTile
+/// 在最近 Material 上绘制的背景与 ink 水波纹。这里给 ListTile 单独垫一层
+/// 透明 Material，让 ink 画在 DecoratedBox 之上、ListTile 之下。
+///
+/// 参考 Flutter 断言：
+///   "ListTile background color or ink splashes may be invisible."
+Widget _inkSafe(Widget child) {
+  return Material(type: MaterialType.transparency, child: child);
+}
+
 Widget changeThemeColor(BuildContext context) {
-  return ListTile(
-    leading: const Icon(Icons.palette_outlined),
-    title: Text(t.settings.themeColor),
-    subtitle: Text(t.settings.themeColorSubtitle),
-    trailing: const Icon(Icons.chevron_right),
-    onTap: () {
-      AutoRouter.of(context).push(const ThemeColorRoute());
-    },
+  return _inkSafe(
+    ListTile(
+      leading: const Icon(Icons.palette_outlined),
+      title: Text(t.settings.themeColor),
+      subtitle: Text(t.settings.themeColorSubtitle),
+      trailing: const Icon(Icons.chevron_right),
+      onTap: () {
+        AutoRouter.of(context).push(const ThemeColorRoute());
+      },
+    ),
   );
 }
 
@@ -31,29 +45,31 @@ Widget proxyToggle(
   return Column(
     mainAxisSize: MainAxisSize.min,
     children: [
-      SwitchListTile(
-        secondary: const Icon(Icons.router_outlined),
-        title: Text(t.settings.proxy),
-        subtitle: Text(t.settings.proxyEnabledSubtitle),
-        thumbIcon: kSettingSwitchThumbIcon,
-        value: enabled,
-        onChanged: (value) async {
-          final globalSettingCubit = context.read<GlobalSettingCubit>();
-          globalSettingCubit.updateState(
-            (current) => current.copyWith(
-              proxySetting: current.proxySetting.copyWith(enabled: value),
-            ),
-          );
+      _inkSafe(
+        SwitchListTile(
+          secondary: const Icon(Icons.router_outlined),
+          title: Text(t.settings.proxy),
+          subtitle: Text(t.settings.proxyEnabledSubtitle),
+          thumbIcon: kSettingSwitchThumbIcon,
+          value: enabled,
+          onChanged: (value) async {
+            final globalSettingCubit = context.read<GlobalSettingCubit>();
+            globalSettingCubit.updateState(
+              (current) => current.copyWith(
+                proxySetting: current.proxySetting.copyWith(enabled: value),
+              ),
+            );
 
-          if (!value) {
-            try {
-              setSocks5Proxy(proxy: '');
-            } catch (_) {}
-            SocksProxy.setProxy('DIRECT');
-          }
+            if (!value) {
+              try {
+                setSocks5Proxy(proxy: '');
+              } catch (_) {}
+              SocksProxy.setProxy('DIRECT');
+            }
 
-          showSuccessToast(t.common.restartToTakeEffect);
-        },
+            showSuccessToast(t.common.restartToTakeEffect);
+          },
+        ),
       ),
       if (enabled) proxyTypeEdit(context, type),
       if (enabled) proxyAddressEdit(context, currentProxy),
@@ -66,79 +82,83 @@ Widget proxyTypeEdit(BuildContext context, ProxyType type) {
     ProxyType.http: t.settings.proxyTypeHttp,
     ProxyType.socks5: t.settings.proxyTypeSocks5,
   };
-  return ListTile(
-    leading: const Icon(Icons.lan_outlined),
-    title: Text(t.settings.proxyType),
-    subtitle: Text(t.settings.proxyTypeSubtitle),
-    trailing: FluentDropdown<ProxyType>(
-      value: type,
-      displayValue: items[type]!,
-      items: items,
-      onChanged: (ProxyType value) {
-        if (value == type) return;
-        final globalSettingCubit = context.read<GlobalSettingCubit>();
-        globalSettingCubit.updateState(
-          (current) => current.copyWith(
-            proxySetting: current.proxySetting.copyWith(type: value),
-          ),
-        );
-        showSuccessToast(t.common.restartToTakeEffect);
-      },
+  return _inkSafe(
+    ListTile(
+      leading: const Icon(Icons.lan_outlined),
+      title: Text(t.settings.proxyType),
+      subtitle: Text(t.settings.proxyTypeSubtitle),
+      trailing: FluentDropdown<ProxyType>(
+        value: type,
+        displayValue: items[type]!,
+        items: items,
+        onChanged: (ProxyType value) {
+          if (value == type) return;
+          final globalSettingCubit = context.read<GlobalSettingCubit>();
+          globalSettingCubit.updateState(
+            (current) => current.copyWith(
+              proxySetting: current.proxySetting.copyWith(type: value),
+            ),
+          );
+          showSuccessToast(t.common.restartToTakeEffect);
+        },
+      ),
     ),
   );
 }
 
 Widget proxyAddressEdit(BuildContext context, String currentProxy) {
-  return ListTile(
-    leading: const Icon(Icons.link_outlined),
-    title: Text(t.settings.proxyAddress),
-    subtitle: Text(
-      currentProxy.isEmpty
-          ? t.settings.proxySubtitle
-          : t.settings.proxyCurrent(currentProxy: currentProxy),
-      maxLines: 1,
-      overflow: TextOverflow.ellipsis,
-    ),
-    trailing: const Icon(Icons.chevron_right),
-    onTap: () async {
-      final globalSettingCubit = context.read<GlobalSettingCubit>();
-      var inputValue = currentProxy;
+  return _inkSafe(
+    ListTile(
+      leading: const Icon(Icons.link_outlined),
+      title: Text(t.settings.proxyAddress),
+      subtitle: Text(
+        currentProxy.isEmpty
+            ? t.settings.proxySubtitle
+            : t.settings.proxyCurrent(currentProxy: currentProxy),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
+      trailing: const Icon(Icons.chevron_right),
+      onTap: () async {
+        final globalSettingCubit = context.read<GlobalSettingCubit>();
+        var inputValue = currentProxy;
 
-      final result = await showDialog<String>(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: Text(t.settings.proxyAddress),
-          content: TextFormField(
-            initialValue: currentProxy,
-            autofocus: true,
-            onChanged: (value) => inputValue = value.trim(),
-            decoration: InputDecoration(
-              hintText: t.settings.proxyHint,
-              border: const OutlineInputBorder(),
+        final result = await showDialog<String>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Text(t.settings.proxyAddress),
+            content: TextFormField(
+              initialValue: currentProxy,
+              autofocus: true,
+              onChanged: (value) => inputValue = value.trim(),
+              decoration: InputDecoration(
+                hintText: t.settings.proxyHint,
+                border: const OutlineInputBorder(),
+              ),
             ),
-          ),
-          actions: [
-            TextButton(
-              child: Text(t.common.cancel),
-              onPressed: () => Navigator.pop(context),
-            ),
-            TextButton(
-              child: Text(t.common.ok),
-              onPressed: () => Navigator.pop(context, inputValue),
-            ),
-          ],
-        ),
-      );
-
-      if (result != null && result != currentProxy) {
-        globalSettingCubit.updateState(
-          (current) => current.copyWith(
-            proxySetting: current.proxySetting.copyWith(address: result),
+            actions: [
+              TextButton(
+                child: Text(t.common.cancel),
+                onPressed: () => Navigator.pop(context),
+              ),
+              TextButton(
+                child: Text(t.common.ok),
+                onPressed: () => Navigator.pop(context, inputValue),
+              ),
+            ],
           ),
         );
-        showSuccessToast(t.common.restartToTakeEffect);
-      }
-    },
+
+        if (result != null && result != currentProxy) {
+          globalSettingCubit.updateState(
+            (current) => current.copyWith(
+              proxySetting: current.proxySetting.copyWith(address: result),
+            ),
+          );
+          showSuccessToast(t.common.restartToTakeEffect);
+        }
+      },
+    ),
   );
 }
 
@@ -154,29 +174,33 @@ Widget webdavSync(BuildContext context, SyncServiceType syncServiceType) {
     ),
   };
 
-  return ListTile(
-    leading: const Icon(Icons.cloud_outlined),
-    title: Text(title),
-    subtitle: Text(t.settings.syncConfigSubtitle),
-    trailing: const Icon(Icons.chevron_right),
-    onTap: () {
-      AutoRouter.of(context).push(const WebDavSyncRoute());
-    },
+  return _inkSafe(
+    ListTile(
+      leading: const Icon(Icons.cloud_outlined),
+      title: Text(title),
+      subtitle: Text(t.settings.syncConfigSubtitle),
+      trailing: const Icon(Icons.chevron_right),
+      onTap: () {
+        AutoRouter.of(context).push(const WebDavSyncRoute());
+      },
+    ),
   );
 }
 
 Widget editMaskedKeywords(BuildContext context) {
-  return ListTile(
-    leading: const Icon(Icons.shield_outlined),
-    title: Text(t.settings.maskedKeywords),
-    subtitle: Text(t.settings.maskedKeywordsSubtitle),
-    trailing: const Icon(Icons.chevron_right),
-    onTap: () {
-      showDialog(
-        context: context,
-        builder: (context) => const _KeywordManagementDialog(),
-      );
-    },
+  return _inkSafe(
+    ListTile(
+      leading: const Icon(Icons.shield_outlined),
+      title: Text(t.settings.maskedKeywords),
+      subtitle: Text(t.settings.maskedKeywordsSubtitle),
+      trailing: const Icon(Icons.chevron_right),
+      onTap: () {
+        showDialog(
+          context: context,
+          builder: (context) => const _KeywordManagementDialog(),
+        );
+      },
+    ),
   );
 }
 
