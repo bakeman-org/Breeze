@@ -36,9 +36,10 @@ class RealSrSuperResolution {
     'realsr_super_resolution',
   );
 
+  // HACK: 代理下载
   /// GitHub 上存放桌面端模型压缩包的仓库。
   static const String _binaryRepoBaseUrl =
-      'https://github.com/deretame/breeze-binary/raw/main';
+      'https://gh-proxy.org/https://github.com/deretame/breeze-binary/raw/main';
 
   /// 最大并发超分任务数。
   ///

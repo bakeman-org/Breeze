@@ -15,6 +15,17 @@ part 'reader_settings_gesture_tab.dart';
 part 'reader_settings_info_tab.dart';
 part 'reader_settings_read_tab.dart';
 
+/// 弹出阅读设置底部面板。
+///
+/// 关闭方式：
+///   1. **点击面板外空白区域** —— 通过外层 GestureDetector 手动处理；
+///   2. **向下拖动面板** —— `enableDrag: true`（默认）；
+///   3. **系统返回键** —— modal route 自动 pop。
+///
+/// 为什么点击外部需要手动处理：
+/// sheet 的 content 是一个全屏尺寸的 widget 树（SafeArea + Padding + Align），
+/// Align 会撑满屏幕并把卡片摆到底部。点击卡片外空白时，事件被这层 widget
+/// 树吸收，ModalBarrier 收不到，`isDismissible` 默认行为不生效。
 Future<void> showReaderSettingsSheet(
   BuildContext context, {
   ValueChanged<int>? changePageIndex,
@@ -24,10 +35,21 @@ Future<void> showReaderSettingsSheet(
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
-    builder: (context) {
-      return _ReaderSettingsSheet(
-        changePageIndex: changePageIndex ?? (_) {},
-        onLandscapeChanged: onLandscapeChanged,
+    isDismissible: true,
+    enableDrag: true,
+    builder: (sheetContext) {
+      // 外层 GestureDetector 处理「点击卡片外空白区域关闭」。
+      //
+      // behavior: HitTestBehavior.opaque 是关键：
+      //   - 点击卡片内部 → Material 命中 → 子 InkWell 处理，GestureDetector 不抢；
+      //   - 点击卡片外空白 → 没有子 widget 命中 → GestureDetector 响应 → pop。
+      return GestureDetector(
+        onTap: () => Navigator.of(sheetContext).maybePop(),
+        behavior: HitTestBehavior.opaque,
+        child: _ReaderSettingsSheet(
+          changePageIndex: changePageIndex ?? (_) {},
+          onLandscapeChanged: onLandscapeChanged,
+        ),
       );
     },
   );
@@ -157,6 +179,10 @@ class _ReaderSettingsHeader extends StatelessWidget {
     );
   }
 }
+
+// ─────────────────────────────────────────────────────────────────
+// 三个 tab 文件引用的 helper（保持原样，未做 Miuix 化）
+// ─────────────────────────────────────────────────────────────────
 
 class _SettingsNoticeCard extends StatelessWidget {
   final String text;

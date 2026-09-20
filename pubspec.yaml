@@ -15,7 +15,7 @@ dependencies:
   slang: ^4.6.0 # 国际化: 类型安全翻译
   slang_flutter: ^4.6.0 # 国际化: Flutter 集成
 
-  # TODO: hack uito miuix
+  # TODO: hack ui to miuix
   flutter_miuix: ^1.2.0
 
   # 路由与状态管理
@@ -26,8 +26,6 @@ dependencies:
   event_bus: ^2.0.1 # 事件: 全局事件总线
 
   # UI 组件与交互
-  # HACK: use flutter_miuix builtin
-  # dynamic_color: ^1.9.0 # UI: 动态取色
   loading_animation_widget: ^1.2.1 # UI: 加载动画合集
   photo_view: ^0.15.0 # UI: 图片缩放预览
   persistent_bottom_nav_bar: ^6.2.1 # UI: 持久底部导航
@@ -95,7 +93,6 @@ dependencies:
   hooks: ^2.1.0 # FFI: Dart 构建钩子
   flutter_rust_bridge: ^2.10.0 # FFI: Flutter-Rust 桥接
   ffi: ^2.2.0 # FFI: Dart 原生互操作
-  # sentry_flutter: ^10.0.0-alpha.5 # 监控: 崩溃与异常上报
   vm_service: ^15.0.2 # 监控: 运行时内存监控
   worker_manager: ^7.2.9 # 并发: 全局 Isolate 任务池管理
   coreml_upscale: # MacOS/iOS 超分
@@ -119,7 +116,6 @@ dev_dependencies:
   json_serializable: ^6.14.0 # 生成: JSON 序列化生成
 
   # 构建与发布辅助
-  # sentry_dart_plugin: ^3.2.1 # 发布: Sentry 构建上传
   flutter_launcher_icons: # 发布: 启动图标生成
   flutter_native_splash: # 发布: 启动画面生成
 
@@ -166,11 +162,6 @@ objectbox:
     lib: object_box
     test: object_box
 
-# sentry:
-#   upload_debug_symbols: true
-#   upload_source_maps: true
-#   project: flutter
-#   org: windy-pt
 
 flutter_launcher_icons:
   android: true
