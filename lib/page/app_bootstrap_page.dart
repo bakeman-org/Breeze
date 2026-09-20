@@ -5,6 +5,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:zephyr/config/global/global_setting.dart';
 import 'package:zephyr/config/router/router.gr.dart' as app_router;
+import 'package:zephyr/cubit/string_select.dart';
 import 'package:zephyr/i18n/strings.g.dart';
 import 'package:zephyr/main.dart';
 import 'package:zephyr/object_box/migration/compatible.dart';
@@ -24,7 +25,7 @@ import 'package:zephyr/widgets/toast.dart';
 ///
 /// 本页只做「必须在 UI 树里」的工作：
 ///   1. 注册回调（原生桥、Rust FFI、前台任务事件）；
-///   2. 数据库兼容性迁移（需要 context 弹对话框）；
+///   2. 数据库兼容性迁移（内部需要 context + [StringSelectCubit]）；
 ///   3. 应用锁校验（仅启用时）。
 ///
 /// 重量级业务初始化（ObjectBox / 字体 / i18n）已在 [ZephyrApp] 完成；
@@ -35,7 +36,14 @@ class AppBootstrapPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const AppBootstrapView();
+    // ★ StringSelectCubit 必须提供：
+    //   `ensureCompatibleMigration()` 内部会 `context.read<StringSelectCubit>()`
+    //   来显示「迁移中…」的状态文字。即使本页 UI 不显示这些文字，cubit
+    //   也必须存在于树上，否则 read 会抛 ProviderNotFoundError。
+    return BlocProvider(
+      create: (_) => StringSelectCubit(),
+      child: const AppBootstrapView(),
+    );
   }
 }
 
@@ -73,7 +81,7 @@ class _AppBootstrapViewState extends State<AppBootstrapView> {
     initRustFunctions();
     ForegroundTaskService.instance.listenEvents();
 
-    // 数据库迁移：需要 context 弹对话框。
+    // 数据库迁移：内部需要 context + StringSelectCubit（已由外层 BlocProvider 提供）。
     if (!mounted) return;
     await ensureCompatibleMigration(context);
 
