@@ -1705,6 +1705,7 @@ class _InlinePreviewGridState extends State<_InlinePreviewGrid> {
                         doc: sliced[i],
                         comicId: widget.comicId,
                         from: widget.from,
+                        onTap: () => _openFullViewer(sliced, i),
                       ),
                     ),
                 ],
@@ -1712,6 +1713,21 @@ class _InlinePreviewGridState extends State<_InlinePreviewGrid> {
           ],
         );
       },
+    );
+  }
+
+  /// 打开全屏查看器，支持在 [sliced] 范围内左右滑动切换上一张/下一张。
+  void _openFullViewer(List<Doc> sliced, int initialIndex) {
+    if (sliced.isEmpty) return;
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => _FullImageViewer(
+          docs: sliced,
+          initialIndex: initialIndex.clamp(0, sliced.length - 1),
+          comicId: widget.comicId,
+          from: widget.from,
+        ),
+      ),
     );
   }
 
@@ -1765,14 +1781,14 @@ class _InlinePreviewGridState extends State<_InlinePreviewGrid> {
 }
 
 // ----------------------------------------------------------------------------
-// 单张预览图
+// 单张预览图（网格里的缩略图）
 //
 // 走和阅读器完全相同的管线：
 //   PictureBloc → GetPicture(PictureInfo) → getCachePicture
 //   → 拿到已还原的本地文件路径 → Image.file 显示。
 //
 // 图片宽度撑满格子、高度按真实比例撑开：无留白、无裁切。
-// 点击可进入全屏查看（支持双击放大/还原）。
+// 点击进入全屏查看器（由父级传入 onTap 回调）。
 // ----------------------------------------------------------------------------
 class _PreviewTile extends StatelessWidget {
   const _PreviewTile({
@@ -1780,11 +1796,13 @@ class _PreviewTile extends StatelessWidget {
     required this.doc,
     required this.comicId,
     required this.from,
+    this.onTap,
   });
 
   final Doc doc;
   final String comicId;
   final String from;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -1806,18 +1824,18 @@ class _PreviewTile extends StatelessWidget {
       create: (_) => PictureBloc()..add(GetPicture(pictureInfo)),
       child: BlocBuilder<PictureBloc, PictureLoadState>(
         builder: (context, state) {
+          Widget content;
           switch (state.status) {
             case PictureLoadStatus.initial:
             case PictureLoadStatus.failure:
-              return const _PreviewPlaceholderTile();
+              content = const _PreviewPlaceholderTile();
+              break;
             case PictureLoadStatus.success:
               final imagePath = state.imagePath;
               if (imagePath == null || imagePath.isEmpty) {
-                return const _PreviewPlaceholderTile();
-              }
-              return GestureDetector(
-                onTap: () => _openFullImage(context, imagePath),
-                child: ClipRRect(
+                content = const _PreviewPlaceholderTile();
+              } else {
+                content = ClipRRect(
                   borderRadius: BorderRadius.circular(8),
                   child: Image.file(
                     File(imagePath),
@@ -1827,18 +1845,17 @@ class _PreviewTile extends StatelessWidget {
                     errorBuilder: (_, __, ___) =>
                         const _PreviewPlaceholderTile(),
                   ),
-                ),
-              );
+                );
+              }
+              break;
           }
-        },
-      ),
-    );
-  }
 
-  void _openFullImage(BuildContext context, String imagePath) {
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => _FullImagePage(imagePath: imagePath),
+          return GestureDetector(
+            onTap: onTap,
+            behavior: HitTestBehavior.opaque,
+            child: content,
+          );
+        },
       ),
     );
   }
@@ -1878,43 +1895,217 @@ class _PreviewPlaceholderTile extends StatelessWidget {
 }
 
 // ----------------------------------------------------------------------------
-// 全屏查看单张图片
+// 全屏图片查看器（支持左右滑动切换上一张/下一张）
 //
-// 支持：
-//   - 双指缩放 / 拖动（InteractiveViewer）
-//   - 双击放大到 2.5 倍（以双击点为中心）
-//   - 放大状态下再次双击还原
-//   - 缩放到 1.0 以下后双击直接跳到 2.5 倍
+// 手势交互：
+//   - 左右滑动：切换上一张 / 下一张
+//   - 双指缩放、单指拖动：放大查看细节
+//   - 双击：以双击点为中心放大到 2.5 倍；再次双击还原
+//   - 放大状态下禁用 PageView 滚动，避免和拖拽冲突
 // ----------------------------------------------------------------------------
-class _FullImagePage extends StatefulWidget {
-  const _FullImagePage({required this.imagePath});
+class _FullImageViewer extends StatefulWidget {
+  const _FullImageViewer({
+    required this.docs,
+    required this.initialIndex,
+    required this.comicId,
+    required this.from,
+  });
 
-  final String imagePath;
+  final List<Doc> docs;
+  final int initialIndex;
+  final String comicId;
+  final String from;
 
   @override
-  State<_FullImagePage> createState() => _FullImagePageState();
+  State<_FullImageViewer> createState() => _FullImageViewerState();
 }
 
-class _FullImagePageState extends State<_FullImagePage> {
-  static const double _doubleTapScale = 2.5;
-  static const double _resetThreshold = 1.01;
+class _FullImageViewerState extends State<_FullImageViewer> {
+  late final PageController _pageController;
+  late int _currentIndex;
 
-  final TransformationController _transformationController =
-      TransformationController();
-  TapDownDetails? _doubleTapDetails;
+  /// 当前页面是否处于放大状态（用于禁用 PageView 滚动）。
+  bool _currentPageZoomed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    final total = widget.docs.length;
+    _currentIndex = total == 0 ? 0 : widget.initialIndex.clamp(0, total - 1);
+    _pageController = PageController(initialPage: _currentIndex);
+  }
 
   @override
   void dispose() {
-    _transformationController.dispose();
+    _pageController.dispose();
     super.dispose();
   }
 
-  void _handleDoubleTap() {
-    final currentScale = _transformationController.value.getMaxScaleOnAxis();
+  @override
+  Widget build(BuildContext context) {
+    final total = widget.docs.length;
 
+    return Scaffold(
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        backgroundColor: Colors.black,
+        foregroundColor: Colors.white,
+        elevation: 0,
+        title: Text(
+          total == 0 ? '' : '${_currentIndex + 1} / $total',
+          style: const TextStyle(fontSize: 15),
+        ),
+      ),
+      body: total == 0
+          ? const Center(
+              child: Icon(Icons.broken_image_outlined, color: Colors.white54),
+            )
+          : PageView.builder(
+              controller: _pageController,
+              itemCount: total,
+              physics: _currentPageZoomed
+                  ? const NeverScrollableScrollPhysics()
+                  : const PageScrollPhysics(),
+              onPageChanged: (i) {
+                setState(() {
+                  _currentIndex = i;
+                  _currentPageZoomed = false;
+                });
+              },
+              itemBuilder: (context, index) {
+                final doc = widget.docs[index];
+                return _FullImageViewerItem(
+                  key: ValueKey(
+                    'full:${doc.storageChapterId}|${doc.fileServer}|${doc.path}',
+                  ),
+                  doc: doc,
+                  comicId: widget.comicId,
+                  from: widget.from,
+                  onZoomChanged: (zoomed) {
+                    if (!mounted || index != _currentIndex) return;
+                    if (_currentPageZoomed == zoomed) return;
+                    setState(() => _currentPageZoomed = zoomed);
+                  },
+                );
+              },
+            ),
+    );
+  }
+}
+
+/// 查看器中的单页：负责加载图片 + 缩放交互。
+class _FullImageViewerItem extends StatelessWidget {
+  const _FullImageViewerItem({
+    super.key,
+    required this.doc,
+    required this.comicId,
+    required this.from,
+    required this.onZoomChanged,
+  });
+
+  final Doc doc;
+  final String comicId;
+  final String from;
+  final ValueChanged<bool> onZoomChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final resolvedChapterId = doc.storageChapterId.trim().isNotEmpty
+        ? doc.storageChapterId
+        : comicId;
+
+    final pictureInfo = PictureInfo(
+      from: from,
+      url: doc.fileServer,
+      path: doc.path,
+      cartoonId: comicId,
+      chapterId: resolvedChapterId,
+      pictureType: PictureType.page,
+      extern: doc.extern,
+    );
+
+    return BlocProvider(
+      create: (_) => PictureBloc()..add(GetPicture(pictureInfo)),
+      child: BlocBuilder<PictureBloc, PictureLoadState>(
+        builder: (context, state) {
+          switch (state.status) {
+            case PictureLoadStatus.initial:
+              return const Center(
+                child: CircularProgressIndicator(color: Colors.white54),
+              );
+            case PictureLoadStatus.failure:
+              return const Center(
+                child: Icon(Icons.broken_image_outlined, color: Colors.white54),
+              );
+            case PictureLoadStatus.success:
+              final imagePath = state.imagePath;
+              if (imagePath == null || imagePath.isEmpty) {
+                return const Center(
+                  child: Icon(
+                    Icons.broken_image_outlined,
+                    color: Colors.white54,
+                  ),
+                );
+              }
+              return _ZoomableImage(
+                imagePath: imagePath,
+                onZoomChanged: onZoomChanged,
+              );
+          }
+        },
+      ),
+    );
+  }
+}
+
+/// 可缩放的单张图片。
+///
+/// - 双击：以双击点为中心放大到 2.5 倍；再次双击还原
+/// - 缩放 > 1 时启用拖动，并把缩放状态上报父级
+/// - 缩放为 1 时禁用拖动，让 PageView 接收左右滑动手势
+class _ZoomableImage extends StatefulWidget {
+  const _ZoomableImage({required this.imagePath, required this.onZoomChanged});
+
+  final String imagePath;
+  final ValueChanged<bool> onZoomChanged;
+
+  @override
+  State<_ZoomableImage> createState() => _ZoomableImageState();
+}
+
+class _ZoomableImageState extends State<_ZoomableImage> {
+  static const double _doubleTapScale = 2.5;
+  static const double _resetThreshold = 1.01;
+
+  final TransformationController _controller = TransformationController();
+  TapDownDetails? _doubleTapDetails;
+  bool _isZoomed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller.addListener(_onTransformChanged);
+  }
+
+  @override
+  void dispose() {
+    _controller.removeListener(_onTransformChanged);
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _onTransformChanged() {
+    final scale = _controller.value.getMaxScaleOnAxis();
+    final zoomed = scale > _resetThreshold;
+    if (zoomed == _isZoomed) return;
+    setState(() => _isZoomed = zoomed);
+    widget.onZoomChanged(zoomed);
+  }
+
+  void _handleDoubleTap() {
     // 已经放大 → 双击还原
-    if (currentScale > _resetThreshold) {
-      _transformationController.value = Matrix4.identity();
+    if (_isZoomed) {
+      _controller.value = Matrix4.identity();
       return;
     }
 
@@ -1935,33 +2126,28 @@ class _FullImagePageState extends State<_FullImagePage> {
       )
       ..scaleByDouble(_doubleTapScale, _doubleTapScale, 1, 1);
 
-    _transformationController.value = matrix;
+    _controller.value = matrix;
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.black,
-      appBar: AppBar(
-        backgroundColor: Colors.black,
-        foregroundColor: Colors.white,
-        elevation: 0,
-      ),
-      body: GestureDetector(
-        onDoubleTapDown: (details) => _doubleTapDetails = details,
-        onDoubleTap: _handleDoubleTap,
-        child: InteractiveViewer(
-          transformationController: _transformationController,
-          minScale: 0.8,
-          maxScale: 5.0,
-          child: Center(
-            child: Image.file(
-              File(widget.imagePath),
-              fit: BoxFit.contain,
-              gaplessPlayback: true,
-              errorBuilder: (_, __, ___) => const Center(
-                child: Icon(Icons.broken_image_outlined, color: Colors.white54),
-              ),
+    return GestureDetector(
+      onDoubleTapDown: (details) => _doubleTapDetails = details,
+      onDoubleTap: _handleDoubleTap,
+      child: InteractiveViewer(
+        transformationController: _controller,
+        minScale: 1.0,
+        maxScale: 5.0,
+        // 未放大时禁用拖动，让 PageView 处理左右滑动手势。
+        panEnabled: _isZoomed,
+        scaleEnabled: true,
+        child: Center(
+          child: Image.file(
+            File(widget.imagePath),
+            fit: BoxFit.contain,
+            gaplessPlayback: true,
+            errorBuilder: (_, __, ___) => const Center(
+              child: Icon(Icons.broken_image_outlined, color: Colors.white54),
             ),
           ),
         ),
