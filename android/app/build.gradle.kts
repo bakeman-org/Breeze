@@ -98,7 +98,9 @@ android {
         // (differently-signed) release without a signature-mismatch conflict.
         // HACK: this idea get from qplayer
         debug {
-            applicationIdSuffix = ".debug"
+            // TODO: handle id stuff to make .orig and .after variant
+            // applicationIdSuffix = ".debug"
+            applicationIdSuffix = ""
             versionNameSuffix = "-debug"
             manifestPlaceholders["appLabel"] = "Breeze (debug)"
         }

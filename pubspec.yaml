@@ -100,6 +100,7 @@ dependencies:
   worker_manager: ^7.2.9 # 并发: 全局 Isolate 任务池管理
   coreml_upscale: # MacOS/iOS 超分
     path: packages/coreml_upscale
+  dynamic_app_icon_flutter_plus: ^2.2.1 # 切换APP图标
 
 dev_dependencies:
   # 测试与规范
@@ -151,6 +152,7 @@ flutter:
     - path: asset/image/app_icon.ico
       platforms: [windows, linux, macos]
     - path: asset/image/app-icon.png
+    - asset/image/app-icon-modern.png
     - asset/image/error_image/404.png
     - asset/image/bika_image/cat_forum.jpg
     - asset/image/bika_image/cat_latest.jpg

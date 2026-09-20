@@ -67,6 +67,18 @@
             </intent-filter>
         </activity>
 
+        <activity-alias
+            android:name="${applicationId}.MainActivity.IconModern"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher_modern"
+            android:targetActivity="com.zephyr.breeze.MainActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+        
         <receiver android:exported="false"
             android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationReceiver" />
         <receiver android:exported="false"
