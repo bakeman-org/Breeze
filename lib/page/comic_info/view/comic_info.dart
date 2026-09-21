@@ -201,6 +201,15 @@ class _ComicInfoState extends State<_ComicInfo>
 
   Future<void> _togglePreview() async {
     final next = !_showPreview;
+
+    // ★ 打开预览前清一次 ImageCache：
+    //   下载任务 + 之前的封面/章节头图会占用大量 GPU 纹理，
+    //   预览网格需要新分配一批纹理，先清一次能显著降低 Adreno OOM 概率。
+    if (next) {
+      PaintingBinding.instance.imageCache.clear();
+      PaintingBinding.instance.imageCache.clearLiveImages();
+    }
+
     setState(() => _showPreview = next);
     try {
       final prefs = await SharedPreferences.getInstance();

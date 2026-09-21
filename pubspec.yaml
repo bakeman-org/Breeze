@@ -101,6 +101,7 @@ dependencies:
   scrollable_positioned_list: ^0.3.8
 
 dev_dependencies:
+  zero_inspector_kit: ^1.12.1
   # 测试与规范
   flutter_test:
     sdk: flutter

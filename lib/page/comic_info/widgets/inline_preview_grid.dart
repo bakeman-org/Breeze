@@ -1,3 +1,5 @@
+// lib/page/comic_info/widgets/inline_preview_grid.dart
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -15,7 +17,15 @@ import 'package:zephyr/widgets/picture_bloc/models/picture_info.dart';
 /// 内嵌预览图网格。
 ///
 /// 走和阅读器相同的图片管线：PageBloc 取章节 docs → PictureBloc 分片还原
-/// → 本地文件 → Image.file。直接 Image.network(fileServer) 会看到错位。
+/// → 本地文件 → Image.file。
+///
+/// ★ 自动展开策略（防 GPU OOM + 无需手动点击）：
+///   1. 首屏只 build 前 `_initialVisibleCount` 个 tile，避免一次向 GPU
+///      申请上百个纹理导致 Adreno kgsl_sharedmem_alloc 失败。
+///   2. 之后通过 `_autoExpandTimer` 每 `_autoExpandInterval` 自动 +N 张，
+///      直到把用户选择的范围全部填满。
+///   3. 每次展开前主动清一次 ImageCache，给新一批纹理腾空间。
+///   4. 每个 tile 用 cacheWidth 限制解码尺寸（缩略图 ~1.2MB vs 原图 ~8MB）。
 class InlinePreviewGrid extends StatefulWidget {
   const InlinePreviewGrid({
     super.key,
@@ -52,6 +62,35 @@ class InlinePreviewGrid extends StatefulWidget {
 
 class _InlinePreviewGridState extends State<InlinePreviewGrid> {
   int _lastReportedTotal = -1;
+
+  // 分批展开的窗口参数
+  static const int _initialVisibleCount = 12;
+  static const int _loadMoreStep = 12;
+  static const Duration _autoExpandInterval = Duration(milliseconds: 300);
+
+  int _visibleCount = _initialVisibleCount;
+  int _targetLength = 0;
+  Timer? _autoExpandTimer;
+
+  @override
+  void didUpdateWidget(covariant InlinePreviewGrid oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // 模式 / 范围变化时重置窗口，让用户看到最新设置的首屏。
+    if (oldWidget.mode != widget.mode ||
+        oldWidget.count != widget.count ||
+        oldWidget.startPage != widget.startPage ||
+        oldWidget.endPage != widget.endPage) {
+      _autoExpandTimer?.cancel();
+      _autoExpandTimer = null;
+      _visibleCount = _initialVisibleCount;
+    }
+  }
+
+  @override
+  void dispose() {
+    _autoExpandTimer?.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -106,6 +145,37 @@ class _InlinePreviewGridState extends State<InlinePreviewGrid> {
     );
   }
 
+  // ──────────────────────────────────────────────────────────────────
+  // 自动展开调度
+  // ──────────────────────────────────────────────────────────────────
+
+  /// 启动 / 继续自动展开。
+  ///
+  /// - `_targetLength` 是当前 sliced 的总长度（用户所选范围）；
+  /// - 每 `_autoExpandInterval` 展开一批，直到 `_visibleCount >= target`；
+  /// - 展开前清一次 ImageCache，避免连续分配导致 GPU OOM。
+  void _scheduleAutoExpand(int target) {
+    _targetLength = target;
+    if (_visibleCount >= _targetLength) return;
+    if (_autoExpandTimer?.isActive ?? false) return;
+
+    _autoExpandTimer = Timer(_autoExpandInterval, () {
+      if (!mounted) return;
+      if (_visibleCount >= _targetLength) return;
+
+      // 清掉已上传 GPU 的旧纹理，给即将出现的新 tile 腾空间。
+      PaintingBinding.instance.imageCache.clear();
+      PaintingBinding.instance.imageCache.clearLiveImages();
+
+      setState(() {
+        _visibleCount = (_visibleCount + _loadMoreStep).clamp(0, _targetLength);
+      });
+
+      // 还有剩余继续下一批。
+      _scheduleAutoExpand(_targetLength);
+    });
+  }
+
   void _maybeReportTotal(int total) {
     if (total <= 0) return;
     if (_lastReportedTotal == total) return;
@@ -141,22 +211,38 @@ class _InlinePreviewGridState extends State<InlinePreviewGrid> {
     if (sliced.isEmpty) {
       return '所选范围超出本章页数（共 $totalInChapter 页）';
     }
-    switch (widget.mode) {
-      case PreviewMode.top:
-        return '前 ${sliced.length} 张 / 共 $totalInChapter 页';
-      case PreviewMode.tail:
-        return '后 ${sliced.length} 张 / 共 $totalInChapter 页';
-      case PreviewMode.range:
+    final base = switch (widget.mode) {
+      PreviewMode.top => '前 ${sliced.length} 张 / 共 $totalInChapter 页',
+      PreviewMode.tail => '后 ${sliced.length} 张 / 共 $totalInChapter 页',
+      PreviewMode.range => () {
         final first = _displayIndex(sliced.first, docs) + 1;
         final last = _displayIndex(sliced.last, docs) + 1;
         return '第 $first-$last 页 / 共 $totalInChapter 页';
+      }(),
+    };
+    // 仍在自动加载时附加提示。
+    if (_visibleCount < sliced.length) {
+      return '$base　·　自动加载中 ${_visibleCount}/${sliced.length}';
     }
+    return base;
   }
 
   Widget _buildGrid(BuildContext context, List<Doc> docs) {
     final hasData = docs.isNotEmpty;
     final sliced = _sliceDocs(docs);
-    final shownCount = sliced.length;
+
+    // 自动展开调度：让 state 变化经 postFrame 通知，避免 build 期间副作用。
+    if (sliced.length > _visibleCount) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        _scheduleAutoExpand(sliced.length);
+      });
+    }
+
+    final effectiveVisible = sliced.length <= _visibleCount
+        ? sliced.length
+        : _visibleCount;
+    final visibleSliced = sliced.take(effectiveVisible).toList(growable: false);
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -187,10 +273,19 @@ class _InlinePreviewGridState extends State<InlinePreviewGrid> {
                       ),
                     ),
                   ),
+                  // 全部展开完成后的小提示，避免用户以为还在加载。
+                  if (hasData &&
+                      sliced.isNotEmpty &&
+                      _visibleCount >= sliced.length)
+                    Icon(
+                      Icons.check_circle_outline,
+                      size: 14,
+                      color: context.textColor.withValues(alpha: 0.35),
+                    ),
                 ],
               ),
             ),
-            if (!hasData || shownCount == 0)
+            if (!hasData || sliced.isEmpty)
               Wrap(
                 spacing: spacing,
                 runSpacing: spacing,
@@ -207,14 +302,14 @@ class _InlinePreviewGridState extends State<InlinePreviewGrid> {
                 spacing: spacing,
                 runSpacing: spacing,
                 children: [
-                  for (int i = 0; i < sliced.length; i++)
+                  for (int i = 0; i < visibleSliced.length; i++)
                     SizedBox(
                       width: tileWidth,
                       child: PreviewTile(
                         key: ValueKey(
-                          '${sliced[i].storageChapterId}|${sliced[i].fileServer}|${sliced[i].path}',
+                          '${visibleSliced[i].storageChapterId}|${visibleSliced[i].fileServer}|${visibleSliced[i].path}',
                         ),
-                        doc: sliced[i],
+                        doc: visibleSliced[i],
                         comicId: widget.comicId,
                         from: widget.from,
                         onTap: () => _openFullViewer(sliced, i),
@@ -336,11 +431,15 @@ class PreviewTile extends StatelessWidget {
               if (imagePath == null || imagePath.isEmpty) {
                 content = const PreviewPlaceholderTile();
               } else {
+                // 缩略图用 cacheWidth 限制解码尺寸。
+                final dpr = MediaQuery.maybeDevicePixelRatioOf(context) ?? 1.0;
+                final cacheWidth = (180 * dpr).round();
                 content = ClipRRect(
                   borderRadius: BorderRadius.circular(8),
                   child: Image.file(
                     File(imagePath),
                     fit: BoxFit.fitWidth,
+                    cacheWidth: cacheWidth,
                     gaplessPlayback: true,
                     errorBuilder: (_, __, ___) =>
                         const PreviewPlaceholderTile(),

@@ -50,6 +50,7 @@ import 'package:zephyr/util/manage_cache.dart';
 import 'package:zephyr/util/rust_loader.dart';
 import 'package:zephyr/widgets/desktop/custom_title_bar.dart';
 import 'package:zephyr/widgets/desktop/intent.dart';
+import 'package:zero_inspector_kit/zero_inspector_kit.dart';
 
 export 'package:zephyr/network/http/wind_http.dart'
     show WindHttp, FetchResponse, fetch, fetchDirect;
@@ -137,6 +138,12 @@ class MyAlwaysLogFilter extends LogFilter {
 Future<void> main(List<String> args) async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  // ★ GPU OOM / 图片解码失败兜底：
+  //   Adreno/Mali 在高并发图片加载时可能返回纹理分配失败，
+  //   默认 ErrorWidget 会显示红屏并可能阻断整棵树。
+  //   这里改成「清理缓存 + 显示占位提示」，让页面还能响应返回。
+  _installResourceErrorWidgetBuilder();
+
   if (!kIsWeb && Platform.isLinux && runWebViewTitleBarWidget(args)) {
     return;
   }
@@ -162,7 +169,54 @@ Future<void> main(List<String> args) async {
     };
   }
 
-  runApp(const ZephyrApp());
+  // zero_inspector_kit 的 AlertService 会在 build 期间同步 fire
+  // ValueNotifier，触发 FloatingInspectorButton 的 setState，导致
+  // "setState() called during build" 异常。生产环境直接使用原生 runApp；
+  // 调试需要 inspector 时，用 dart-define 手动打开。
+  //flutter run --dart-define=USE_INSPECTOR=true
+
+  const useInspector = bool.fromEnvironment('USE_INSPECTOR');
+  if (kDebugMode && useInspector) {
+    ZeroInspectorKit.runAppWithInspector(const ZephyrApp());
+  } else {
+    runApp(const ZephyrApp());
+  }
+}
+
+/// 安装资源错误兜底 ErrorWidget。
+///
+/// GPU 纹理分配失败（Adreno kgsl_sharedmem_alloc、iOS 上类似错误）会以
+/// FlutterErrorDetails 形式冒泡到 ErrorWidget.builder。默认红屏不好看，
+/// 且不会主动释放缓存，容易连锁触发更多分配失败。
+void _installResourceErrorWidgetBuilder() {
+  ErrorWidget.builder = (FlutterErrorDetails details) {
+    final msg = details.exception.toString().toLowerCase();
+    final isResourceError =
+        msg.contains('memory') ||
+        msg.contains('gpu') ||
+        msg.contains('texture') ||
+        msg.contains('alloc') ||
+        msg.contains('adreno') ||
+        msg.contains('kgsl') ||
+        msg.contains('out of') ||
+        msg.contains('surface');
+
+    if (isResourceError) {
+      PaintingBinding.instance.imageCache.clear();
+      PaintingBinding.instance.imageCache.clearLiveImages();
+    }
+
+    return Container(
+      color: const Color(0xFF1E1E1E),
+      alignment: Alignment.center,
+      padding: const EdgeInsets.all(24),
+      child: Text(
+        isResourceError ? '资源紧张，已尝试释放缓存。\n如仍异常请返回上一页。' : '渲染出错',
+        style: const TextStyle(color: Colors.white70, fontSize: 13),
+        textAlign: TextAlign.center,
+      ),
+    );
+  };
 }
 
 // ─────────────────────────────────────────────────────────────────────
@@ -401,15 +455,15 @@ Future<(GlobalSettingCubit, PluginRegistryCubit)> _initServices() async {
         ),
       );
 
-      // ★ 调大图片解码缓存。
-      //   默认 100MB / 1000 张，对 1080p 漫画页（单张解码 ~6MB）只够 16 张，
-      //   翻页 / 预取时 LRU 频繁驱逐，导致每张图重新走解码路径。
-      //   这里：移动端 ~320MB / 150 张；桌面端 ~768MB / 400 张。
+      // ★ 图片解码缓存上限。
+      //   移动端之前试过 320MB，会在「下载多部漫画 + 打开预览」时挤压
+      //   GPU 纹理预算（Adreno OOM）。折中到 220MB / 100 张，
+      //   桌面端 512MB / 300 张。
       final isDesktop =
           Platform.isWindows || Platform.isMacOS || Platform.isLinux;
       final cache = PaintingBinding.instance.imageCache;
-      cache.maximumSizeBytes = (isDesktop ? 768 : 320) * 1024 * 1024;
-      cache.maximumSize = isDesktop ? 400 : 150;
+      cache.maximumSizeBytes = (isDesktop ? 512 : 220) * 1024 * 1024;
+      cache.maximumSize = isDesktop ? 300 : 100;
 
       if (!isTabletWithOutContext()) {
         await SystemChrome.setPreferredOrientations([
