@@ -23,20 +23,6 @@ class ToastEvent {
   });
 }
 
-/// 把 [ToastType] 映射成 [HyperToastType]。
-HyperToastType _mapType(ToastType type) {
-  switch (type) {
-    case ToastType.info:
-      return HyperToastType.info;
-    case ToastType.success:
-      return HyperToastType.success;
-    case ToastType.warning:
-      return HyperToastType.warning;
-    case ToastType.error:
-      return HyperToastType.error;
-  }
-}
-
 /// 把标题和正文拼成 HyperOS toast 能显示的多行文字。
 ///
 /// HyperOS toast 没有独立的「标题区」，两行文本用换行符拼接即可。

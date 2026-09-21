@@ -2034,7 +2034,7 @@ packages:
     source: hosted
     version: "3.1.4"
   zero_inspector_kit:
-    dependency: "direct dev"
+    dependency: "direct main"
     description:
       name: zero_inspector_kit
       sha256: "35a6615a036f237e51e98d91bbca7cd2639d502111a38fb78b3ac32d3df82e51"

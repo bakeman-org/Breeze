@@ -91,7 +91,7 @@ dependencies:
   code_assets: ^2.0.0 # FFI: hooks/build.dart 使用的目标平台配置类型
   native_toolchain_rust: ^1.0.4 # FFI: Rust 构建工具
   hooks: ^2.1.0 # FFI: Dart 构建钩子
-  flutter_rust_bridge: ^2.10.0 # FFI: Flutter-Rust 桥接
+  flutter_rust_bridge: ^2.13.0 # FFI: Flutter-Rust 桥接
   ffi: ^2.2.0 # FFI: Dart 原生互操作
   vm_service: ^15.0.2 # 监控: 运行时内存监控
   worker_manager: ^7.2.9 # 并发: 全局 Isolate 任务池管理
@@ -99,9 +99,9 @@ dependencies:
     path: packages/coreml_upscale
   dynamic_app_icon_flutter_plus: ^2.2.1 # 切换APP图标
   scrollable_positioned_list: ^0.3.8
+  zero_inspector_kit: ^1.12.1
 
 dev_dependencies:
-  zero_inspector_kit: ^1.12.1
   # 测试与规范
   flutter_test:
     sdk: flutter
