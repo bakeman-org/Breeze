@@ -14,6 +14,8 @@ import 'package:zephyr/plugin/bridge/plugin_config_bridge.dart';
 import 'package:zephyr/plugin/plugin_cloud_update_service.dart';
 import 'package:zephyr/plugin/plugin_registry_service.dart';
 import 'package:zephyr/service/lifecycle/foreground_task/foreground_task_service.dart';
+import 'package:zephyr/service/update/ntfy/ntfy_notification_bridge.dart';
+import 'package:zephyr/service/update/ntfy/ntfy_service.dart';
 import 'package:zephyr/src/rust/api/qjs.dart';
 import 'package:zephyr/widgets/gesture_lock.dart';
 import 'package:zephyr/widgets/toast.dart';
@@ -102,6 +104,17 @@ class _AppBootstrapViewState extends State<AppBootstrapView> {
 
   /// 后台初始化任务集合。失败只记录日志，不影响主流程。
   Future<void> _runBackgroundInit() async {
+    // ★ 先装通知桥接，再启动 ntfy —— 保证收到的第一条消息也能弹系统通知。
+    try {
+      NtfyNotificationBridge.install();
+      await NtfyService.I.start();
+      logger.d(
+        '[Ntfy] started: ${NtfyService.I.server}/${NtfyService.I.topic}',
+      );
+    } catch (e, st) {
+      logger.w('[Ntfy] startup failed', error: e, stackTrace: st);
+    }
+
     try {
       await PluginRegistryService.I.warmupPluginInfos();
     } catch (e, st) {

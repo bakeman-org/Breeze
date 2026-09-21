@@ -100,6 +100,7 @@ dependencies:
   dynamic_app_icon_flutter_plus: ^2.2.1 # 切换APP图标
   scrollable_positioned_list: ^0.3.8
   zero_inspector_kit: ^1.12.1
+  ntfy: ^1.0.2
 
 dev_dependencies:
   # 测试与规范

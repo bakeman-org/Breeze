@@ -1098,6 +1098,14 @@ packages:
       url: "https://pub.flutter-io.cn"
     source: hosted
     version: "0.5.0"
+  ntfy:
+    dependency: "direct main"
+    description:
+      name: ntfy
+      sha256: b450df00365bb4c93697971430e4f4dcfbf37a45b74102aff105ef88d2ef2e2c
+      url: "https://pub.flutter-io.cn"
+    source: hosted
+    version: "1.0.2"
   objectbox:
     dependency: "direct main"
     description:
