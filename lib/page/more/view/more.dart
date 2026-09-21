@@ -4,9 +4,42 @@ import 'package:zephyr/page/more/more.dart';
 import 'package:zephyr/service/app_icon/app_icon_service.dart';
 import 'package:zephyr/widgets/hyper_toast.dart';
 
+/// 展开时 header 的高度（图标 + 标题 + 上下间距）。
+const double _kHeaderHeight = 180;
+
+/// 展开触发阈值：pixels 需要 < -_kExpandTrigger（即拉出这么多像素才展开）。
+///
+/// 太小 → 轻微滑动就误触；太大 → 感觉迟钝。8 是经验值。
+const double _kExpandTrigger = 8;
+
+/// 收起触发阈值：pixels 超过这个值就收起。
+const double _kCollapseTrigger = 60;
+
 @RoutePage()
-class MorePage extends StatelessWidget {
+class MorePage extends StatefulWidget {
   const MorePage({super.key});
+
+  @override
+  State<MorePage> createState() => _MorePageState();
+}
+
+class _MorePageState extends State<MorePage> {
+  /// header 是否展开。
+  bool _headerExpanded = false;
+
+  bool _onScroll(ScrollNotification n) {
+    final pixels = n.metrics.pixels;
+
+    // 到顶后继续下拉足够多 → 展开。
+    if (pixels < -_kExpandTrigger && !_headerExpanded) {
+      setState(() => _headerExpanded = true);
+    }
+    // 向上滚开顶部超过阈值 → 收起。
+    else if (pixels > _kCollapseTrigger && _headerExpanded) {
+      setState(() => _headerExpanded = false);
+    }
+    return false;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -16,12 +49,32 @@ class MorePage extends StatelessWidget {
           alignment: Alignment.topCenter,
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 768),
-            child: ListView(
-              children: const [
-                SizedBox(height: 24),
-                _AppIconHeader(),
-                SettingsWidget(),
-              ],
+            child: ScrollConfiguration(
+              behavior: ScrollConfiguration.of(context).copyWith(
+                physics: const BouncingScrollPhysics(),
+                overscroll: false,
+                scrollbars: false,
+              ),
+              child: NotificationListener<ScrollNotification>(
+                onNotification: _onScroll,
+                child: ListView(
+                  physics: const BouncingScrollPhysics(
+                    parent: AlwaysScrollableScrollPhysics(),
+                  ),
+                  children: [
+                    // ★ 用 _CollapsibleHeader 替代 AnimatedContainer。
+                    //   一条 AnimationController 驱动高度/透明度/位移/缩放，
+                    //   四个属性同步演变，视觉上像"从顶部柔和拉出"。
+                    _CollapsibleHeader(
+                      expanded: _headerExpanded,
+                      expandedHeight: _kHeaderHeight,
+                      child: const _AppIconHeader(),
+                    ),
+                    const SettingsWidget(),
+                    const SizedBox(height: 240),
+                  ],
+                ),
+              ),
             ),
           ),
         ),
@@ -30,15 +83,115 @@ class MorePage extends StatelessWidget {
   }
 }
 
+// ─────────────────────────────────────────────────────────────────────
+// 可折叠 header：单 controller 驱动四属性
+// ─────────────────────────────────────────────────────────────────────
+
+class _CollapsibleHeader extends StatefulWidget {
+  const _CollapsibleHeader({
+    required this.expanded,
+    required this.expandedHeight,
+    required this.child,
+  });
+
+  final bool expanded;
+  final double expandedHeight;
+  final Widget child;
+
+  @override
+  State<_CollapsibleHeader> createState() => _CollapsibleHeaderState();
+}
+
+class _CollapsibleHeaderState extends State<_CollapsibleHeader>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl = AnimationController(
+    duration: const Duration(milliseconds: 340),
+    vsync: this,
+    value: widget.expanded ? 1.0 : 0.0,
+  );
+
+  /// easeOutCubic：起步快、尾段慢，符合"拉开"的物理感。
+  ///
+  /// 换成 [Curves.easeOutBack] 会有一点点过冲，也可以试。
+  late final Animation<double> _curved = CurvedAnimation(
+    parent: _ctrl,
+    curve: Curves.easeOutCubic,
+  );
+
+  @override
+  void didUpdateWidget(covariant _CollapsibleHeader oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.expanded != oldWidget.expanded) {
+      if (widget.expanded) {
+        _ctrl.forward();
+      } else {
+        _ctrl.reverse();
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final h = widget.expandedHeight;
+
+    // ★ AnimatedBuilder 的 child 参数：把 child 提前构建好，避免每帧 rebuild。
+    //
+    // OverflowBox 让 child 始终按 expandedHeight 布局 —— 即使外层 SizedBox
+    // 高度是 0，图标也不会被压扁，只是被 ClipRect 裁掉而已。
+    final fixedChild = OverflowBox(
+      maxHeight: h,
+      alignment: Alignment.topCenter,
+      child: widget.child,
+    );
+
+    return AnimatedBuilder(
+      animation: _curved,
+      builder: (context, child) {
+        final t = _curved.value; // 0 = 收起, 1 = 展开
+
+        // 高度：0 → h
+        // 透明度：0 → 1
+        // 位移：-24px → 0（从上方略微滑入，产生"落下"的感觉）
+        // 缩放：0.88 → 1.0（从略微压扁到正常，跟"拉出"的视觉一致）
+        return ClipRect(
+          child: SizedBox(
+            height: h * t,
+            child: Opacity(
+              opacity: t,
+              child: Transform.translate(
+                offset: Offset(0, (1 - t) * -24),
+                child: Transform.scale(
+                  scale: 0.88 + 0.12 * t,
+                  alignment: Alignment.topCenter,
+                  child: child,
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+      child: fixedChild,
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// 顶部 header：应用图标 + 名称
+// ─────────────────────────────────────────────────────────────────────
+
 /// 顶部 header：应用图标 + 名称。
 ///
 /// 图标本身通过 [AppIconService] 订阅 —— 任何地方改了应用图标，这里都会
-/// 同步刷新，不需要页面之间传递状态。
+/// 同步刷新。
 ///
-/// **连续点击 3 次**（每次间隔 < 1 秒）会弹出应用图标选择弹窗。仅在
-/// Android / iOS 上生效；其他平台点击无反应。
-///
-/// 连点过程中会显示类似小米 HyperOS「开发者模式」的 toast，提示还剩几次。
+/// **只有图标图片区域**响应点击。连点 3 次（间隔 < 1 秒）弹出应用图标
+/// 选择弹窗。点 Breeze 文字或周围留白**不会**触发切换。
 class _AppIconHeader extends StatefulWidget {
   const _AppIconHeader();
 
@@ -47,10 +200,7 @@ class _AppIconHeader extends StatefulWidget {
 }
 
 class _AppIconHeaderState extends State<_AppIconHeader> {
-  /// 连点窗口：两次点击间隔不超过此值才算连点，否则计数重置。
   static const _multiTapWindow = Duration(seconds: 1);
-
-  /// 触发切换所需的点击数。
   static const _requiredTaps = 3;
 
   int _tapCount = 0;
@@ -59,20 +209,16 @@ class _AppIconHeaderState extends State<_AppIconHeader> {
   @override
   void initState() {
     super.initState();
-    // 触发一次加载。幂等，多次进入页面不会重复查询。
     AppIconService.instance.ensureLoaded();
   }
 
   @override
   void dispose() {
-    // 页面销毁时顺手关掉 toast，避免残留在 Overlay 上。
     HyperToast.dismiss();
     super.dispose();
   }
 
   void _handleTap() {
-    // 连点切换图标只在移动平台有效。
-    // 桌面端不阻断，但点击也不做任何事（否则用户会困惑「点了没反应」）。
     if (!_supportsDynamicIcon) return;
 
     final now = DateTime.now();
@@ -95,13 +241,9 @@ class _AppIconHeaderState extends State<_AppIconHeader> {
   }
 
   bool get _supportsDynamicIcon =>
-      AppIconService.instance.value.iconName != null ||
-      // 未加载完成时也允许点击，让用户在 Android 上即便尚未加载也能触发。
-      // 真正的平台判断放在 AppIconService.switchTo 里。
-      true;
+      AppIconService.instance.value.iconName != null || true;
 
   Future<void> _showIconPicker() async {
-    // 结果用 record 包装，区分「取消」(null) 和「选了某个图标」(可能 name 是 null)。
     final result = await showModalBottomSheet<({String? name})>(
       context: context,
       backgroundColor: Colors.transparent,
@@ -112,7 +254,7 @@ class _AppIconHeaderState extends State<_AppIconHeader> {
         onSelect: (name) => Navigator.of(sheetContext).pop((name: name)),
       ),
     );
-    if (result == null) return; // 用户取消
+    if (result == null) return;
 
     final ok = await AppIconService.instance.switchTo(result.name);
     if (!mounted) return;
@@ -129,17 +271,15 @@ class _AppIconHeaderState extends State<_AppIconHeader> {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      // HitTestBehavior.opaque：让整个 header 区域都能响应点击（包括图标
-      // 和文字之间的留白），同时不阻断外层 ListView 的滚动手势。
-      behavior: HitTestBehavior.opaque,
-      onTap: _handleTap,
-      child: Column(
-        children: [
-          // 订阅 AppIconService：任何地方改了图标，这里自动刷新。
-          //
-          // AnimatedSwitcher 用 asset 路径作为 key，图标变化时做淡入淡出。
-          ValueListenableBuilder<AppIconState>(
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const SizedBox(height: 24),
+        // 只有图标响应点击；点文字或留白无反应。
+        GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: _handleTap,
+          child: ValueListenableBuilder<AppIconState>(
             valueListenable: AppIconService.instance,
             builder: (context, state, _) {
               return AnimatedSwitcher(
@@ -160,32 +300,27 @@ class _AppIconHeaderState extends State<_AppIconHeader> {
               );
             },
           ),
-          const SizedBox(height: 12),
-          Text(
-            'Breeze',
-            style: Theme.of(
-              context,
-            ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 16),
-        ],
-      ),
+        ),
+        const SizedBox(height: 12),
+        Text(
+          'Breeze',
+          style: Theme.of(
+            context,
+          ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 16),
+      ],
     );
   }
 }
 
 // ─────────────────────────────────────────────────────────────────────
-// 图标选择底部弹窗
+// 图标选择弹窗
 // ─────────────────────────────────────────────────────────────────────
 
-/// 图标选择弹窗。
-///
-/// 展示两个选项（经典 / 现代），并高亮当前生效的那个。选项的展示信息直接
-/// 从 [AppIconService] 里拿，不重复定义 asset 路径。
 class _AppIconPickerSheet extends StatelessWidget {
   const _AppIconPickerSheet({required this.onSelect});
 
-  /// 选中回调。name 为 null 表示选择了「经典」。
   final ValueChanged<String?> onSelect;
 
   @override
@@ -216,7 +351,6 @@ class _AppIconPickerSheet extends StatelessWidget {
             ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: 34),
-          // 订阅 AppIconService：当前选中项自动跟随。
           ValueListenableBuilder<AppIconState>(
             valueListenable: AppIconService.instance,
             builder: (context, current, _) {
@@ -246,9 +380,6 @@ class _AppIconPickerSheet extends StatelessWidget {
   }
 }
 
-/// 单个图标选项卡片。
-///
-/// 所有展示信息（label / asset）都从 [AppIconState] 里取，不在 UI 层再写一遍。
 class _AppIconOption extends StatelessWidget {
   const _AppIconOption({
     required this.state,
