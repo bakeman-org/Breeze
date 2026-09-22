@@ -1,5 +1,10 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools" package="com.zephyr.breeze">
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- 闪光灯权限 -->
+    <uses-permission android:name="android.permission.FLASHLIGHT" />
+    <uses-feature android:name="android.hardware.camera.flash" />
+
     <!-- 网络权限 -->
     <uses-permission android:name="android.permission.INTERNET" />
     <!-- 通知权限 -->
@@ -40,6 +45,7 @@
         android:icon="@mipmap/ic_launcher"
         android:enableOnBackInvokedCallback="false"
         android:extractNativeLibs="true">
+
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -55,8 +61,6 @@
                  the Android process has started. This theme is visible to the user
                  while the Flutter UI initializes. After that, this theme continues
                  to determine the Window background behind the Flutter UI. -->
-
-
             <meta-data
                 android:name="io.flutter.embedding.android.NormalTheme"
                 android:resource="@style/NormalTheme"
@@ -68,11 +72,11 @@
         </activity>
 
         <activity-alias
-            android:name="${applicationId}.MainActivity.IconModern"
+            android:name=".MainActivity.IconModern"
             android:enabled="false"
             android:exported="true"
             android:icon="@mipmap/ic_launcher_modern"
-            android:targetActivity="com.zephyr.breeze.MainActivity">
+            android:targetActivity=".MainActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />

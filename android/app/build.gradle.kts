@@ -100,7 +100,7 @@ android {
         debug {
             // TODO: handle id stuff to make .orig and .after variant
             // applicationIdSuffix = ".debug"
-            applicationIdSuffix = ""
+            // applicationIdSuffix = ""
             versionNameSuffix = "-debug"
             manifestPlaceholders["appLabel"] = "Breeze (debug)"
         }
