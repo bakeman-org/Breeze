@@ -1,3 +1,6 @@
 since current ui is kind of ugly, I want to port things to flutter_miuix
 
 1. 主题颜色修复成haka_comic 那样预设吧，目前这都不知道是什么垃圾
+
+2. build up my local issue viewer(develop mode), because github issue template is annoying
+
