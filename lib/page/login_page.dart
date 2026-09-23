@@ -175,6 +175,14 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
+  /// 清空两个输入框，让用户重新输入。
+  void _clearFields() {
+    setState(() {
+      _account.clear();
+      _password.clear();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_loadingScheme) {
@@ -206,52 +214,213 @@ class _LoginPageState extends State<LoginPage> {
     return Scaffold(
       appBar: AppBar(
         title: Text(title),
+        elevation: 0,
+        backgroundColor: Colors.transparent,
         actions: [
           IconButton(
-            icon: Icon(Icons.settings),
+            icon: const Icon(Icons.settings),
             onPressed: () => context.pushRoute(GlobalSettingRoute()),
           ),
         ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start, // 子组件在水平方向上靠左对齐
-          children: <Widget>[
-            // 账号输入框
-            TextField(
-              controller: _account,
-              decoration: InputDecoration(
-                labelText: accountLabel,
-                border: const OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 20), // 用于添加空间
-            // 密码输入框
-            TextField(
-              controller: _password,
-              decoration: InputDecoration(
-                labelText: passwordLabel,
-                border: OutlineInputBorder(),
-              ),
-              obscureText: true, // 隐藏输入内容
-            ),
-            const SizedBox(height: 10), // 用于添加空间
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center, // 设置Row中的内容水平居中
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 480),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                TextButton(
-                  onPressed: _submitForm,
-                  child: Text(t.login.loginButton),
+                // 账号输入框：miuix 风格，前置 person 图标。
+                _MiuixLoginField(
+                  controller: _account,
+                  label: accountLabel,
+                  icon: Icons.person_outline,
+                  textInputAction: TextInputAction.next,
+                ),
+                const SizedBox(height: 16),
+                // 密码输入框：miuix 风格，前置 lock 图标，圆点混淆。
+                _MiuixLoginField(
+                  controller: _password,
+                  label: passwordLabel,
+                  icon: Icons.lock_outline,
+                  obscure: true,
+                  textInputAction: TextInputAction.done,
+                  onSubmitted: (_) => _submitForm(),
+                ),
+                const SizedBox(height: 24),
+                // 按钮组：清除（次要）+ 登录（主要），右对齐。
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    _MiuixPillButton(
+                      label: t.common.clear,
+                      icon: Icons.backspace_outlined,
+                      variant: _MiuixPillVariant.secondary,
+                      onPressed: _clearFields,
+                    ),
+                    const SizedBox(width: 12),
+                    _MiuixPillButton(
+                      label: t.login.loginButton,
+                      icon: Icons.login,
+                      variant: _MiuixPillVariant.primary,
+                      onPressed: _submitForm,
+                    ),
+                  ],
                 ),
               ],
             ),
-            const SizedBox(height: 10), // 用于添加空间
-            Expanded(
-              child: Container(), // 占据剩余空间
-            ),
-            const SizedBox.shrink(),
-          ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// miuix 风格的单行输入框：圆角填充底 + 浮动 label + 前置图标。
+/// 与 `PluginSettingsInlineTextField` 保持同一视觉（圆角 14、聚焦描边 primary）。
+class _MiuixLoginField extends StatelessWidget {
+  const _MiuixLoginField({
+    required this.controller,
+    required this.label,
+    required this.icon,
+    this.obscure = false,
+    this.textInputAction,
+    this.onSubmitted,
+  });
+
+  /// 输入框内容控制器。
+  final TextEditingController controller;
+
+  /// 浮动标签文案，同时用作可访问性 label。
+  final String label;
+
+  /// 左侧前置图标（账号 / 密码各一个）。
+  final IconData icon;
+
+  /// 是否隐藏输入（密码模式）。
+  final bool obscure;
+
+  /// 键盘「下一步 / 完成」按键的行为。
+  final TextInputAction? textInputAction;
+
+  /// 用户按下键盘「完成」时的回调，用于密码框直接触发登录。
+  final ValueChanged<String>? onSubmitted;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return TextField(
+      controller: controller,
+      obscureText: obscure,
+      textInputAction: textInputAction,
+      onSubmitted: onSubmitted,
+      style: TextStyle(fontSize: 16, color: colorScheme.onSurface),
+      decoration: InputDecoration(
+        labelText: label,
+        floatingLabelBehavior: FloatingLabelBehavior.always,
+        prefixIcon: Icon(icon, size: 22, color: colorScheme.onSurfaceVariant),
+        prefixIconConstraints: const BoxConstraints(
+          minWidth: 52,
+          minHeight: 52,
+        ),
+        filled: true,
+        fillColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+        contentPadding: const EdgeInsets.fromLTRB(16, 22, 16, 14),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide.none,
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide.none,
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide(color: colorScheme.primary, width: 1.5),
+        ),
+        labelStyle: TextStyle(
+          color: colorScheme.onSurfaceVariant,
+          fontSize: 13,
+        ),
+        floatingLabelStyle: TextStyle(
+          color: colorScheme.onSurfaceVariant,
+          fontSize: 13,
+        ),
+      ),
+    );
+  }
+}
+
+/// pill 按钮的视觉变体（与设置页按钮组保持一致的语义）。
+enum _MiuixPillVariant { primary, secondary }
+
+/// miuix 风格的 pill 按钮：圆角矩形 + 可选前置图标 + 主 / 次两种变体。
+class _MiuixPillButton extends StatelessWidget {
+  const _MiuixPillButton({
+    required this.label,
+    required this.onPressed,
+    this.icon,
+    this.variant = _MiuixPillVariant.primary,
+  });
+
+  /// 按钮文案。
+  final String label;
+
+  /// 点击回调；为 null 时按钮显示禁用态。
+  final VoidCallback? onPressed;
+
+  /// 可选前置图标。
+  final IconData? icon;
+
+  /// 视觉变体。
+  final _MiuixPillVariant variant;
+
+  /// 解析变体对应的（背景色, 前景色），禁用时走灰阶。
+  (Color bg, Color fg) _resolveColors(ColorScheme scheme) {
+    if (onPressed == null) {
+      return (
+        scheme.onSurface.withValues(alpha: 0.12),
+        scheme.onSurface.withValues(alpha: 0.38),
+      );
+    }
+    switch (variant) {
+      case _MiuixPillVariant.primary:
+        return (scheme.primary, scheme.onPrimary);
+      case _MiuixPillVariant.secondary:
+        return (scheme.surfaceContainerHighest, scheme.onSurface);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final (bg, fg) = _resolveColors(scheme);
+    return Material(
+      color: bg,
+      borderRadius: BorderRadius.circular(100),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onPressed,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (icon != null) ...[
+                Icon(icon, size: 18, color: fg),
+                const SizedBox(width: 6),
+              ],
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  color: fg,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

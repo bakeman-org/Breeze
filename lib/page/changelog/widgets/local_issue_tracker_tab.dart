@@ -8,6 +8,7 @@ import 'package:markdown_widget/markdown_widget.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
+import 'package:zephyr/widgets/toast.dart';
 
 /// 是否处于移动端。web 也按桌面处理，避免 Platform.isAndroid 抛异常。
 bool get _isMobilePlatform {
@@ -1200,12 +1201,13 @@ class _LocalIssueDetailScreenState extends State<_LocalIssueDetailScreen> {
     await widget.store.save(widget.issue);
     if (!mounted) return;
     setState(() => _dirty = false);
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Saved'),
-        duration: Duration(milliseconds: 700),
-      ),
-    );
+    // ScaffoldMessenger.of(context).showSnackBar(
+    //   const SnackBar(
+    //     content: Text('Saved'),
+    //     duration: Duration(milliseconds: 700),
+    //   ),
+    // );
+    showInfoToast('Issue saved');
   }
 
   /// 用 file_selector 的 openFiles 一次挑多个文件（无类型限制）。
@@ -1319,9 +1321,10 @@ class _LocalIssueDetailScreenState extends State<_LocalIssueDetailScreen> {
     final file = File(absPath);
     if (!await file.exists()) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('File not found: $absPath')));
+      // ScaffoldMessenger.of(
+      //   context,
+      // ).showSnackBar(SnackBar(content: Text('File not found: $absPath')));
+      showInfoToast('File not found: $absPath');
       return;
     }
     try {
@@ -1333,15 +1336,18 @@ class _LocalIssueDetailScreenState extends State<_LocalIssueDetailScreen> {
         await Process.run('cmd', ['/c', 'start', '', absPath]);
       } else {
         if (!mounted) return;
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Saved at: $absPath')));
+
+        // ScaffoldMessenger.of(
+        //   context,
+        // ).showSnackBar(SnackBar(content: Text('Saved at: $absPath')));
+        showInfoToast('Saved at: $absPath');
       }
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Could not open: $e')));
+      // ScaffoldMessenger.of(
+      //   context,
+      // ).showSnackBar(SnackBar(content: Text('Could not open: $e')));
+      showInfoToast('Could not open: $e');
     }
   }
 
@@ -2057,9 +2063,10 @@ class _LocalIssueDetailScreenState extends State<_LocalIssueDetailScreen> {
     if (file != null) {
       _openAttachmentExternally(file.path);
     } else {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Attachment not found: $href')));
+      // ScaffoldMessenger.of(
+      //   context,
+      // ).showSnackBar(SnackBar(content: Text('Attachment not found: $href')));
+      showInfoToast('Attachment not found: $href');
     }
   }
 }

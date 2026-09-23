@@ -488,6 +488,7 @@ class _PluginSettingsPageViewState extends State<_PluginSettingsPageView> {
             onUpdatePlugin: _updatePlugin,
             onCommitField: _commitField,
             onRunAction: (action) => _runAction(context, action),
+            onLogin: _openLoginPage,
           ),
         ),
       ),
@@ -506,6 +507,14 @@ class _PluginSettingsPageViewState extends State<_PluginSettingsPageView> {
     } catch (e) {
       showErrorToast(t.plugin.syncFailed(error: e.toString()));
     }
+  }
+
+  /// 未登录时点击「登录」按钮：跳转登录页，回来后重载插件设置，
+  /// 这样账号 / 密码输入框与顶部用户信息卡片都会拿到最新值。
+  Future<void> _openLoginPage() async {
+    await context.router.push(LoginRoute(from: widget.from));
+    if (!mounted) return;
+    await context.read<PluginSettingsCubit>().load(widget.from);
   }
 
   Future<void> _updatePlugin() async {
@@ -571,6 +580,9 @@ class _PluginSettingsPageViewState extends State<_PluginSettingsPageView> {
     }
   }
 
+  /// 弹出「网络地址输入」对话框：内部输入框用 Material 原生 [TextField]
+  /// 搭配自定义 [InputDecoration] 复刻 miuix 的圆角填充底 + 浮动 label
+  /// 视觉，与 [PluginSettingsInlineTextField] 保持同一套样式。
   Future<String?> _showUrlInputDialog({
     required String title,
     required String hintText,
@@ -578,24 +590,76 @@ class _PluginSettingsPageViewState extends State<_PluginSettingsPageView> {
     final controller = TextEditingController();
     return showDialog<String>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(title),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          decoration: InputDecoration(hintText: hintText),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: Text(t.common.cancel),
+      builder: (context) {
+        final colorScheme = Theme.of(context).colorScheme;
+        return AlertDialog(
+          title: Text(title),
+          content: SizedBox(
+            width: 320,
+            child: TextField(
+              controller: controller,
+              autofocus: true,
+              style: TextStyle(fontSize: 16, color: colorScheme.onSurface),
+              decoration: InputDecoration(
+                labelText: title,
+                hintText: hintText,
+                floatingLabelBehavior: FloatingLabelBehavior.always,
+                prefixIcon: Icon(
+                  Icons.link,
+                  size: 22,
+                  color: colorScheme.onSurfaceVariant,
+                ),
+                prefixIconConstraints: const BoxConstraints(
+                  minWidth: 52,
+                  minHeight: 52,
+                ),
+                filled: true,
+                fillColor: colorScheme.surfaceContainerHighest.withValues(
+                  alpha: 0.5,
+                ),
+                contentPadding: const EdgeInsets.fromLTRB(16, 22, 16, 14),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: BorderSide.none,
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: BorderSide.none,
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: BorderSide(
+                    color: colorScheme.primary,
+                    width: 1.5,
+                  ),
+                ),
+                labelStyle: TextStyle(
+                  color: colorScheme.onSurfaceVariant,
+                  fontSize: 13,
+                ),
+                floatingLabelStyle: TextStyle(
+                  color: colorScheme.onSurfaceVariant,
+                  fontSize: 13,
+                ),
+                hintStyle: TextStyle(
+                  color: colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+                  fontSize: 14,
+                ),
+              ),
+            ),
           ),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(controller.text),
-            child: Text(t.plugin.startInstall),
-          ),
-        ],
-      ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text(t.common.cancel),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(controller.text),
+              child: Text(t.plugin.startInstall),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -703,7 +767,11 @@ class _PluginSettingsPageViewState extends State<_PluginSettingsPageView> {
       }
       if (!mounted) return;
       if (fnPath == 'clearPluginSession') {
-        this.context.router.push(LoginRoute(from: widget.from));
+        // 登出后跳登录页；用户登录 / 返回后都要再 load 一次，
+        // 否则插件设置页的 values / userInfo 仍是旧的。
+        await this.context.router.push(LoginRoute(from: widget.from));
+        if (!mounted) return;
+        await this.context.read<PluginSettingsCubit>().load(widget.from);
       }
     } catch (e) {
       showErrorToast(t.plugin.executeFailed(error: e.toString()));
