@@ -2,13 +2,12 @@ import 'dart:convert';
 import 'package:flutter/services.dart';
 
 import 'package:bloc/bloc.dart';
-import 'package:zephyr/i18n/strings.g.dart';
+import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:equatable/equatable.dart';
 import 'package:worker_manager/worker_manager.dart';
+import 'package:zephyr/i18n/strings.g.dart';
 import 'package:zephyr/main.dart';
-import 'package:zephyr/widgets/comic_entry/models/models.dart';
 import 'package:zephyr/object_box/model.dart';
-import 'package:zephyr/object_box/objectbox.g.dart';
 import 'package:zephyr/object_box/object_box.dart';
 import 'package:zephyr/page/bookshelf/cubit/search_status.dart';
 import 'package:zephyr/page/bookshelf/models/shelf_page_mode.dart';
@@ -19,6 +18,7 @@ import 'package:zephyr/page/bookshelf/service/favorite_folder_service.dart';
 import 'package:zephyr/util/rust_loader.dart';
 import 'package:zephyr/util/text/chinese_convert.dart';
 import 'package:zephyr/util/worker_isolate.dart';
+import 'package:zephyr/widgets/comic_entry/models/models.dart';
 import 'package:zephyr/widgets/comic_simplify_entry/comic_simplify_entry_info.dart';
 
 const String kFolderShelfRootPath = '';
@@ -30,6 +30,7 @@ class FolderShelfState extends Equatable {
     this.folders = const <ComicFolder>[],
     this.comics = const <ComicSimplifyEntryInfo>[],
     this.comicSearchTexts = const <String, String>{},
+    this.comicDownloadDates = const <String, String>{},
     this.search,
     this.isLoading = false,
     this.error,
@@ -44,6 +45,10 @@ class FolderShelfState extends Equatable {
   final List<ComicFolder> folders;
   final List<ComicSimplifyEntryInfo> comics;
   final Map<String, String> comicSearchTexts;
+
+  /// 漫画唯一键 -> 下载时间（ISO8601 字符串）。仅下载模式填充，用于按日期分组。
+  final Map<String, String> comicDownloadDates;
+
   final SearchStatusState? search;
   final bool isLoading;
   final String? error;
@@ -74,6 +79,7 @@ class FolderShelfState extends Equatable {
     List<ComicFolder>? folders,
     List<ComicSimplifyEntryInfo>? comics,
     Map<String, String>? comicSearchTexts,
+    Map<String, String>? comicDownloadDates,
     SearchStatusState? search,
     bool? isLoading,
     String? error,
@@ -88,6 +94,7 @@ class FolderShelfState extends Equatable {
       folders: folders ?? this.folders,
       comics: comics ?? this.comics,
       comicSearchTexts: comicSearchTexts ?? this.comicSearchTexts,
+      comicDownloadDates: comicDownloadDates ?? this.comicDownloadDates,
       search: search ?? this.search,
       isLoading: isLoading ?? this.isLoading,
       error: error,
@@ -105,6 +112,7 @@ class FolderShelfState extends Equatable {
     folders,
     comics,
     comicSearchTexts,
+    comicDownloadDates,
     search,
     isLoading,
     error,
@@ -244,11 +252,16 @@ class FolderShelfDeleteSelected extends FolderShelfEvent {
 class FolderShelfBloc extends Bloc<FolderShelfEvent, FolderShelfState> {
   FolderShelfBloc({required ShelfPageMode mode})
     : super(FolderShelfState(mode: mode)) {
+    // 加载事件用 concurrent + token 丢弃过期结果，最新请求获胜。
     on<FolderShelfLoadRequested>(_onLoadRequested);
-    on<FolderShelfEnterFolder>(_onEnterFolder);
-    on<FolderShelfGoBack>(_onGoBack);
-    on<FolderShelfGoHome>(_onGoHome);
-    on<FolderShelfToggleSort>(_onToggleSort);
+
+    // 导航类事件串行，避免路径跳跃造成状态错乱。
+    on<FolderShelfEnterFolder>(_onEnterFolder, transformer: sequential());
+    on<FolderShelfGoBack>(_onGoBack, transformer: sequential());
+    on<FolderShelfGoHome>(_onGoHome, transformer: sequential());
+    on<FolderShelfToggleSort>(_onToggleSort, transformer: sequential());
+
+    // 其余事件默认并发策略即可。
     on<FolderShelfCreateFolder>(_onCreateFolder);
     on<FolderShelfDeleteFolder>(_onDeleteFolder);
     on<FolderShelfRenameFolder>(_onRenameFolder);
@@ -261,6 +274,9 @@ class FolderShelfBloc extends Bloc<FolderShelfEvent, FolderShelfState> {
     on<FolderShelfCopySelected>(_onCopySelected);
     on<FolderShelfDeleteSelected>(_onDeleteSelected);
   }
+
+  /// 请求令牌：每次新请求自增，旧请求返回时若发现令牌不匹配则丢弃结果。
+  int _loadToken = 0;
 
   ComicFolderType get _folderType => _toFolderType(state.mode);
 
@@ -276,12 +292,14 @@ class FolderShelfBloc extends Bloc<FolderShelfEvent, FolderShelfState> {
     FolderShelfLoadRequested event,
     Emitter<FolderShelfState> emit,
   ) async {
+    final requestToken = ++_loadToken;
+
     emit(state.copyWith(isLoading: true, error: null));
     try {
       final search = event.search ?? state.search;
       final currentMode = state.mode;
       final currentPath = state.currentPath;
-      final token = captureWorkerIsolateToken();
+      final isolateToken = captureWorkerIsolateToken();
       final payload = {
         'mode': currentMode.name,
         'currentPath': currentPath,
@@ -290,8 +308,11 @@ class FolderShelfBloc extends Bloc<FolderShelfEvent, FolderShelfState> {
         'sources': search?.sources ?? const <String>[],
       };
       final result = await workerManager.execute<Map<String, dynamic>>(
-        () => _runFolderShelfLoadTask(payload, token),
+        () => _runFolderShelfLoadTask(payload, isolateToken),
       );
+
+      // 有更新的请求已经发出，丢弃本次结果。
+      if (requestToken != _loadToken) return;
 
       final error = result['error']?.toString() ?? '';
       if (error.isNotEmpty) {
@@ -305,6 +326,9 @@ class FolderShelfBloc extends Bloc<FolderShelfEvent, FolderShelfState> {
           comicSearchTexts:
               (result['comicSearchTexts'] as Map?)?.cast<String, String>() ??
               const <String, String>{},
+          comicDownloadDates:
+              (result['comicDownloadDates'] as Map?)?.cast<String, String>() ??
+              const <String, String>{},
           search: search,
           sortAscending: search?.sort == 'da',
           isLoading: false,
@@ -312,6 +336,7 @@ class FolderShelfBloc extends Bloc<FolderShelfEvent, FolderShelfState> {
         ),
       );
     } catch (e) {
+      if (requestToken != _loadToken) return;
       emit(state.copyWith(isLoading: false, error: e.toString()));
     }
   }
@@ -599,10 +624,31 @@ Future<Map<String, dynamic>> _runFolderShelfLoadTask(
         }
       }
     }
+
     final sourceFilter = _sourceFilterFromSearch(search, folderType);
     final folderMembers = _folderMembersFromSearch(search, folderType);
 
-    // 搜索时不应被“当前所在文件夹”限制，而是全局搜索该类型下的全部漫画。
+    // 一次性加载全部数据到内存，避免逐条 findFirst。
+    final favoriteMap = <String, UnifiedComicFavorite>{
+      for (final f in objectbox.unifiedFavoriteBox.getAll().where(
+        (f) => !f.deleted,
+      ))
+        f.uniqueKey: f,
+    };
+    final downloadMap = <String, UnifiedComicDownload>{
+      for (final d in objectbox.unifiedDownloadBox.getAll().where(
+        (d) => !d.deleted,
+      ))
+        d.uniqueKey: d,
+    };
+    final historyMap = <String, UnifiedComicHistory>{
+      for (final h in objectbox.unifiedHistoryBox.getAll().where(
+        (h) => !h.deleted,
+      ))
+        h.uniqueKey: h,
+    };
+
+    // 搜索时全局搜索，不受当前文件夹限制。
     final isSearching = keyword.trim().isNotEmpty;
     final normalizedKeyword = isSearching ? _normalizeSearchText(keyword) : '';
     final folders = isSearching
@@ -625,13 +671,21 @@ Future<Map<String, dynamic>> _runFolderShelfLoadTask(
 
     final comics = <ComicSimplifyEntryInfo>[];
     final comicSearchTexts = <String, String>{};
+    final comicDownloadDates = <String, String>{};
     final seenKeys = <String>{};
+
     for (final link in links) {
       if (folderMembers != null &&
           !folderMembers.contains(link.comicUniqueKey)) {
         continue;
       }
-      final resolved = _resolveComic(link.comicUniqueKey, folderType);
+      final resolved = _resolveComicFromMaps(
+        uniqueKey: link.comicUniqueKey,
+        folderType: folderType,
+        favoriteMap: favoriteMap,
+        downloadMap: downloadMap,
+        historyMap: historyMap,
+      );
       if (resolved == null) continue;
       if (sourceFilter != null &&
           !sourceFilter.contains(resolved.info.source)) {
@@ -644,7 +698,11 @@ Future<Map<String, dynamic>> _runFolderShelfLoadTask(
       }
       comics.add(resolved.info);
       comicSearchTexts[key] = resolved.searchText;
+      if (resolved.downloadedAt != null) {
+        comicDownloadDates[key] = resolved.downloadedAt!.toIso8601String();
+      }
     }
+
     if (sortByViewTime) {
       _sortShelfItemsByViewTime(
         comics,
@@ -658,6 +716,7 @@ Future<Map<String, dynamic>> _runFolderShelfLoadTask(
       'folders': folders,
       'comics': comics,
       'comicSearchTexts': comicSearchTexts,
+      'comicDownloadDates': comicDownloadDates,
     };
   } catch (e) {
     return {
@@ -665,6 +724,7 @@ Future<Map<String, dynamic>> _runFolderShelfLoadTask(
       'folders': <ComicFolder>[],
       'comics': <ComicSimplifyEntryInfo>[],
       'comicSearchTexts': <String, String>{},
+      'comicDownloadDates': <String, String>{},
     };
   }
 }
@@ -681,7 +741,6 @@ void _sortShelfItemsByViewTime(
     final leftViewTime = viewTimes[leftKey];
     final rightViewTime = viewTimes[rightKey];
 
-    // 未观看的条目没有可比较的观看时间，始终放在已观看项目之后。
     if (leftViewTime == null && rightViewTime != null) return 1;
     if (leftViewTime != null && rightViewTime == null) return -1;
     if (leftViewTime != null && rightViewTime != null) {
@@ -751,52 +810,39 @@ Set<String>? _folderMembersFromSearch(
   return members;
 }
 
-({ComicSimplifyEntryInfo info, String searchText})? _resolveComic(
-  String uniqueKey,
-  ComicFolderType folderType,
-) {
+/// 从内存 Map 中解析漫画，避免逐条走 ObjectBox 查询。
+({ComicSimplifyEntryInfo info, String searchText, DateTime? downloadedAt})?
+_resolveComicFromMaps({
+  required String uniqueKey,
+  required ComicFolderType folderType,
+  required Map<String, UnifiedComicFavorite> favoriteMap,
+  required Map<String, UnifiedComicDownload> downloadMap,
+  required Map<String, UnifiedComicHistory> historyMap,
+}) {
   switch (folderType) {
     case ComicFolderType.favorite:
-      final comic = objectbox.unifiedFavoriteBox
-          .query(
-            UnifiedComicFavorite_.uniqueKey
-                .equals(uniqueKey)
-                .and(UnifiedComicFavorite_.deleted.equals(false)),
-          )
-          .build()
-          .findFirst();
+      final comic = favoriteMap[uniqueKey];
       if (comic == null) return null;
       return (
         info: unifiedComicFromUnifiedFavorite(comic).toSimplifyEntryInfo(),
         searchText: _buildComicSearchText(comic),
+        downloadedAt: null,
       );
     case ComicFolderType.download:
-      final comic = objectbox.unifiedDownloadBox
-          .query(
-            UnifiedComicDownload_.uniqueKey
-                .equals(uniqueKey)
-                .and(UnifiedComicDownload_.deleted.equals(false)),
-          )
-          .build()
-          .findFirst();
+      final comic = downloadMap[uniqueKey];
       if (comic == null) return null;
       return (
         info: unifiedComicFromUnifiedDownload(comic).toSimplifyEntryInfo(),
         searchText: _buildComicSearchText(comic),
+        downloadedAt: comic.downloadedAt,
       );
     case ComicFolderType.history:
-      final comic = objectbox.unifiedHistoryBox
-          .query(
-            UnifiedComicHistory_.uniqueKey
-                .equals(uniqueKey)
-                .and(UnifiedComicHistory_.deleted.equals(false)),
-          )
-          .build()
-          .findFirst();
+      final comic = historyMap[uniqueKey];
       if (comic == null) return null;
       return (
         info: unifiedComicFromUnifiedHistory(comic).toSimplifyEntryInfo(),
         searchText: _buildComicSearchText(comic),
+        downloadedAt: null,
       );
   }
 }

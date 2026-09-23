@@ -1,5 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:zephyr/page/bookshelf/cubit/search_status.dart';
+import 'package:zephyr/page/bookshelf/models/shelf_group_mode.dart';
 import 'package:zephyr/page/bookshelf/models/shelf_page_mode.dart';
 import 'package:zephyr/page/bookshelf/service/download_folder_service.dart';
 import 'package:zephyr/page/bookshelf/service/favorite_folder_service.dart';
@@ -69,6 +70,11 @@ class BookshelfSearchCubit extends Cubit<BookshelfSearchState> {
 
   void setSources(ShelfPageMode mode, List<String> sources) {
     final next = state.stateOf(mode).copyWith(sources: sources);
+    emit(state.copyMode(mode, next));
+  }
+
+  void setGroupMode(ShelfPageMode mode, ShelfGroupMode groupMode) {
+    final next = state.stateOf(mode).copyWith(groupMode: groupMode);
     emit(state.copyMode(mode, next));
   }
 

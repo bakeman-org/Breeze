@@ -401,7 +401,13 @@
     "confirmRemoveFromCurrentFolder": "是否要从本文件夹中移除",
     "confirmDeleteSelectedFavorites": "确定要删除选中的 $count 条收藏记录吗？",
     "confirmDeleteSelectedHistory": "确定要删除选中的 $count 条历史记录吗？",
-    "confirmDeleteSelectedDownloads": "确定要删除选中的 $count 条下载记录及文件吗？"
+    "confirmDeleteSelectedDownloads": "确定要删除选中的 $count 条下载记录及文件吗？",   
+    
+    "groupBy": "分组方式",
+    "groupNone": "不分组",
+    "groupBySource": "按来源",
+    "groupByTitle": "按标题",
+    "groupByDate": "按下载日期"
   },
   "comicInfo": {
     "follow": "加入追更",

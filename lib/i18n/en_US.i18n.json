@@ -400,7 +400,13 @@
     "confirmRemoveFromCurrentFolder": "Remove from current folder?",
     "confirmDeleteSelectedFavorites": "Delete selected $count favorite records?",
     "confirmDeleteSelectedHistory": "Delete selected $count history records?",
-    "confirmDeleteSelectedDownloads": "Delete selected $count download records and files?"
+    "confirmDeleteSelectedDownloads": "Delete selected $count download records and files?",
+
+    "groupBy": "Group by",
+    "groupNone": "No grouping",
+    "groupBySource": "By source",
+    "groupByTitle": "By title",
+    "groupByDate": "By download date"
   },
   "comicInfo": {
     "follow": "Follow updates",

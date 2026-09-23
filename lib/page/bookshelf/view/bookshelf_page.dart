@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/foundation.dart';
 import 'package:material_ui/material_ui.dart';
@@ -74,6 +76,9 @@ class _BookshelfPageContentState extends State<_BookshelfPageContent>
   List<String> _lastAvailableSources = const <String>[];
   bool _isSearchExpanded = false;
 
+  // 搜索输入防抖
+  Timer? _searchDebounce;
+
   @override
   void initState() {
     super.initState();
@@ -89,6 +94,7 @@ class _BookshelfPageContentState extends State<_BookshelfPageContent>
 
   @override
   void dispose() {
+    _searchDebounce?.cancel();
     _tabController
       ..removeListener(_handleTabControllerChanged)
       ..dispose();
@@ -281,6 +287,7 @@ class _BookshelfPageContentState extends State<_BookshelfPageContent>
               : IconButton(
                   icon: const Icon(Icons.close, size: 16),
                   onPressed: () {
+                    _searchDebounce?.cancel();
                     _searchController.clear();
                     _setKeyword('');
                     _triggerRefresh(goTop: true);
@@ -288,8 +295,18 @@ class _BookshelfPageContentState extends State<_BookshelfPageContent>
                   },
                 ),
         ),
-        onChanged: (_) => setState(() {}),
+        onChanged: (value) {
+          setState(() {});
+          // 250ms 防抖：避免每次按键都触发 worker 往返。
+          _searchDebounce?.cancel();
+          _searchDebounce = Timer(const Duration(milliseconds: 250), () {
+            if (!mounted) return;
+            _setKeyword(value.trim());
+            _triggerRefresh(goTop: true);
+          });
+        },
         onSubmitted: (value) {
+          _searchDebounce?.cancel();
           _setKeyword(value.trim());
           _triggerRefresh(goTop: true);
         },
@@ -718,7 +735,6 @@ class _BookshelfFilterDialogState extends State<_BookshelfFilterDialog> {
 
   bool get _isFavoriteMode => widget.mode == ShelfPageMode.favorite;
   bool get _isDownloadMode => widget.mode == ShelfPageMode.download;
-  // 文件夹筛选入口已废弃，保留底层文件夹逻辑供其他入口继续使用。
   bool get _showFolderSection => false;
 
   @override
@@ -829,7 +845,6 @@ class _BookshelfFilterDialogState extends State<_BookshelfFilterDialog> {
               style: Theme.of(context).textTheme.titleSmall,
             ),
             const Spacer(),
-            // TextButton(onPressed: _createFolder, child: const Text('新建')),
           ],
         ),
         const SizedBox(height: 8),

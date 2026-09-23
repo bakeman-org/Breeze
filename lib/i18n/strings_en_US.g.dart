@@ -510,6 +510,11 @@ class _Translations$bookshelf$en_US extends Translations$bookshelf$zh_CN {
 	@override String confirmDeleteSelectedFavorites({required Object count}) => 'Delete selected ${count} favorite records?';
 	@override String confirmDeleteSelectedHistory({required Object count}) => 'Delete selected ${count} history records?';
 	@override String confirmDeleteSelectedDownloads({required Object count}) => 'Delete selected ${count} download records and files?';
+	@override String get groupBy => 'Group by';
+	@override String get groupNone => 'No grouping';
+	@override String get groupBySource => 'By source';
+	@override String get groupByTitle => 'By title';
+	@override String get groupByDate => 'By download date';
 }
 
 // Path: comicInfo
@@ -1931,6 +1936,11 @@ extension on TranslationsEnUs {
 			'bookshelf.confirmDeleteSelectedFavorites' => ({required Object count}) => 'Delete selected ${count} favorite records?',
 			'bookshelf.confirmDeleteSelectedHistory' => ({required Object count}) => 'Delete selected ${count} history records?',
 			'bookshelf.confirmDeleteSelectedDownloads' => ({required Object count}) => 'Delete selected ${count} download records and files?',
+			'bookshelf.groupBy' => 'Group by',
+			'bookshelf.groupNone' => 'No grouping',
+			'bookshelf.groupBySource' => 'By source',
+			'bookshelf.groupByTitle' => 'By title',
+			'bookshelf.groupByDate' => 'By download date',
 			'comicInfo.follow' => 'Follow updates',
 			'comicInfo.unfollow' => 'Unfollow',
 			'comicInfo.exportComic' => 'Export comic',
@@ -2046,13 +2056,13 @@ extension on TranslationsEnUs {
 			'reader.doublePageSeamlessSubtitle' => 'Give each page half the width, preserve its aspect ratio, and remove the gap between them',
 			'reader.doublePageLeadingBlank' => 'Leading blank',
 			'reader.doublePageLeadingBlankSubtitle' => 'Insert a blank page at the start of each chapter to shift page pairing',
+			_ => null,
+		} ?? switch (path) {
 			'reader.landscapeReader' => 'Landscape reading',
 			'reader.landscapeReaderSubtitle' => 'Switch to landscape while reading and restore the previous direction when you leave',
 			'reader.themeMode' => 'Theme mode',
 			'reader.autoRead' => 'Auto read',
 			'reader.autoReadSubtitle' => 'Automatically scroll the reader',
-			_ => null,
-		} ?? switch (path) {
 			'reader.autoReadHidePauseButton' => 'Hide pause button',
 			'reader.autoReadHidePauseButtonSubtitle' => 'Keep auto-read running without showing the pause/play button',
 			'reader.autoReadSmooth' => 'Smooth scroll',
@@ -2560,13 +2570,13 @@ extension on TranslationsEnUs {
 			'comicEntry.deleteDownload' => 'Delete Download',
 			'comicEntry.deleteDownloadConfirm' => ({required Object title}) => 'Delete download record and files for "${title}"?',
 			'comicEntry.deleteFailed' => 'Delete failed',
+			_ => null,
+		} ?? switch (path) {
 			'comicFollow.title' => 'Updates',
 			'comicFollow.loadFailed' => ({required Object result}) => 'Load failed: ${result}',
 			'comicFollow.empty' => 'No followed comics',
 			'comicFollow.emptyHint' => 'Tap the follow button on a comic detail page to add it here',
 			'comicFollow.unfollow' => 'Unfollow',
-			_ => null,
-		} ?? switch (path) {
 			'comicFollow.unfollowConfirm' => ({required Object title}) => 'Stop following "${title}"?',
 			'comicFollow.unfollowed' => 'Unfollowed',
 			'comicFollow.all' => 'All',

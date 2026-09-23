@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:collection/collection.dart';
 import 'package:file_selector/file_selector.dart';
+import 'package:flutter/rendering.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -13,6 +14,7 @@ import 'package:zephyr/page/bookshelf/bloc/folder_shelf_bloc.dart';
 import 'package:zephyr/page/bookshelf/cubit/bookshelf_search_cubit.dart';
 import 'package:zephyr/page/bookshelf/cubit/search_status.dart';
 import 'package:zephyr/page/bookshelf/method/method.dart';
+import 'package:zephyr/page/bookshelf/models/shelf_group_mode.dart';
 import 'package:zephyr/page/bookshelf/models/shelf_page_mode.dart';
 import 'package:zephyr/page/bookshelf/service/comic_folder_service.dart';
 import 'package:zephyr/page/bookshelf/service/comic_link_service.dart';
@@ -20,6 +22,7 @@ import 'package:zephyr/page/bookshelf/widgets/bookshelf_empty_view.dart';
 import 'package:zephyr/page/bookshelf/widgets/bookshelf_grid_shimmer.dart';
 import 'package:zephyr/page/bookshelf/widgets/bookshelf_loading_view.dart';
 import 'package:zephyr/page/bookshelf/widgets/folder_shelf_item.dart';
+import 'package:zephyr/page/bookshelf/widgets/shelf_grouping.dart';
 import 'package:zephyr/type/enum.dart';
 import 'package:zephyr/util/text/chinese_convert.dart';
 import 'package:zephyr/widgets/comic_simplify_entry/comic_simplify_entry.dart';
@@ -42,7 +45,9 @@ class FolderShelfPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final search = context.read<BookshelfSearchCubit>().state.stateOf(mode);
+    // 用 watch 订阅 BookshelfSearchCubit：search 变化时自动 rebuild，
+    // 触发 didUpdateWidget → 重新派发 FolderShelfLoadRequested。
+    final search = context.watch<BookshelfSearchCubit>().state.stateOf(mode);
     return BlocProvider(
       create: (_) =>
           FolderShelfBloc(mode: mode)
@@ -74,12 +79,21 @@ class _FolderShelfPageContent extends StatefulWidget {
 
 class _FolderShelfPageContentState extends State<_FolderShelfPageContent>
     with AutomaticKeepAliveClientMixin {
+  static bool get _isDesktop =>
+      Platform.isWindows || Platform.isMacOS || Platform.isLinux;
+
+  // 分组视图的滚动控制 + 每个分组 header 的 GlobalKey + 当前激活组。
+  final _groupScrollController = ScrollController();
+  final Map<String, GlobalKey> _groupHeaderKeys = {};
+  String? _activeGroup;
+
   @override
   bool get wantKeepAlive => true;
 
   @override
   void initState() {
     super.initState();
+    _groupScrollController.addListener(_onGroupScrollChanged);
     if (_isDesktop) {
       HardwareKeyboard.instance.addHandler(_handleKeyEvent);
     }
@@ -87,14 +101,13 @@ class _FolderShelfPageContentState extends State<_FolderShelfPageContent>
 
   @override
   void dispose() {
+    _groupScrollController.removeListener(_onGroupScrollChanged);
+    _groupScrollController.dispose();
     if (_isDesktop) {
       HardwareKeyboard.instance.removeHandler(_handleKeyEvent);
     }
     super.dispose();
   }
-
-  static bool get _isDesktop =>
-      Platform.isWindows || Platform.isMacOS || Platform.isLinux;
 
   bool _handleKeyEvent(KeyEvent event) {
     if (event is! KeyDownEvent) return false;
@@ -113,10 +126,67 @@ class _FolderShelfPageContentState extends State<_FolderShelfPageContent>
   @override
   void didUpdateWidget(covariant _FolderShelfPageContent oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.refreshSignal != widget.refreshSignal) {
+    if (oldWidget.refreshSignal != widget.refreshSignal ||
+        oldWidget.search != widget.search) {
       context.read<FolderShelfBloc>().add(
         FolderShelfLoadRequested(search: widget.search),
       );
+    }
+  }
+
+  // ===================== 分组 sidebar 相关 =====================
+
+  void _onGroupScrollChanged() {
+    if (!_groupScrollController.hasClients) return;
+    final scrollOffset = _groupScrollController.offset;
+    String? nextActive;
+    for (final entry in _groupHeaderKeys.entries) {
+      final ctx = entry.value.currentContext;
+      if (ctx == null) continue;
+      final box = ctx.findRenderObject();
+      if (box is! RenderBox || !box.attached) continue;
+      final viewport = RenderAbstractViewport.maybeOf(box);
+      if (viewport == null) continue;
+      final offsetToReveal = viewport.getOffsetToReveal(box, 0).offset;
+      // 用 64 像素做容差：header 快滚入视口顶部时就算作当前组。
+      if (offsetToReveal <= scrollOffset + 64) {
+        nextActive = entry.key;
+      } else {
+        break;
+      }
+    }
+    if (nextActive != _activeGroup) {
+      setState(() => _activeGroup = nextActive);
+    }
+  }
+
+  void _jumpToGroup(String group) {
+    final key = _groupHeaderKeys[group];
+    final ctx = key?.currentContext;
+    if (ctx == null) return;
+    Scrollable.ensureVisible(
+      ctx,
+      duration: const Duration(milliseconds: 220),
+      curve: Curves.easeOutCubic,
+    );
+  }
+
+  /// sidebar 上每个组名显示的短标签，按分组模式自适应。
+  String _sidebarLabel(String groupName, ShelfGroupMode mode) {
+    switch (mode) {
+      case ShelfGroupMode.byTitle:
+        // 单字符，直接用。
+        return groupName;
+      case ShelfGroupMode.bySource:
+        // 取来源名前两个字符，避免 sidebar 过宽。
+        if (groupName.length <= 2) return groupName;
+        return groupName.substring(0, 2);
+      case ShelfGroupMode.byDate:
+        // "2024-09-22" → "09-22"
+        if (groupName.length >= 10) return groupName.substring(5);
+        return groupName;
+      case ShelfGroupMode.none:
+        return groupName;
     }
   }
 
@@ -172,9 +242,11 @@ class _FolderShelfPageContentState extends State<_FolderShelfPageContent>
   }
 
   Widget _buildNormalHeader(BuildContext context, FolderShelfState state) {
+    final showGroupButton =
+        state.mode == ShelfPageMode.download && state.isRoot;
+
     return Row(
       children: [
-        // 返回/帮助按钮
         IconButton(
           icon: Icon(state.isRoot ? Icons.help_outline : Icons.arrow_back),
           tooltip: state.isRoot ? t.bookshelf.folderHint : t.common.back,
@@ -184,7 +256,6 @@ class _FolderShelfPageContentState extends State<_FolderShelfPageContent>
                   const FolderShelfGoBack(),
                 ),
         ),
-        // 面包屑
         Expanded(
           child: Text(
             state.breadcrumbTitle,
@@ -193,7 +264,6 @@ class _FolderShelfPageContentState extends State<_FolderShelfPageContent>
             overflow: TextOverflow.ellipsis,
           ),
         ),
-        // Home 按钮
         IconButton(
           icon: const Icon(Icons.home),
           onPressed: state.isRoot
@@ -202,7 +272,7 @@ class _FolderShelfPageContentState extends State<_FolderShelfPageContent>
                   const FolderShelfGoHome(),
                 ),
         ),
-        // 管理菜单
+        if (showGroupButton) _buildGroupModeButton(context),
         FluentPopupMenuButton<String>(
           icon: const Icon(Icons.more_vert),
           onSelected: (value) {
@@ -238,6 +308,55 @@ class _FolderShelfPageContentState extends State<_FolderShelfPageContent>
         ),
       ],
     );
+  }
+
+  Widget _buildGroupModeButton(BuildContext context) {
+    return BlocBuilder<BookshelfSearchCubit, BookshelfSearchState>(
+      builder: (context, searchState) {
+        final current = searchState.stateOf(ShelfPageMode.download).groupMode;
+        return FluentPopupMenuButton<ShelfGroupMode>(
+          icon: Icon(_groupModeIcon(current)),
+          tooltip: t.bookshelf.groupBy,
+          onSelected: (mode) {
+            context.read<BookshelfSearchCubit>().setGroupMode(
+              ShelfPageMode.download,
+              mode,
+            );
+          },
+          itemBuilder: (context) => [
+            FluentPopupMenuItem(
+              value: ShelfGroupMode.none,
+              leading: const Icon(Icons.grid_view),
+              title: Text(t.bookshelf.groupNone),
+            ),
+            FluentPopupMenuItem(
+              value: ShelfGroupMode.bySource,
+              leading: const Icon(Icons.source_outlined),
+              title: Text(t.bookshelf.groupBySource),
+            ),
+            FluentPopupMenuItem(
+              value: ShelfGroupMode.byTitle,
+              leading: const Icon(Icons.sort_by_alpha),
+              title: Text(t.bookshelf.groupByTitle),
+            ),
+            FluentPopupMenuItem(
+              value: ShelfGroupMode.byDate,
+              leading: const Icon(Icons.calendar_month_outlined),
+              title: Text(t.bookshelf.groupByDate),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  static IconData _groupModeIcon(ShelfGroupMode mode) {
+    return switch (mode) {
+      ShelfGroupMode.none => Icons.grid_view,
+      ShelfGroupMode.bySource => Icons.source_outlined,
+      ShelfGroupMode.byTitle => Icons.sort_by_alpha,
+      ShelfGroupMode.byDate => Icons.calendar_month_outlined,
+    };
   }
 
   Future<void> _showShelfHelpDialog(BuildContext context) async {
@@ -338,9 +457,10 @@ class _FolderShelfPageContentState extends State<_FolderShelfPageContent>
       builder: (context, searchState) {
         return BlocBuilder<FolderShelfBloc, FolderShelfState>(
           builder: (context, state) {
-            final keyword = _normalizeSearchText(
-              searchState.stateOf(state.mode).keyword,
-            );
+            final modeState = searchState.stateOf(state.mode);
+            final keyword = _normalizeSearchText(modeState.keyword);
+            final groupMode = modeState.groupMode;
+
             // 搜索时只展示漫画，不展示文件夹。
             final filteredFolders = keyword.isEmpty
                 ? state.folders
@@ -373,122 +493,265 @@ class _FolderShelfPageContentState extends State<_FolderShelfPageContent>
               );
             }
 
-            final comicType = _comicEntryTypeOf(state.mode);
-            final folderSyncIdMap = _buildSyncIdMap(state.mode);
-            String folderPathOf(ComicFolder f) =>
-                ComicFolderService.folderPath(f, syncIdMap: folderSyncIdMap);
+            // 只在下载 tab 根目录、未搜索、选定了分组模式时启用分组视图。
+            final useGrouping =
+                groupMode != ShelfGroupMode.none &&
+                state.mode == ShelfPageMode.download &&
+                state.isRoot &&
+                keyword.isEmpty;
 
-            return RefreshIndicator(
-              onRefresh: () async {
-                context.read<FolderShelfBloc>().add(
-                  const FolderShelfLoadRequested(),
-                );
-              },
-              child: Stack(
-                children: [
-                  GridView.builder(
-                    padding: const EdgeInsets.all(10),
-                    gridDelegate: buildComicSimplifyEntryGridDelegate(),
-                    itemCount: totalCount,
-                    itemBuilder: (context, index) {
-                      if (index < filteredFolders.length) {
-                        final folder = filteredFolders[index];
-                        final folderPath = folderPathOf(folder);
-                        final isSelected = state.selectedFolderPaths.contains(
-                          folderPath,
-                        );
-                        return FolderShelfItem(
-                          key: ValueKey('folder-${folder.uniqueKey}'),
-                          folder: folder,
-                          selectionMode: state.selectionMode,
-                          isSelected: isSelected,
-                          onTap: state.selectionMode
-                              ? () => context.read<FolderShelfBloc>().add(
-                                  FolderShelfToggleFolderSelection(folderPath),
-                                )
-                              : () => context.read<FolderShelfBloc>().add(
-                                  FolderShelfEnterFolder(folderPath),
-                                ),
-                          onLongPress: state.selectionMode
-                              ? (details) =>
-                                    context.read<FolderShelfBloc>().add(
-                                      FolderShelfToggleFolderSelection(
-                                        folderPath,
-                                      ),
-                                    )
-                              : (details) => _showFolderActions(
-                                  context,
-                                  folder,
-                                  folderPath,
-                                  details.globalPosition,
-                                ),
-                          onSecondaryTapDown: state.selectionMode
-                              ? null
-                              : (details) => _showFolderActions(
-                                  context,
-                                  folder,
-                                  folderPath,
-                                  details.globalPosition,
-                                ),
-                        );
-                      }
-                      final comicIndex = index - filteredFolders.length;
-                      final comic = filteredComics[comicIndex];
-                      final comicUniqueKey = '${comic.from.trim()}:${comic.id}';
-                      final isComicSelected = state.selectedComicKeys.contains(
-                        comicUniqueKey,
-                      );
-                      return ComicSimplifyEntry(
-                        key: ValueKey('comic-${comic.from}:${comic.id}'),
-                        info: comic,
-                        type: comicType,
-                        selectionMode: state.selectionMode,
-                        isSelected: isComicSelected,
-                        refresh: () => context.read<FolderShelfBloc>().add(
-                          const FolderShelfLoadRequested(),
-                        ),
-                        onTapOverride: state.selectionMode
-                            ? (info) => context.read<FolderShelfBloc>().add(
-                                FolderShelfToggleComicSelection(
-                                  '${info.from.trim()}:${info.id}',
-                                ),
-                              )
-                            : null,
-                        onLongPressOverride: state.selectionMode
-                            ? (info, details) =>
-                                  context.read<FolderShelfBloc>().add(
-                                    FolderShelfToggleComicSelection(
-                                      '${info.from.trim()}:${info.id}',
-                                    ),
-                                  )
-                            : (info, details) => _showComicActions(
-                                context,
-                                info,
-                                details.globalPosition,
-                              ),
-                        onSecondaryTapDown: state.selectionMode
-                            ? null
-                            : (info, details) => _showComicActions(
-                                context,
-                                info,
-                                details.globalPosition,
-                              ),
-                      );
-                    },
-                  ),
-                  if (state.isLoading)
-                    const Positioned(
-                      top: 0,
-                      left: 0,
-                      right: 0,
-                      child: LinearProgressIndicator(minHeight: 2),
-                    ),
-                ],
-              ),
+            if (useGrouping) {
+              return _buildGroupedView(
+                context,
+                state: state,
+                groupMode: groupMode,
+                comics: filteredComics,
+              );
+            }
+
+            return _buildGridView(
+              context,
+              state: state,
+              filteredFolders: filteredFolders,
+              filteredComics: filteredComics,
             );
           },
         );
       },
+    );
+  }
+
+  // ============ 普通网格视图 ============
+
+  Widget _buildGridView(
+    BuildContext context, {
+    required FolderShelfState state,
+    required List<ComicFolder> filteredFolders,
+    required List<ComicSimplifyEntryInfo> filteredComics,
+  }) {
+    final comicType = _comicEntryTypeOf(state.mode);
+    final folderSyncIdMap = _buildSyncIdMap(state.mode);
+    String folderPathOf(ComicFolder f) =>
+        ComicFolderService.folderPath(f, syncIdMap: folderSyncIdMap);
+    final totalCount = filteredFolders.length + filteredComics.length;
+
+    return RefreshIndicator(
+      onRefresh: () async {
+        context.read<FolderShelfBloc>().add(const FolderShelfLoadRequested());
+      },
+      child: Stack(
+        children: [
+          GridView.builder(
+            padding: const EdgeInsets.all(10),
+            gridDelegate: buildComicSimplifyEntryGridDelegate(),
+            itemCount: totalCount,
+            itemBuilder: (context, index) {
+              if (index < filteredFolders.length) {
+                final folder = filteredFolders[index];
+                final folderPath = folderPathOf(folder);
+                final isSelected = state.selectedFolderPaths.contains(
+                  folderPath,
+                );
+                return FolderShelfItem(
+                  key: ValueKey('folder-${folder.uniqueKey}'),
+                  folder: folder,
+                  selectionMode: state.selectionMode,
+                  isSelected: isSelected,
+                  onTap: state.selectionMode
+                      ? () => context.read<FolderShelfBloc>().add(
+                          FolderShelfToggleFolderSelection(folderPath),
+                        )
+                      : () => context.read<FolderShelfBloc>().add(
+                          FolderShelfEnterFolder(folderPath),
+                        ),
+                  onLongPress: state.selectionMode
+                      ? (details) => context.read<FolderShelfBloc>().add(
+                          FolderShelfToggleFolderSelection(folderPath),
+                        )
+                      : (details) => _showFolderActions(
+                          context,
+                          folder,
+                          folderPath,
+                          details.globalPosition,
+                        ),
+                  onSecondaryTapDown: state.selectionMode
+                      ? null
+                      : (details) => _showFolderActions(
+                          context,
+                          folder,
+                          folderPath,
+                          details.globalPosition,
+                        ),
+                );
+              }
+              final comicIndex = index - filteredFolders.length;
+              final comic = filteredComics[comicIndex];
+              return _buildComicEntry(
+                context,
+                state: state,
+                comic: comic,
+                comicType: comicType,
+              );
+            },
+          ),
+          if (state.isLoading)
+            const Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: LinearProgressIndicator(minHeight: 2),
+            ),
+        ],
+      ),
+    );
+  }
+
+  // ============ 分组视图 ============
+
+  Widget _buildGroupedView(
+    BuildContext context, {
+    required FolderShelfState state,
+    required ShelfGroupMode groupMode,
+    required List<ComicSimplifyEntryInfo> comics,
+  }) {
+    final grouping = groupDownloadComics(
+      comics: comics,
+      mode: groupMode,
+      comicDownloadDates: state.comicDownloadDates,
+    );
+    final comicType = _comicEntryTypeOf(state.mode);
+
+    // 同步 header keys 到当前顺序（Dart Map 保持插入顺序）。
+    final nextKeys = <String, GlobalKey>{};
+    for (final name in grouping.order) {
+      nextKeys[name] = _groupHeaderKeys[name] ?? GlobalKey();
+    }
+    _groupHeaderKeys
+      ..clear()
+      ..addAll(nextKeys);
+    if (_activeGroup != null && !grouping.order.contains(_activeGroup)) {
+      _activeGroup = null;
+    }
+
+    return RefreshIndicator(
+      onRefresh: () async {
+        context.read<FolderShelfBloc>().add(const FolderShelfLoadRequested());
+      },
+      child: Stack(
+        children: [
+          CustomScrollView(
+            controller: _groupScrollController,
+            slivers: [
+              for (final groupName in grouping.order) ...[
+                SliverToBoxAdapter(
+                  child: Padding(
+                    // ✅ header 挂 GlobalKey，供 sidebar 跳转与滚动高亮使用。
+                    key: _groupHeaderKeys[groupName],
+                    padding: const EdgeInsets.fromLTRB(16, 20, 16, 8),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            groupName,
+                            style: Theme.of(context).textTheme.titleMedium
+                                ?.copyWith(fontWeight: FontWeight.w600),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        Text(
+                          '${grouping.items[groupName]!.length}',
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(
+                                color: Theme.of(context).colorScheme.outline,
+                              ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                SliverPadding(
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  sliver: SliverGrid.builder(
+                    gridDelegate: buildComicSimplifyEntryGridDelegate(),
+                    itemCount: grouping.items[groupName]!.length,
+                    itemBuilder: (context, index) {
+                      final comic = grouping.items[groupName]![index];
+                      return _buildComicEntry(
+                        context,
+                        state: state,
+                        comic: comic,
+                        comicType: comicType,
+                      );
+                    },
+                  ),
+                ),
+              ],
+              // 底部留一点空间，避免最后一行被 sidebar 遮挡。
+              const SliverToBoxAdapter(child: SizedBox(height: 72)),
+            ],
+          ),
+
+          // ✅ 右侧分组 sidebar
+          if (grouping.order.length > 1)
+            Positioned(
+              right: 4,
+              top: 0,
+              bottom: 0,
+              child: Center(
+                child: _ShelfGroupSidebar(
+                  groups: grouping.order,
+                  active: _activeGroup,
+                  labelBuilder: (g) => _sidebarLabel(g, groupMode),
+                  onTap: _jumpToGroup,
+                ),
+              ),
+            ),
+
+          if (state.isLoading)
+            const Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: LinearProgressIndicator(minHeight: 2),
+            ),
+        ],
+      ),
+    );
+  }
+
+  /// 抽取的 comic 条目构建，供网格/分组视图共用。
+  Widget _buildComicEntry(
+    BuildContext context, {
+    required FolderShelfState state,
+    required ComicSimplifyEntryInfo comic,
+    required ComicEntryType comicType,
+  }) {
+    final comicUniqueKey = '${comic.from.trim()}:${comic.id}';
+    final isComicSelected = state.selectedComicKeys.contains(comicUniqueKey);
+    return ComicSimplifyEntry(
+      key: ValueKey('comic-${comic.from}:${comic.id}'),
+      info: comic,
+      type: comicType,
+      selectionMode: state.selectionMode,
+      isSelected: isComicSelected,
+      refresh: () =>
+          context.read<FolderShelfBloc>().add(const FolderShelfLoadRequested()),
+      onTapOverride: state.selectionMode
+          ? (info) => context.read<FolderShelfBloc>().add(
+              FolderShelfToggleComicSelection('${info.from.trim()}:${info.id}'),
+            )
+          : null,
+      onLongPressOverride: state.selectionMode
+          ? (info, details) => context.read<FolderShelfBloc>().add(
+              FolderShelfToggleComicSelection('${info.from.trim()}:${info.id}'),
+            )
+          : (info, details) =>
+                _showComicActions(context, info, details.globalPosition),
+      onSecondaryTapDown: state.selectionMode
+          ? null
+          : (info, details) =>
+                _showComicActions(context, info, details.globalPosition),
     );
   }
 
@@ -757,6 +1020,80 @@ class _FolderShelfPageContentState extends State<_FolderShelfPageContent>
   }
 }
 
+// ==================== 分组 sidebar ====================
+
+class _ShelfGroupSidebar extends StatelessWidget {
+  const _ShelfGroupSidebar({
+    required this.groups,
+    required this.active,
+    required this.onTap,
+    required this.labelBuilder,
+  });
+
+  final List<String> groups;
+  final String? active;
+  final ValueChanged<String> onTap;
+  final String Function(String) labelBuilder;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      width: 44,
+      // 最多占屏高 60%，超出则 sidebar 内部滚动。
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 0.6,
+      ),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface.withValues(alpha: 0.92),
+        borderRadius: BorderRadius.circular(22),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.08),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            for (final g in groups)
+              InkWell(
+                onTap: () => onTap(g),
+                borderRadius: BorderRadius.circular(4),
+                child: Container(
+                  width: 36,
+                  padding: const EdgeInsets.symmetric(vertical: 3),
+                  alignment: Alignment.center,
+                  child: Text(
+                    labelBuilder(g),
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: g == active
+                          ? FontWeight.bold
+                          : FontWeight.w500,
+                      color: g == active
+                          ? theme.colorScheme.primary
+                          : theme.colorScheme.onSurfaceVariant,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.clip,
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ==================== 选择操作条 ====================
+
 class _SelectionActionStrip extends StatefulWidget {
   const _SelectionActionStrip({required this.children});
 
@@ -833,6 +1170,8 @@ class _SelectionActionStripState extends State<_SelectionActionStrip> {
   }
 }
 
+// ==================== 目标文件夹选择 ====================
+
 Future<void> _showTargetFolderDialog(
   BuildContext context, {
   Set<String>? selectedFolderPaths,
@@ -853,7 +1192,6 @@ Future<void> _showTargetFolderDialog(
   };
   final forest = _buildFolderForest(allFolders, pathMap);
 
-  // 排除当前所在文件夹（仅自身）、被选中的文件夹及其子树
   final forbiddenSyncIds = <String>{};
   for (final path in sourceFolderPaths) {
     final folder = allFolders.firstWhereOrNull(
@@ -1080,6 +1418,8 @@ ComicFolderType _folderTypeOf(ShelfPageMode mode) {
     ShelfPageMode.history => ComicFolderType.history,
   };
 }
+
+// ==================== 导入 / 导出 / 删除 ====================
 
 Future<void> _importComic(BuildContext context) async {
   String? importRoot;

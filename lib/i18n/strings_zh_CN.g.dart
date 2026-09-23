@@ -1300,6 +1300,21 @@ class Translations$bookshelf$zh_CN {
 
 	/// zh-CN: '确定要删除选中的 $count 条下载记录及文件吗？'
 	String confirmDeleteSelectedDownloads({required Object count}) => '确定要删除选中的 ${count} 条下载记录及文件吗？';
+
+	/// zh-CN: '分组方式'
+	String get groupBy => '分组方式';
+
+	/// zh-CN: '不分组'
+	String get groupNone => '不分组';
+
+	/// zh-CN: '按来源'
+	String get groupBySource => '按来源';
+
+	/// zh-CN: '按标题'
+	String get groupByTitle => '按标题';
+
+	/// zh-CN: '按下载日期'
+	String get groupByDate => '按下载日期';
 }
 
 // Path: comicInfo
@@ -4238,6 +4253,11 @@ extension on Translations {
 			'bookshelf.confirmDeleteSelectedFavorites' => ({required Object count}) => '确定要删除选中的 ${count} 条收藏记录吗？',
 			'bookshelf.confirmDeleteSelectedHistory' => ({required Object count}) => '确定要删除选中的 ${count} 条历史记录吗？',
 			'bookshelf.confirmDeleteSelectedDownloads' => ({required Object count}) => '确定要删除选中的 ${count} 条下载记录及文件吗？',
+			'bookshelf.groupBy' => '分组方式',
+			'bookshelf.groupNone' => '不分组',
+			'bookshelf.groupBySource' => '按来源',
+			'bookshelf.groupByTitle' => '按标题',
+			'bookshelf.groupByDate' => '按下载日期',
 			'comicInfo.follow' => '加入追更',
 			'comicInfo.unfollow' => '不再追更',
 			'comicInfo.exportComic' => '导出漫画',
@@ -4352,13 +4372,13 @@ extension on Translations {
 			'reader.doublePageSeamless' => '双页无缝',
 			'reader.doublePageSeamlessSubtitle' => '左右各占一半宽度，按图片比例独立显示并消除中间留白',
 			'reader.doublePageLeadingBlank' => '首页留白',
+			_ => null,
+		} ?? switch (path) {
 			'reader.doublePageLeadingBlankSubtitle' => '在每章最前插入一页空白，使配对整体错一位',
 			'reader.landscapeReader' => '横屏阅读',
 			'reader.landscapeReaderSubtitle' => '阅读时切换为横屏，离开后恢复原来的方向',
 			'reader.themeMode' => '系统模式',
 			'reader.autoRead' => '自动阅读',
-			_ => null,
-		} ?? switch (path) {
 			'reader.autoReadSubtitle' => '开启后自动滚动',
 			'reader.autoReadHidePauseButton' => '隐藏暂停按钮',
 			'reader.autoReadHidePauseButtonSubtitle' => '自动阅读继续运行，但不显示阅读页上的暂停/播放按钮',
@@ -4866,13 +4886,13 @@ extension on Translations {
 			'comicEntry.deleteHistoryConfirm' => ({required Object title}) => '确定要删除（${title}）的历史记录吗？',
 			'comicEntry.deleteDownload' => '删除下载记录',
 			'comicEntry.deleteDownloadConfirm' => ({required Object title}) => '确定要删除（${title}）的下载记录及文件吗？',
+			_ => null,
+		} ?? switch (path) {
 			'comicEntry.deleteFailed' => '删除失败',
 			'comicFollow.title' => '追更',
 			'comicFollow.loadFailed' => ({required Object result}) => '加载失败：${result}',
 			'comicFollow.empty' => '暂无追更漫画',
 			'comicFollow.emptyHint' => '在漫画详情页点击追更按钮即可加入',
-			_ => null,
-		} ?? switch (path) {
 			'comicFollow.unfollow' => '取消追更',
 			'comicFollow.unfollowConfirm' => ({required Object title}) => '确定不再追更《${title}》吗？',
 			'comicFollow.unfollowed' => '已取消追更',
