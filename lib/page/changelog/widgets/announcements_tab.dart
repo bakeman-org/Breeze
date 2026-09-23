@@ -8,8 +8,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:zephyr/i18n/strings.g.dart';
 import 'package:zephyr/page/changelog/widgets/announcement_card.dart';
-import 'package:zephyr/page/changelog/widgets/changelog_search_bar.dart';
 import 'package:zephyr/page/changelog/widgets/changelog_status_bar.dart';
+import 'package:zephyr/page/changelog/widgets/search_input.dart';
 import 'package:zephyr/service/update/ntfy/ntfy_service.dart';
 import 'package:zephyr/util/context/context_extensions.dart';
 import 'package:zephyr/widgets/toast.dart';
@@ -120,9 +120,6 @@ class _AnnouncementsTabState extends State<AnnouncementsTab>
   }
 
   /// 公告的显示标题：优先用 ntfy 消息自带的 title，为空时回退到「Breeze 公告」。
-  ///
-  /// 过滤和卡片渲染都用这个，避免两处逻辑不一致（搜「公告」找不到就是
-  /// 因为过滤里只查了 raw title）。
   String announcementDisplayTitle(NtfyMessage m) {
     final raw = m.title?.trim();
     if (raw != null && raw.isNotEmpty) return raw;
@@ -130,9 +127,6 @@ class _AnnouncementsTabState extends State<AnnouncementsTab>
   }
 
   /// 把过滤后的消息按本地日期分组，输出展平的列表条目。
-  ///
-  /// 展平的好处：一次 [ListView.builder] 就能同时渲染 header 和 item，
-  /// 不用嵌套两个 ListView。
   List<_AnnEntry> _buildEntries(List<NtfyMessage> messages) {
     final entries = <_AnnEntry>[];
     DateTime? currentDay;
@@ -244,7 +238,7 @@ class _AnnouncementsTabState extends State<AnnouncementsTab>
 
     return Column(
       children: [
-        ChangelogSearchBar(onChanged: _onQueryChanged),
+        SearchInput(hintText: '搜索公告…', onChanged: _onQueryChanged),
         if (_showNotice) _NtfyNoticeBanner(onDismiss: _dismissNotice),
         ChangelogStatusBar(
           status: _status,
@@ -310,8 +304,6 @@ class _AnnouncementsTabState extends State<AnnouncementsTab>
 // ─────────────────────────────────────────────────────────────────────
 
 /// 提示条的显隐状态持久化。
-///
-/// 用户关闭一次后不再显示；「清空全部」时重置，让用户下次还能看到。
 class _NtfyNoticePrefs {
   _NtfyNoticePrefs._();
 
@@ -515,8 +507,6 @@ class _EmptyState extends StatelessWidget {
     final String text;
     if (hasQuery) {
       text = '没有匹配的公告';
-    } else if (hasAny) {
-      text = '暂无公告';
     } else {
       text = '暂无公告';
     }
