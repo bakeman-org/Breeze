@@ -74,6 +74,7 @@ class TranslationsEnUs extends Translations with BaseTranslations<AppLocale, Tra
 	@override late final _Translations$notification$en_US notification = _Translations$notification$en_US._(_root);
 	@override late final _Translations$update$en_US update = _Translations$update$en_US._(_root);
 	@override late final _Translations$dialog$en_US dialog = _Translations$dialog$en_US._(_root);
+	@override late final _Translations$bika$en_US bika = _Translations$bika$en_US._(_root);
 }
 
 // Path: common
@@ -1534,6 +1535,82 @@ class _Translations$dialog$en_US extends Translations$dialog$zh_CN {
 	@override String get rememberChoice => 'Remember my choice';
 }
 
+// Path: bika
+class _Translations$bika$en_US extends Translations$bika$zh_CN {
+	_Translations$bika$en_US._(TranslationsEnUs root) : this._root = root, super.internal(root);
+
+	final TranslationsEnUs _root; // ignore: unused_field
+
+	// Translations
+	@override String get appName => 'Bika Comic';
+	@override String get home => 'Home';
+	@override String get category => 'Categories';
+	@override String get recommend => 'Recommend';
+	@override String get rank => 'Leaderboard';
+	@override String get search => 'Search';
+	@override String get mine => 'Mine';
+	@override String get settings => 'Settings';
+	@override String get loginRequired => 'Sign in required';
+	@override String get loginTitle => 'Sign in to Bika';
+	@override String get account => 'Email';
+	@override String get password => 'Password';
+	@override String get login => 'Sign in';
+	@override String get loginSuccess => 'Signed in';
+	@override String get loginFailed => 'Sign in failed';
+	@override String get logout => 'Sign out';
+	@override String get punchIn => 'Punch in';
+	@override String get punchInDone => 'Already punched in today';
+	@override String get punchInSuccess => 'Punched in';
+	@override String get line => 'API line';
+	@override String get lineMain => 'Main (picacomic)';
+	@override String get lineBackup => 'Backup (go2778)';
+	@override String get imageQuality => 'Image quality';
+	@override String get qualityOriginal => 'Original';
+	@override String get qualityLow => 'Low';
+	@override String get qualityMedium => 'Medium';
+	@override String get qualityHigh => 'High';
+	@override String get readNow => 'Read now';
+	@override String get continueReading => 'Continue';
+	@override String get chapters => 'Chapters';
+	@override String get comments => 'Comments';
+	@override String get like => 'Like';
+	@override String get favourite => 'Favourite';
+	@override String get favouriteAdded => 'Added to favourites';
+	@override String get favouriteRemoved => 'Removed from favourites';
+	@override String get recommendation => 'Recommendations';
+	@override String get hotSearchWords => 'Hot searches';
+	@override String get searchHint => 'Search Bika comics';
+	@override String get filterCategory => 'Category filter';
+	@override String get sort => 'Sort';
+	@override String get sortLatest => 'Latest';
+	@override String get sortViews => 'Most viewed';
+	@override String get sortLikes => 'Most liked';
+	@override String get rankH24 => 'Day';
+	@override String get rankWeek => 'Week';
+	@override String get rankMonth => 'Month';
+	@override String get knight => 'Knights';
+	@override String get finished => 'Completed';
+	@override String get serializing => 'Ongoing';
+	@override String get pages => 'Pages';
+	@override String get views => 'Views';
+	@override String get likes => 'Likes';
+	@override String get sendComment => 'Post comment';
+	@override String get commentSent => 'Comment posted';
+	@override String get commentHint => 'Say something...';
+	@override String get reply => 'Reply';
+	@override String get subComments => 'Replies';
+	@override String get profile => 'Profile';
+	@override String get level => 'Level';
+	@override String get myComments => 'My comments';
+	@override String get random => 'Random comics';
+	@override String get notLoggedIn => 'Not signed in';
+	@override String get networkError => 'Network error';
+	@override String get retry => 'Retry';
+	@override String get empty => 'Nothing here';
+	@override String get allCategories => 'All';
+	@override String get done => 'Done';
+}
+
 /// The flat map containing all translations for locale <en-US>.
 /// Only for edge cases! For simple maps, use the map function of this library.
 ///
@@ -2699,6 +2776,73 @@ extension on TranslationsEnUs {
 			'update.unknownArch' => 'Unknown',
 			'dialog.hideOrClose' => 'Hide to tray or close app',
 			'dialog.rememberChoice' => 'Remember my choice',
+			'bika.appName' => 'Bika Comic',
+			'bika.home' => 'Home',
+			'bika.category' => 'Categories',
+			'bika.recommend' => 'Recommend',
+			'bika.rank' => 'Leaderboard',
+			'bika.search' => 'Search',
+			'bika.mine' => 'Mine',
+			'bika.settings' => 'Settings',
+			'bika.loginRequired' => 'Sign in required',
+			'bika.loginTitle' => 'Sign in to Bika',
+			'bika.account' => 'Email',
+			'bika.password' => 'Password',
+			'bika.login' => 'Sign in',
+			'bika.loginSuccess' => 'Signed in',
+			'bika.loginFailed' => 'Sign in failed',
+			'bika.logout' => 'Sign out',
+			'bika.punchIn' => 'Punch in',
+			'bika.punchInDone' => 'Already punched in today',
+			'bika.punchInSuccess' => 'Punched in',
+			'bika.line' => 'API line',
+			'bika.lineMain' => 'Main (picacomic)',
+			'bika.lineBackup' => 'Backup (go2778)',
+			'bika.imageQuality' => 'Image quality',
+			'bika.qualityOriginal' => 'Original',
+			'bika.qualityLow' => 'Low',
+			'bika.qualityMedium' => 'Medium',
+			'bika.qualityHigh' => 'High',
+			'bika.readNow' => 'Read now',
+			'bika.continueReading' => 'Continue',
+			'bika.chapters' => 'Chapters',
+			'bika.comments' => 'Comments',
+			'bika.like' => 'Like',
+			'bika.favourite' => 'Favourite',
+			'bika.favouriteAdded' => 'Added to favourites',
+			'bika.favouriteRemoved' => 'Removed from favourites',
+			'bika.recommendation' => 'Recommendations',
+			'bika.hotSearchWords' => 'Hot searches',
+			'bika.searchHint' => 'Search Bika comics',
+			'bika.filterCategory' => 'Category filter',
+			'bika.sort' => 'Sort',
+			'bika.sortLatest' => 'Latest',
+			'bika.sortViews' => 'Most viewed',
+			'bika.sortLikes' => 'Most liked',
+			'bika.rankH24' => 'Day',
+			'bika.rankWeek' => 'Week',
+			'bika.rankMonth' => 'Month',
+			'bika.knight' => 'Knights',
+			'bika.finished' => 'Completed',
+			'bika.serializing' => 'Ongoing',
+			'bika.pages' => 'Pages',
+			'bika.views' => 'Views',
+			'bika.likes' => 'Likes',
+			'bika.sendComment' => 'Post comment',
+			'bika.commentSent' => 'Comment posted',
+			'bika.commentHint' => 'Say something...',
+			'bika.reply' => 'Reply',
+			'bika.subComments' => 'Replies',
+			'bika.profile' => 'Profile',
+			'bika.level' => 'Level',
+			'bika.myComments' => 'My comments',
+			'bika.random' => 'Random comics',
+			'bika.notLoggedIn' => 'Not signed in',
+			'bika.networkError' => 'Network error',
+			'bika.retry' => 'Retry',
+			'bika.empty' => 'Nothing here',
+			'bika.allCategories' => 'All',
+			'bika.done' => 'Done',
 			_ => null,
 		};
 	}

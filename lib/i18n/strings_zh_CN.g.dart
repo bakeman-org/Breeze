@@ -79,6 +79,7 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	late final Translations$notification$zh_CN notification = Translations$notification$zh_CN.internal(_root);
 	late final Translations$update$zh_CN update = Translations$update$zh_CN.internal(_root);
 	late final Translations$dialog$zh_CN dialog = Translations$dialog$zh_CN.internal(_root);
+	late final Translations$bika$zh_CN bika = Translations$bika$zh_CN.internal(_root);
 }
 
 // Path: common
@@ -3846,6 +3847,216 @@ class Translations$dialog$zh_CN {
 	String get rememberChoice => '记住我的选择';
 }
 
+// Path: bika
+class Translations$bika$zh_CN {
+	Translations$bika$zh_CN.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// zh-CN: '哔咔漫画'
+	String get appName => '哔咔漫画';
+
+	/// zh-CN: '首页'
+	String get home => '首页';
+
+	/// zh-CN: '分类'
+	String get category => '分类';
+
+	/// zh-CN: '推荐'
+	String get recommend => '推荐';
+
+	/// zh-CN: '排行榜'
+	String get rank => '排行榜';
+
+	/// zh-CN: '搜索'
+	String get search => '搜索';
+
+	/// zh-CN: '我的'
+	String get mine => '我的';
+
+	/// zh-CN: '设置'
+	String get settings => '设置';
+
+	/// zh-CN: '请先登录'
+	String get loginRequired => '请先登录';
+
+	/// zh-CN: '哔咔登录'
+	String get loginTitle => '哔咔登录';
+
+	/// zh-CN: '邮箱'
+	String get account => '邮箱';
+
+	/// zh-CN: '密码'
+	String get password => '密码';
+
+	/// zh-CN: '登录'
+	String get login => '登录';
+
+	/// zh-CN: '登录成功'
+	String get loginSuccess => '登录成功';
+
+	/// zh-CN: '登录失败'
+	String get loginFailed => '登录失败';
+
+	/// zh-CN: '退出登录'
+	String get logout => '退出登录';
+
+	/// zh-CN: '打卡'
+	String get punchIn => '打卡';
+
+	/// zh-CN: '今日已打卡'
+	String get punchInDone => '今日已打卡';
+
+	/// zh-CN: '打卡成功'
+	String get punchInSuccess => '打卡成功';
+
+	/// zh-CN: '线路'
+	String get line => '线路';
+
+	/// zh-CN: '主线路（picacomic）'
+	String get lineMain => '主线路（picacomic）';
+
+	/// zh-CN: '备线路（go2778）'
+	String get lineBackup => '备线路（go2778）';
+
+	/// zh-CN: '图片质量'
+	String get imageQuality => '图片质量';
+
+	/// zh-CN: '原画'
+	String get qualityOriginal => '原画';
+
+	/// zh-CN: '低'
+	String get qualityLow => '低';
+
+	/// zh-CN: '中'
+	String get qualityMedium => '中';
+
+	/// zh-CN: '高'
+	String get qualityHigh => '高';
+
+	/// zh-CN: '开始阅读'
+	String get readNow => '开始阅读';
+
+	/// zh-CN: '继续阅读'
+	String get continueReading => '继续阅读';
+
+	/// zh-CN: '章节'
+	String get chapters => '章节';
+
+	/// zh-CN: '评论'
+	String get comments => '评论';
+
+	/// zh-CN: '点赞'
+	String get like => '点赞';
+
+	/// zh-CN: '收藏'
+	String get favourite => '收藏';
+
+	/// zh-CN: '已收藏'
+	String get favouriteAdded => '已收藏';
+
+	/// zh-CN: '已取消收藏'
+	String get favouriteRemoved => '已取消收藏';
+
+	/// zh-CN: '相关推荐'
+	String get recommendation => '相关推荐';
+
+	/// zh-CN: '热搜'
+	String get hotSearchWords => '热搜';
+
+	/// zh-CN: '搜索哔咔漫画'
+	String get searchHint => '搜索哔咔漫画';
+
+	/// zh-CN: '分类筛选'
+	String get filterCategory => '分类筛选';
+
+	/// zh-CN: '排序'
+	String get sort => '排序';
+
+	/// zh-CN: '最新'
+	String get sortLatest => '最新';
+
+	/// zh-CN: '最热'
+	String get sortViews => '最热';
+
+	/// zh-CN: '最多点赞'
+	String get sortLikes => '最多点赞';
+
+	/// zh-CN: '日榜'
+	String get rankH24 => '日榜';
+
+	/// zh-CN: '周榜'
+	String get rankWeek => '周榜';
+
+	/// zh-CN: '月榜'
+	String get rankMonth => '月榜';
+
+	/// zh-CN: '骑士榜'
+	String get knight => '骑士榜';
+
+	/// zh-CN: '完结'
+	String get finished => '完结';
+
+	/// zh-CN: '连载中'
+	String get serializing => '连载中';
+
+	/// zh-CN: '页数'
+	String get pages => '页数';
+
+	/// zh-CN: '观看'
+	String get views => '观看';
+
+	/// zh-CN: '点赞'
+	String get likes => '点赞';
+
+	/// zh-CN: '发表评论'
+	String get sendComment => '发表评论';
+
+	/// zh-CN: '评论成功'
+	String get commentSent => '评论成功';
+
+	/// zh-CN: '说点什么...'
+	String get commentHint => '说点什么...';
+
+	/// zh-CN: '回复'
+	String get reply => '回复';
+
+	/// zh-CN: '楼中楼'
+	String get subComments => '楼中楼';
+
+	/// zh-CN: '个人资料'
+	String get profile => '个人资料';
+
+	/// zh-CN: '等级'
+	String get level => '等级';
+
+	/// zh-CN: '我的评论'
+	String get myComments => '我的评论';
+
+	/// zh-CN: '随机漫画'
+	String get random => '随机漫画';
+
+	/// zh-CN: '未登录'
+	String get notLoggedIn => '未登录';
+
+	/// zh-CN: '网络错误'
+	String get networkError => '网络错误';
+
+	/// zh-CN: '重试'
+	String get retry => '重试';
+
+	/// zh-CN: '暂无数据'
+	String get empty => '暂无数据';
+
+	/// zh-CN: '全部'
+	String get allCategories => '全部';
+
+	/// zh-CN: '完成'
+	String get done => '完成';
+}
+
 /// The flat map containing all translations for locale <zh-CN>.
 /// Only for edge cases! For simple maps, use the map function of this library.
 ///
@@ -5012,6 +5223,73 @@ extension on Translations {
 			'update.unknownArch' => '未知',
 			'dialog.hideOrClose' => '隐藏到托盘或关闭程序',
 			'dialog.rememberChoice' => '记住我的选择',
+			'bika.appName' => '哔咔漫画',
+			'bika.home' => '首页',
+			'bika.category' => '分类',
+			'bika.recommend' => '推荐',
+			'bika.rank' => '排行榜',
+			'bika.search' => '搜索',
+			'bika.mine' => '我的',
+			'bika.settings' => '设置',
+			'bika.loginRequired' => '请先登录',
+			'bika.loginTitle' => '哔咔登录',
+			'bika.account' => '邮箱',
+			'bika.password' => '密码',
+			'bika.login' => '登录',
+			'bika.loginSuccess' => '登录成功',
+			'bika.loginFailed' => '登录失败',
+			'bika.logout' => '退出登录',
+			'bika.punchIn' => '打卡',
+			'bika.punchInDone' => '今日已打卡',
+			'bika.punchInSuccess' => '打卡成功',
+			'bika.line' => '线路',
+			'bika.lineMain' => '主线路（picacomic）',
+			'bika.lineBackup' => '备线路（go2778）',
+			'bika.imageQuality' => '图片质量',
+			'bika.qualityOriginal' => '原画',
+			'bika.qualityLow' => '低',
+			'bika.qualityMedium' => '中',
+			'bika.qualityHigh' => '高',
+			'bika.readNow' => '开始阅读',
+			'bika.continueReading' => '继续阅读',
+			'bika.chapters' => '章节',
+			'bika.comments' => '评论',
+			'bika.like' => '点赞',
+			'bika.favourite' => '收藏',
+			'bika.favouriteAdded' => '已收藏',
+			'bika.favouriteRemoved' => '已取消收藏',
+			'bika.recommendation' => '相关推荐',
+			'bika.hotSearchWords' => '热搜',
+			'bika.searchHint' => '搜索哔咔漫画',
+			'bika.filterCategory' => '分类筛选',
+			'bika.sort' => '排序',
+			'bika.sortLatest' => '最新',
+			'bika.sortViews' => '最热',
+			'bika.sortLikes' => '最多点赞',
+			'bika.rankH24' => '日榜',
+			'bika.rankWeek' => '周榜',
+			'bika.rankMonth' => '月榜',
+			'bika.knight' => '骑士榜',
+			'bika.finished' => '完结',
+			'bika.serializing' => '连载中',
+			'bika.pages' => '页数',
+			'bika.views' => '观看',
+			'bika.likes' => '点赞',
+			'bika.sendComment' => '发表评论',
+			'bika.commentSent' => '评论成功',
+			'bika.commentHint' => '说点什么...',
+			'bika.reply' => '回复',
+			'bika.subComments' => '楼中楼',
+			'bika.profile' => '个人资料',
+			'bika.level' => '等级',
+			'bika.myComments' => '我的评论',
+			'bika.random' => '随机漫画',
+			'bika.notLoggedIn' => '未登录',
+			'bika.networkError' => '网络错误',
+			'bika.retry' => '重试',
+			'bika.empty' => '暂无数据',
+			'bika.allCategories' => '全部',
+			'bika.done' => '完成',
 			_ => null,
 		};
 	}

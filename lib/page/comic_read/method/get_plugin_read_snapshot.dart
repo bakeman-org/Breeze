@@ -6,6 +6,8 @@ import 'package:zephyr/page/comic_read/type/chapter_extern.dart';
 import 'package:zephyr/page/download/adapters/download_chapter_adapter.dart';
 import 'package:zephyr/page/download/adapters/download_chapter_matcher.dart';
 import 'package:zephyr/page/download/models/download_chapter.dart';
+import 'package:zephyr/source/bika/bika_read_snapshot.dart';
+import 'package:zephyr/source/core/source_registry.dart';
 
 Future<NormalComicEpInfo> getPluginReadSnapshot(
   String comicId,
@@ -18,6 +20,18 @@ Future<NormalComicEpInfo> getPluginReadSnapshot(
   String storageChapterId,
   ChapterExtern chapterExtern,
 ) async {
+  if (isNativeSourceId(from.trim())) {
+    return _getNativeReadSnapshot(
+      comicId: comicId,
+      order: order,
+      from: from,
+      comicInfo: comicInfo,
+      selectedChapterId: selectedChapterId,
+      logicalKey: logicalKey,
+      storageChapterId: storageChapterId,
+    );
+  }
+
   const adapter = DownloadChapterAdapter();
   const matcher = DownloadChapterMatcher();
   DownloadChapter? chapter;
@@ -137,6 +151,41 @@ String _resolveLogicalChapterId(
   }
 
   return order.toString();
+}
+
+Future<NormalComicEpInfo> _getNativeReadSnapshot({
+  required String comicId,
+  required int order,
+  required String from,
+  required dynamic comicInfo,
+  String? selectedChapterId,
+  required String logicalKey,
+  required String storageChapterId,
+}) async {
+  switch (from.trim()) {
+    case bikaSourceId:
+      final snapshot = await fetchBikaReadSnapshot(
+        comicId: comicId,
+        order: order,
+        comicInfo: comicInfo,
+      );
+      final fallbackChapterId = snapshot.chapter.id.trim().isNotEmpty
+          ? snapshot.chapter.id.trim()
+          : order.toString();
+      final logicalChapterId = _resolveLogicalChapterId(
+        null,
+        selectedChapterId,
+        logicalKey,
+        order,
+        fallbackChapterId,
+      );
+      return snapshot.toNormalEpInfo(
+        logicalChapterId: logicalChapterId,
+        storageChapterId: storageChapterId.trim(),
+      );
+    default:
+      throw StateError('未支持的原生图源: $from');
+  }
 }
 
 Future<ComicReadSnapshot> _fetchSnapshot({

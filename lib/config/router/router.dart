@@ -49,6 +49,16 @@ class AppRouter extends RootStackRouter {
     AutoRoute(page: BookshelfSettingRoute.page),
     AutoRoute(page: DataBackupRoute.page),
     AutoRoute(page: ComicFollowRoute.page),
+    AutoRoute(page: BikaHomeRoute.page),
+    AutoRoute(page: BikaLoginRoute.page),
+    AutoRoute(page: BikaRankRoute.page),
+    AutoRoute(page: BikaSearchRoute.page),
+    AutoRoute(page: BikaDetailRoute.page),
+    AutoRoute(page: BikaCommentsRoute.page),
+    AutoRoute(page: BikaMineRoute.page),
+    AutoRoute(page: BikaFavoritesRoute.page),
+    AutoRoute(page: BikaMyCommentsRoute.page),
+    AutoRoute(page: BikaSettingsRoute.page),
   ];
 
   @override
