@@ -4,7 +4,6 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as file_path;
-import 'package:zephyr/config/global/global_setting.dart';
 import 'package:zephyr/main.dart';
 import 'package:zephyr/network/http/plugin/qjs_download_runtime.dart';
 import 'package:zephyr/service/download/download_asset_store.dart';
@@ -15,6 +14,8 @@ import 'package:zephyr/page/setting/real_sr/service/real_sr_super_resolution.dar
 
 import 'package:zephyr/src/rust/api/simple.dart';
 import 'package:zephyr/src/rust/decode/decode.dart';
+import 'package:zephyr/source/core/native_image_fetch.dart';
+import 'package:zephyr/source/core/source_registry.dart';
 import 'package:zephyr/util/get_path.dart';
 
 export 'package:zephyr/service/download/download_asset_store.dart'
@@ -24,12 +25,6 @@ const _kQjsRuntimeCancelled = '__QJS_RUNTIME_CANCELLED__';
 const _kDownloadTaskCancelled = '__DOWNLOAD_TASK_CANCELLED__';
 const _kJmPluginUuid = 'bf99008d-010b-4f17-ac7c-61a9b57dc3d9';
 const _kBikaPluginUuid = '0a0e5858-a467-4702-994a-79e608a4589d';
-
-String rewriteBikaImageUrl(String url) {
-  if (!globalSetting.bikaImageAcceleration) return url;
-  if (!url.contains('picacomic')) return url;
-  return url.replaceFirst('picacomic', 'go2778');
-}
 
 void _throwIfDownloadCancelled(String taskGroupKey) {
   if (taskGroupKey.isNotEmpty && isDownloadCancelSignaled(taskGroupKey)) {
@@ -546,68 +541,38 @@ Future<Uint8List> downloadImageWithRetry(
   if (normalizePluginId(source) == _kBikaPluginUuid) {
     url = rewriteBikaImageUrl(url);
   }
+  final resolvedSource = normalizePluginId(source);
+  final isNative = isNativeSourceId(resolvedSource);
+  Future<Uint8List> fetchOnce() async {
+    if (isNative) {
+      try {
+        return await fetchNativeSourceImage(url, source: resolvedSource);
+      } on NativeImageHttpException catch (e) {
+        if (e.statusCode == 404 || e.statusCode == 422) {
+          throw DownloadPictureNotFoundException(
+            url,
+            DownloadPictureHttpException(url, e.message, statusCode: e.statusCode),
+          );
+        }
+        throw DownloadPictureHttpException(url, e.message, statusCode: e.statusCode);
+      }
+    }
+    return _fetchImageViaQjs(
+      url,
+      source: source,
+      qjsName: qjsName,
+      qjsTaskGroupKey: qjsTaskGroupKey,
+      extern: extern,
+    );
+  }
+
   var attempts = 0;
   while (true) {
     try {
       attempts += 1;
       _throwIfDownloadCancelled(qjsTaskGroupKey);
-      final pluginId = source.trim();
-      if (pluginId.isEmpty) {
-        throw StateError('downloadImageWithRetry missing plugin id');
-      }
-      final runtimeName = qjsName?.trim().isNotEmpty == true
-          ? qjsName!.trim()
-          : pluginId;
-      final args = <String, dynamic>{"url": url, "timeoutMs": 30000};
-      if (qjsTaskGroupKey.isNotEmpty) {
-        args["taskGroupKey"] = qjsTaskGroupKey;
-      }
-      final externPayload = <String, dynamic>{...extern};
-      if (qjsTaskGroupKey.isNotEmpty) {
-        externPayload["taskGroupKey"] = qjsTaskGroupKey;
-      }
-      if (externPayload.isNotEmpty) {
-        args["extern"] = externPayload;
-      }
-      final result = await executeQjsFetchImageResult(
-        pluginId: pluginId,
-        runtimeName: runtimeName,
-        fnPath: 'fetchImageBytes',
-        argsJson: jsonEncode(args),
-        taskGroupKey: qjsTaskGroupKey.isEmpty ? null : qjsTaskGroupKey,
-      );
+      final bytes = await fetchOnce();
 
-      if (result.error != null) {
-        throw DownloadPictureHttpException(
-          url,
-          result.error!,
-          statusCode: result.statusCode,
-          responseBodyLength: result.responseBodyLength,
-        );
-      }
-
-      final statusCode = result.statusCode;
-      if (statusCode == 404 || statusCode == 422) {
-        throw DownloadPictureNotFoundException(
-          url,
-          DownloadPictureHttpException(
-            url,
-            'HTTP $statusCode',
-            statusCode: statusCode,
-            responseBodyLength: result.responseBodyLength,
-          ),
-        );
-      }
-      if (statusCode != null && (statusCode < 200 || statusCode >= 300)) {
-        throw DownloadPictureHttpException(
-          url,
-          'HTTP $statusCode',
-          statusCode: statusCode,
-          responseBodyLength: result.responseBodyLength,
-        );
-      }
-
-      final bytes = result.bytes;
       if (bytes.isEmpty) {
         throw DownloadPictureEmptyDataException(url);
       }
@@ -659,6 +624,72 @@ Future<Uint8List> downloadImageWithRetry(
       );
     }
   }
+}
+
+Future<Uint8List> _fetchImageViaQjs(
+  String url, {
+  required String source,
+  String? qjsName,
+  required String qjsTaskGroupKey,
+  required Map<String, dynamic> extern,
+}) async {
+  final pluginId = source.trim();
+  if (pluginId.isEmpty) {
+    throw StateError('downloadImageWithRetry missing plugin id');
+  }
+  final runtimeName = qjsName?.trim().isNotEmpty == true
+      ? qjsName!.trim()
+      : pluginId;
+  final args = <String, dynamic>{"url": url, "timeoutMs": 30000};
+  if (qjsTaskGroupKey.isNotEmpty) {
+    args["taskGroupKey"] = qjsTaskGroupKey;
+  }
+  final externPayload = <String, dynamic>{...extern};
+  if (qjsTaskGroupKey.isNotEmpty) {
+    externPayload["taskGroupKey"] = qjsTaskGroupKey;
+  }
+  if (externPayload.isNotEmpty) {
+    args["extern"] = externPayload;
+  }
+  final result = await executeQjsFetchImageResult(
+    pluginId: pluginId,
+    runtimeName: runtimeName,
+    fnPath: 'fetchImageBytes',
+    argsJson: jsonEncode(args),
+    taskGroupKey: qjsTaskGroupKey.isEmpty ? null : qjsTaskGroupKey,
+  );
+
+  if (result.error != null) {
+    throw DownloadPictureHttpException(
+      url,
+      result.error!,
+      statusCode: result.statusCode,
+      responseBodyLength: result.responseBodyLength,
+    );
+  }
+
+  final statusCode = result.statusCode;
+  if (statusCode == 404 || statusCode == 422) {
+    throw DownloadPictureNotFoundException(
+      url,
+      DownloadPictureHttpException(
+        url,
+        'HTTP $statusCode',
+        statusCode: statusCode,
+        responseBodyLength: result.responseBodyLength,
+      ),
+    );
+  }
+  if (statusCode != null && (statusCode < 200 || statusCode >= 300)) {
+    throw DownloadPictureHttpException(
+      url,
+      'HTTP $statusCode',
+      statusCode: statusCode,
+      responseBodyLength: result.responseBodyLength,
+    );
+  }
+
+  return result.bytes;
 }
 
 bool _isQjsRuntimeCancelledError(Object error) {

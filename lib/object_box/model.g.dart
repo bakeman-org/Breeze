@@ -565,6 +565,7 @@ UserSetting _$UserSettingFromJson(Map<String, dynamic> json) =>
         globalSettingData: json['globalSettingData'] as String?,
         bikaSettingData: json['bikaSettingData'] as String?,
         jmSettingData: json['jmSettingData'] as String?,
+        ehSettingData: json['ehSettingData'] as String?,
         jmJwt: json['jmJwt'] as String? ?? '',
       )
       ..globalSetting = GlobalSettingState.fromJson(
@@ -575,6 +576,12 @@ UserSetting _$UserSettingFromJson(Map<String, dynamic> json) =>
       )
       ..jmSetting = JmSettingState.fromJson(
         json['jmSetting'] as Map<String, dynamic>,
+      )
+      ..ehSetting = EhSettingState.fromJson(
+        json['ehSetting'] as Map<String, dynamic>,
+      )
+      ..bikaNativeSetting = BikaNativeSetting.fromJson(
+        json['bikaNativeSetting'] as Map<String, dynamic>,
       );
 
 Map<String, dynamic> _$UserSettingToJson(UserSetting instance) =>
@@ -583,10 +590,13 @@ Map<String, dynamic> _$UserSettingToJson(UserSetting instance) =>
       'globalSettingData': instance.globalSettingData,
       'bikaSettingData': instance.bikaSettingData,
       'jmSettingData': instance.jmSettingData,
+      'ehSettingData': instance.ehSettingData,
       'jmJwt': instance.jmJwt,
       'globalSetting': instance.globalSetting.toJson(),
       'bikaSetting': instance.bikaSetting.toJson(),
       'jmSetting': instance.jmSetting.toJson(),
+      'ehSetting': instance.ehSetting.toJson(),
+      'bikaNativeSetting': instance.bikaNativeSetting.toJson(),
     };
 
 DownloadTask _$DownloadTaskFromJson(Map<String, dynamic> json) => DownloadTask()

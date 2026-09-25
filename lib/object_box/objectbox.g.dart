@@ -1020,7 +1020,7 @@ final _entities = <obx_int.ModelEntity>[
   obx_int.ModelEntity(
     id: const obx_int.IdUid(8, 3979284532864250006),
     name: 'UserSetting',
-    lastPropertyId: const obx_int.IdUid(5, 2434649140750519009),
+    lastPropertyId: const obx_int.IdUid(6, 1770674311426635378),
     flags: 0,
     properties: <obx_int.ModelProperty>[
       obx_int.ModelProperty(
@@ -1050,6 +1050,12 @@ final _entities = <obx_int.ModelEntity>[
       obx_int.ModelProperty(
         id: const obx_int.IdUid(5, 2434649140750519009),
         name: 'jmJwt',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(6, 1770674311426635378),
+        name: 'ehSettingData',
         type: 9,
         flags: 0,
       ),
@@ -3440,12 +3446,16 @@ obx_int.ModelDefinition getObjectBoxModel() {
             ? null
             : fbb.writeString(object.jmSettingData!);
         final jmJwtOffset = fbb.writeString(object.jmJwt);
-        fbb.startTable(6);
+        final ehSettingDataOffset = object.ehSettingData == null
+            ? null
+            : fbb.writeString(object.ehSettingData!);
+        fbb.startTable(7);
         fbb.addInt64(0, object.id);
         fbb.addOffset(1, globalSettingDataOffset);
         fbb.addOffset(2, bikaSettingDataOffset);
         fbb.addOffset(3, jmSettingDataOffset);
         fbb.addOffset(4, jmJwtOffset);
+        fbb.addOffset(5, ehSettingDataOffset);
         fbb.finish(fbb.endTable());
         return object.id;
       },
@@ -3467,6 +3477,9 @@ obx_int.ModelDefinition getObjectBoxModel() {
         final jmSettingDataParam = const fb.StringReader(
           asciiOptimization: true,
         ).vTableGetNullable(buffer, rootOffset, 10);
+        final ehSettingDataParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGetNullable(buffer, rootOffset, 14);
         final jmJwtParam = const fb.StringReader(asciiOptimization: true)
             .vTableGet(buffer, rootOffset, 12, '');
         final object = UserSetting(
@@ -3474,6 +3487,7 @@ obx_int.ModelDefinition getObjectBoxModel() {
           globalSettingData: globalSettingDataParam,
           bikaSettingData: bikaSettingDataParam,
           jmSettingData: jmSettingDataParam,
+          ehSettingData: ehSettingDataParam,
           jmJwt: jmJwtParam,
         );
 
@@ -5515,6 +5529,11 @@ class UserSetting_ {
   /// See [UserSetting.jmJwt].
   static final jmJwt = obx.QueryStringProperty<UserSetting>(
     _entities[5].properties[4],
+  );
+
+  /// See [UserSetting.ehSettingData].
+  static final ehSettingData = obx.QueryStringProperty<UserSetting>(
+    _entities[5].properties[5],
   );
 }
 

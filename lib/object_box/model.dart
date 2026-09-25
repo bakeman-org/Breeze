@@ -6,6 +6,8 @@ import 'package:zephyr/config/bika/bika_setting.dart';
 import 'package:zephyr/config/global/global_setting.dart';
 import 'package:zephyr/config/jm/jm_setting.dart';
 import 'package:zephyr/service/download/models/download_task_json.dart';
+import 'package:zephyr/source/bika/auth/bika_setting.dart';
+import 'package:zephyr/source/eh/auth/eh_setting.dart';
 
 part 'model.g.dart';
 
@@ -733,6 +735,7 @@ class UserSetting {
   String? globalSettingData;
   String? bikaSettingData;
   String? jmSettingData;
+  String? ehSettingData;
   String jmJwt;
 
   // 2. 内存缓存字段 (@Transient)
@@ -742,12 +745,17 @@ class UserSetting {
   BikaSettingState? _bikaSetting;
   @Transient()
   JmSettingState? _jmSetting;
+  @Transient()
+  EhSettingState? _ehSetting;
+  @Transient()
+  BikaNativeSetting? _bikaNativeSetting;
 
   UserSetting({
     this.id = 0,
     this.globalSettingData,
     this.bikaSettingData,
     this.jmSettingData,
+    this.ehSettingData,
     this.jmJwt = '',
   });
 
@@ -793,6 +801,36 @@ class UserSetting {
   set jmSetting(JmSettingState value) {
     _jmSetting = value;
     jmSettingData = jsonEncode(value.toJson());
+  }
+
+  @Transient()
+  EhSettingState get ehSetting {
+    if (_ehSetting == null && ehSettingData != null) {
+      _ehSetting = EhSettingState.fromJson(jsonDecode(ehSettingData!));
+    }
+    return _ehSetting ??= const EhSettingState();
+  }
+
+  @Transient()
+  set ehSetting(EhSettingState value) {
+    _ehSetting = value;
+    ehSettingData = jsonEncode(value.toJson());
+  }
+
+  @Transient()
+  BikaNativeSetting get bikaNativeSetting {
+    if (_bikaNativeSetting == null && bikaSettingData != null) {
+      _bikaNativeSetting = BikaNativeSetting.fromJson(
+        jsonDecode(bikaSettingData!),
+      );
+    }
+    return _bikaNativeSetting ??= const BikaNativeSetting();
+  }
+
+  @Transient()
+  set bikaNativeSetting(BikaNativeSetting value) {
+    _bikaNativeSetting = value;
+    bikaSettingData = jsonEncode(value.toJson());
   }
 
   Map<String, dynamic> toJson() => _$UserSettingToJson(this);
