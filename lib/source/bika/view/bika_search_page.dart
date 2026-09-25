@@ -5,6 +5,7 @@ import 'package:zephyr/i18n/strings.g.dart';
 import 'package:zephyr/source/bika/api/bika_api.dart';
 import 'package:zephyr/source/bika/models/bika_models.dart';
 import 'package:zephyr/source/bika/view/widgets/bika_comic_card.dart';
+import 'package:zephyr/widgets/miuix_field_colors.dart';
 import 'package:zephyr/widgets/toast.dart';
 
 @RoutePage()
@@ -110,7 +111,9 @@ class _BikaSearchPageState extends State<BikaSearchPage> {
         _page = next;
         _pages = resp.comics.pages;
         final existing = _comics.map((c) => c.uid).toSet();
-        _comics.addAll(resp.comics.docs.where((c) => !existing.contains(c.uid)));
+        _comics.addAll(
+          resp.comics.docs.where((c) => !existing.contains(c.uid)),
+        );
         _loadingMore = false;
       });
     } catch (e) {
@@ -141,7 +144,9 @@ class _BikaSearchPageState extends State<BikaSearchPage> {
             initialValue: _sort,
             onSelected: _selectSort,
             itemBuilder: (context) => ComicSortType.values
-                .map((type) => PopupMenuItem(value: type, child: Text(type.title)))
+                .map(
+                  (type) => PopupMenuItem(value: type, child: Text(type.title)),
+                )
                 .toList(),
             child: const Icon(Icons.sort),
           ),
@@ -160,6 +165,7 @@ class _BikaSearchPageState extends State<BikaSearchPage> {
                   singleLine: true,
                   label: t.bika.searchHint,
                   useLabelAsPlaceholder: true,
+                  colors: dimmedHintFieldColors(context),
                   leadingIcon: const Icon(Icons.search, size: 20),
                   textInputAction: TextInputAction.search,
                   onSubmitted: _search,
@@ -181,7 +187,10 @@ class _BikaSearchPageState extends State<BikaSearchPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(t.bika.networkError, style: Theme.of(context).textTheme.titleMedium),
+            Text(
+              t.bika.networkError,
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
             const SizedBox(height: 12),
             MiuixButton(
               onPressed: () => _search(_keyword),

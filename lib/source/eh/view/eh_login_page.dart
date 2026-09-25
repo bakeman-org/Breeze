@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_miuix/miuix.dart';
 import 'package:zephyr/i18n/strings.g.dart';
 import 'package:zephyr/source/eh/auth/eh_setting.dart';
+import 'package:zephyr/widgets/miuix_field_colors.dart';
 import 'package:zephyr/widgets/toast.dart';
 
 @RoutePage()
@@ -138,6 +139,7 @@ class _EhLoginPageState extends State<EhLoginPage> {
                       singleLine: true,
                       label: t.eh.memberId,
                       useLabelAsPlaceholder: true,
+                      colors: dimmedHintFieldColors(context),
                       textInputAction: TextInputAction.next,
                     ),
                     const SizedBox(height: 16),
@@ -146,6 +148,7 @@ class _EhLoginPageState extends State<EhLoginPage> {
                       singleLine: true,
                       label: t.eh.passHash,
                       useLabelAsPlaceholder: true,
+                      colors: dimmedHintFieldColors(context),
                       textInputAction: TextInputAction.next,
                     ),
                     const SizedBox(height: 16),
@@ -154,6 +157,7 @@ class _EhLoginPageState extends State<EhLoginPage> {
                       singleLine: true,
                       label: t.eh.igneous,
                       useLabelAsPlaceholder: true,
+                      colors: dimmedHintFieldColors(context),
                       textInputAction: TextInputAction.done,
                       onSubmitted: (_) => _submit(),
                     ),

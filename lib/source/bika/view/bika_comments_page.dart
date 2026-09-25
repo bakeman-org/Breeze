@@ -6,6 +6,7 @@ import 'package:zephyr/source/bika/api/bika_api.dart';
 import 'package:zephyr/source/bika/models/bika_models.dart';
 import 'package:zephyr/source/bika/view/widgets/bika_avatar_image.dart';
 import 'package:zephyr/source/bika/view/widgets/bika_comic_card.dart';
+import 'package:zephyr/widgets/miuix_field_colors.dart';
 import 'package:zephyr/widgets/toast.dart';
 
 @RoutePage()
@@ -153,8 +154,10 @@ class _BikaCommentsPageState extends State<BikaCommentsPage> {
       await likeBikaComment(comment.uid);
       if (!mounted) return;
       setState(
-        () => _likeOverrides[comment.uid] =
-            !_isLiked(comment.uid, comment.isLiked),
+        () => _likeOverrides[comment.uid] = !_isLiked(
+          comment.uid,
+          comment.isLiked,
+        ),
       );
     } catch (e) {
       showErrorToast(e.toString());
@@ -166,8 +169,10 @@ class _BikaCommentsPageState extends State<BikaCommentsPage> {
       await likeBikaComment(comment.uid);
       if (!mounted) return;
       setState(
-        () => _subLikeOverrides[comment.uid] =
-            !_subIsLiked(comment.uid, comment.isLiked),
+        () => _subLikeOverrides[comment.uid] = !_subIsLiked(
+          comment.uid,
+          comment.isLiked,
+        ),
       );
     } catch (e) {
       showErrorToast(e.toString());
@@ -333,7 +338,8 @@ class _BikaCommentsPageState extends State<BikaCommentsPage> {
                 onToggleLike: () => _toggleLike(comment),
                 onToggleSubLike: _toggleSubLike,
                 onToggleExpand: () => _toggleExpanded(comment),
-                onActivateReply: () => setState(() => _replyTarget = comment.uid),
+                onActivateReply: () =>
+                    setState(() => _replyTarget = comment.uid),
                 onRetrySub: () => _loadSubComments(comment.uid),
                 onSendReply: () => _sendReply(comment.uid),
                 formatDate: _formatDate,
@@ -376,6 +382,7 @@ class _BikaCommentsPageState extends State<BikaCommentsPage> {
               singleLine: true,
               label: t.bika.commentHint,
               useLabelAsPlaceholder: true,
+              colors: dimmedHintFieldColors(context),
             ),
           ),
           const SizedBox(width: 8),
@@ -451,7 +458,11 @@ class _CommentItem extends StatelessWidget {
           children: [
             Row(
               children: [
-                BikaAvatarImage(image: user.avatar, name: user.name, radius: 16),
+                BikaAvatarImage(
+                  image: user.avatar,
+                  name: user.name,
+                  radius: 16,
+                ),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Column(
@@ -526,7 +537,7 @@ class _CommentItem extends StatelessWidget {
               const SizedBox(height: 8),
               _buildSubComments(theme),
               const SizedBox(height: 8),
-              _buildReplyRow(theme),
+              _buildReplyRow(context, theme),
             ],
           ],
         ),
@@ -620,7 +631,7 @@ class _CommentItem extends StatelessWidget {
     );
   }
 
-  Widget _buildReplyRow(ThemeData theme) {
+  Widget _buildReplyRow(BuildContext context, ThemeData theme) {
     return Row(
       children: [
         Expanded(
@@ -630,6 +641,7 @@ class _CommentItem extends StatelessWidget {
                   singleLine: true,
                   label: t.bika.reply,
                   useLabelAsPlaceholder: true,
+                  colors: dimmedHintFieldColors(context),
                 )
               : GestureDetector(
                   onTap: onActivateReply,
@@ -639,9 +651,8 @@ class _CommentItem extends StatelessWidget {
                       vertical: 10,
                     ),
                     decoration: BoxDecoration(
-                      color: theme.colorScheme.surfaceContainerHighest.withValues(
-                        alpha: 0.5,
-                      ),
+                      color: theme.colorScheme.surfaceContainerHighest
+                          .withValues(alpha: 0.5),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
@@ -687,9 +698,16 @@ class _SubLikeButton extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
         child: Row(
           children: [
-            Icon(liked ? Icons.thumb_up : Icons.thumb_up_outlined, size: 14, color: color),
+            Icon(
+              liked ? Icons.thumb_up : Icons.thumb_up_outlined,
+              size: 14,
+              color: color,
+            ),
             const SizedBox(width: 4),
-            Text('$count', style: theme.textTheme.labelSmall?.copyWith(color: color)),
+            Text(
+              '$count',
+              style: theme.textTheme.labelSmall?.copyWith(color: color),
+            ),
           ],
         ),
       ),

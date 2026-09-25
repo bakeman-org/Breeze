@@ -6,6 +6,7 @@ import 'package:zephyr/i18n/strings.g.dart';
 import 'package:zephyr/source/eh/api/eh_client.dart';
 import 'package:zephyr/source/eh/models/eh_models.dart';
 import 'package:zephyr/source/eh/view/widgets/eh_gallery_list_item.dart';
+import 'package:zephyr/widgets/miuix_field_colors.dart';
 import 'package:zephyr/widgets/toast.dart';
 
 @RoutePage()
@@ -184,6 +185,7 @@ class _EhSearchPageState extends State<EhSearchPage> {
                   singleLine: true,
                   label: t.eh.search,
                   useLabelAsPlaceholder: true,
+                  colors: dimmedHintFieldColors(context),
                   leadingIcon: const Icon(Icons.search, size: 20),
                   textInputAction: TextInputAction.search,
                   onSubmitted: _search,

@@ -5,6 +5,7 @@ import 'package:zephyr/i18n/strings.g.dart';
 import 'package:zephyr/source/bika/api/bika_api.dart';
 import 'package:zephyr/source/bika/auth/bika_setting.dart';
 import 'package:zephyr/source/bika/models/bika_models.dart';
+import 'package:zephyr/widgets/miuix_field_colors.dart';
 import 'package:zephyr/widgets/toast.dart';
 
 @RoutePage()
@@ -34,7 +35,9 @@ class _BikaLoginPageState extends State<BikaLoginPage> {
     if (email.isEmpty || password.isEmpty) return;
     setState(() => _submitting = true);
     try {
-      final resp = await bikaLogin(LoginPayload(email: email, password: password));
+      final resp = await bikaLogin(
+        LoginPayload(email: email, password: password),
+      );
       saveBikaNativeSetting(
         bikaNativeSetting.copyWith(
           authorization: resp.token,
@@ -82,6 +85,7 @@ class _BikaLoginPageState extends State<BikaLoginPage> {
                       singleLine: true,
                       label: t.bika.account,
                       useLabelAsPlaceholder: true,
+                      colors: dimmedHintFieldColors(context),
                       leadingIcon: const Icon(Icons.email_outlined, size: 20),
                       textInputAction: TextInputAction.next,
                     ),
@@ -91,6 +95,7 @@ class _BikaLoginPageState extends State<BikaLoginPage> {
                       singleLine: true,
                       label: t.bika.password,
                       useLabelAsPlaceholder: true,
+                      colors: dimmedHintFieldColors(context),
                       leadingIcon: const Icon(Icons.lock_outline, size: 20),
                       obscureText: true,
                       textInputAction: TextInputAction.done,
