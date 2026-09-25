@@ -89,16 +89,25 @@ Future<Uint8List> _downloadEhImage(
   if (cookie.isNotEmpty) headers['Cookie'] = cookie;
   final response = await WindHttp(
     headers: headers,
+    resolveHosts: activeEhResolveHosts(),
   ).fetch(imageUrl, timeout: timeout);
   return _ensureImageBytes(requestUrl, response);
 }
 
 Uint8List _ensureImageBytes(String url, FetchResponse response) {
   if (response.status == 404 || response.status == 422) {
-    throw NativeImageHttpException(url, 'HTTP ${response.status}', statusCode: response.status);
+    throw NativeImageHttpException(
+      url,
+      'HTTP ${response.status}',
+      statusCode: response.status,
+    );
   }
   if (response.status < 200 || response.status >= 300) {
-    throw NativeImageHttpException(url, 'HTTP ${response.status}', statusCode: response.status);
+    throw NativeImageHttpException(
+      url,
+      'HTTP ${response.status}',
+      statusCode: response.status,
+    );
   }
   if (response.body.isEmpty) {
     throw NativeImageHttpException(url, '响应体为空', statusCode: response.status);

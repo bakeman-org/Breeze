@@ -246,6 +246,7 @@ fn direct_get(url: &str, timeout_ms: u64) -> Result<Duration, String> {
                 connect_timeout: Some(Duration::from_millis(15_000)),
                 follow_redirects: None,
                 user_agent: None,
+                resolve_hosts: Vec::new(),
             },
         )
         .map_err(|e| e.to_string())?;
@@ -369,6 +370,7 @@ fn host_header_and_referer_on_cross_host_redirect() {
                 connect_timeout: Some(Duration::from_millis(5_000)),
                 follow_redirects: None,
                 user_agent: None,
+                resolve_hosts: Vec::new(),
             },
         )
         .expect("client");
@@ -903,6 +905,7 @@ fn direct_get_real(
                 connect_timeout: Some(Duration::from_millis(15_000)),
                 follow_redirects: None,
                 user_agent: None,
+                resolve_hosts: Vec::new(),
             },
         )
         .map_err(|e| e.to_string())?;

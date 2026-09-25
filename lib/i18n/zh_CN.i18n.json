@@ -1326,6 +1326,8 @@
     "done": "完成",
     "saved": "已保存",
     "logout": "退出登录",
-    "notSet": "未设置"
+    "notSet": "未设置",
+    "builtInHosts": "内置 hosts 直连",
+    "builtInHostsDesc": "使用硬编码 IP 绕过 DNS 污染，需重启页面生效"
   }
 }

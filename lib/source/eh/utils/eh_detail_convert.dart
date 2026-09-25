@@ -65,5 +65,9 @@ normal.NormalComicAllInfo buildEhNormalComicInfo(EhGalleryDetail detail) {
 }
 
 PluginComicDetailSource buildEhDetailSource(normal.NormalComicAllInfo info) {
-  return PluginComicDetailSource(from: ehSourceId, normalInfo: info, raw: const {});
+  return PluginComicDetailSource(
+    from: ehSourceId,
+    normalInfo: info,
+    raw: const {},
+  );
 }

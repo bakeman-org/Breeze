@@ -155,6 +155,9 @@ class HttpClientOptions {
   final bool? dangerAcceptInvalidCerts;
   final String? userAgent;
 
+  /// 域名 → IP 列表，覆盖 DNS 解析（TLS SNI 仍为原域名）。
+  final Map<String, List<String>>? resolveHosts;
+
   const HttpClientOptions({
     this.baseUrl,
     this.defaultHeaders,
@@ -165,6 +168,7 @@ class HttpClientOptions {
     this.httpProxy,
     this.dangerAcceptInvalidCerts,
     this.userAgent,
+    this.resolveHosts,
   });
 
   static Future<HttpClientOptions> default_() =>
@@ -180,7 +184,8 @@ class HttpClientOptions {
       noProxy.hashCode ^
       httpProxy.hashCode ^
       dangerAcceptInvalidCerts.hashCode ^
-      userAgent.hashCode;
+      userAgent.hashCode ^
+      resolveHosts.hashCode;
 
   @override
   bool operator ==(Object other) =>
@@ -195,7 +200,8 @@ class HttpClientOptions {
           noProxy == other.noProxy &&
           httpProxy == other.httpProxy &&
           dangerAcceptInvalidCerts == other.dangerAcceptInvalidCerts &&
-          userAgent == other.userAgent;
+          userAgent == other.userAgent &&
+          resolveHosts == other.resolveHosts;
 }
 
 /// 下载进度事件。

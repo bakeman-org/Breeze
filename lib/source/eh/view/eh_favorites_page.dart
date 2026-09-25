@@ -162,7 +162,10 @@ class _EhFavoritesPageState extends State<EhFavoritesPage> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text(t.eh.loginRequired, style: Theme.of(context).textTheme.titleMedium),
+          Text(
+            t.eh.loginRequired,
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
           const SizedBox(height: 16),
           MiuixButton(onPressed: _goLogin, child: Text(t.eh.login)),
         ],
@@ -179,7 +182,10 @@ class _EhFavoritesPageState extends State<EhFavoritesPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(t.eh.networkError, style: Theme.of(context).textTheme.titleMedium),
+            Text(
+              t.eh.networkError,
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
             const SizedBox(height: 12),
             MiuixButton(onPressed: _reload, child: Text(t.eh.retry)),
           ],

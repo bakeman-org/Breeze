@@ -1,5 +1,6 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:zephyr/main.dart';
+import 'package:zephyr/source/eh/api/eh_hosts.dart';
 
 part 'eh_setting.freezed.dart';
 part 'eh_setting.g.dart';
@@ -14,6 +15,7 @@ abstract class EhSettingState with _$EhSettingState {
     @Default('') String ipbMemberId,
     @Default('') String ipbPassHash,
     @Default('') String igneous,
+    @Default(true) bool builtInHosts,
   }) = _EhSettingState;
 
   factory EhSettingState.fromJson(Map<String, dynamic> json) =>
@@ -52,4 +54,9 @@ void saveEhSettingState(EhSettingState setting) {
   if (user == null) return;
   user.ehSetting = setting;
   objectbox.userSettingBox.put(user);
+}
+
+Map<String, List<String>>? activeEhResolveHosts() {
+  return null;
+  return ehResolveHosts(ehSettingState.builtInHosts);
 }

@@ -181,7 +181,10 @@ class _EhHomePageState extends State<EhHomePage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(t.eh.networkError, style: Theme.of(context).textTheme.titleMedium),
+            Text(
+              t.eh.networkError,
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
             const SizedBox(height: 12),
             MiuixButton(onPressed: _reload, child: Text(t.eh.retry)),
           ],

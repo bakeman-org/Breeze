@@ -4167,6 +4167,12 @@ class Translations$eh$zh_CN {
 
 	/// zh-CN: '未设置'
 	String get notSet => '未设置';
+
+	/// zh-CN: '内置 hosts 直连'
+	String get builtInHosts => '内置 hosts 直连';
+
+	/// zh-CN: '使用硬编码 IP 绕过 DNS 污染，需重启页面生效'
+	String get builtInHostsDesc => '使用硬编码 IP 绕过 DNS 污染，需重启页面生效';
 }
 
 /// The flat map containing all translations for locale <zh-CN>.
@@ -5436,6 +5442,8 @@ extension on Translations {
 			'eh.saved' => '已保存',
 			'eh.logout' => '退出登录',
 			'eh.notSet' => '未设置',
+			'eh.builtInHosts' => '内置 hosts 直连',
+			'eh.builtInHostsDesc' => '使用硬编码 IP 绕过 DNS 污染，需重启页面生效',
 			_ => null,
 		};
 	}

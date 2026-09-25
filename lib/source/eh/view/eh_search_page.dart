@@ -234,7 +234,10 @@ class _EhSearchPageState extends State<EhSearchPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(t.eh.networkError, style: Theme.of(context).textTheme.titleMedium),
+            Text(
+              t.eh.networkError,
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
             const SizedBox(height: 12),
             MiuixButton(
               onPressed: () => _search(_keyword),

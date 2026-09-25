@@ -110,7 +110,10 @@ class _EhCommentsPageState extends State<EhCommentsPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(t.eh.networkError, style: Theme.of(context).textTheme.titleMedium),
+            Text(
+              t.eh.networkError,
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
             const SizedBox(height: 12),
             MiuixButton(onPressed: _load, child: Text(t.eh.retry)),
           ],
@@ -171,9 +174,7 @@ class _CommentItem extends StatelessWidget {
               ),
               if (comment.score != 0) ...[
                 Icon(
-                  comment.score > 0
-                      ? Icons.thumb_up
-                      : Icons.thumb_down,
+                  comment.score > 0 ? Icons.thumb_up : Icons.thumb_down,
                   size: 14,
                   color: comment.score > 0
                       ? theme.colorScheme.primary

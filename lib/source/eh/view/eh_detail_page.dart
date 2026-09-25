@@ -143,7 +143,10 @@ class _EhDetailViewState extends State<_EhDetailView> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(t.eh.networkError, style: Theme.of(context).textTheme.titleMedium),
+            Text(
+              t.eh.networkError,
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
             const SizedBox(height: 12),
             MiuixButton(onPressed: _load, child: Text(t.eh.retry)),
           ],
@@ -244,8 +247,7 @@ class _EhDetailViewState extends State<_EhDetailView> {
                           '${t.eh.uploader}: ${detail.uploader}',
                         if (detail.uploaded.isNotEmpty)
                           '${t.eh.uploaded}: ${detail.uploaded}',
-                        if (detail.pages > 0)
-                          '${t.eh.pages}: ${detail.pages}',
+                        if (detail.pages > 0) '${t.eh.pages}: ${detail.pages}',
                       ].join('\n'),
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
@@ -286,9 +288,8 @@ class _EhDetailViewState extends State<_EhDetailView> {
                                 vertical: 3,
                               ),
                               decoration: BoxDecoration(
-                                color: theme
-                                    .colorScheme
-                                    .surfaceContainerHighest,
+                                color:
+                                    theme.colorScheme.surfaceContainerHighest,
                                 borderRadius: BorderRadius.circular(6),
                               ),
                               child: Text(

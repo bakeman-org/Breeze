@@ -1325,6 +1325,8 @@
     "done": "Done",
     "saved": "Saved",
     "logout": "Log out",
-    "notSet": "Not set"
+    "notSet": "Not set",
+    "builtInHosts": "Built-in hosts",
+    "builtInHostsDesc": "Use hardcoded IPs to bypass DNS pollution"
   }
 }

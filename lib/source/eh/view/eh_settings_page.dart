@@ -139,6 +139,18 @@ class _EhSettingsPageState extends State<EhSettingsPage> {
                   ],
                 ),
               ),
+              const SizedBox(height: 16),
+              MiuixSwitchPreference(
+                title: t.eh.builtInHosts,
+                summary: t.eh.builtInHostsDesc,
+                value: setting.builtInHosts,
+                onChanged: (value) {
+                  saveEhSettingState(
+                    ehSettingState.copyWith(builtInHosts: value),
+                  );
+                  setState(() {});
+                },
+              ),
             ],
           ),
         ),

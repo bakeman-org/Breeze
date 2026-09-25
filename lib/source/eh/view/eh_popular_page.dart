@@ -53,12 +53,8 @@ class _EhPopularPageState extends State<EhPopularPage> {
 
   void _apply(EhGalleryListResult resp, bool replace) {
     final newOffset = resp.maxPage > 0 ? resp.maxPage - 1 : 0;
-    final existing = replace
-        ? <String>{}
-        : _items.map((e) => e.gid).toSet();
-    final fresh = resp.items
-        .where((e) => !existing.contains(e.gid))
-        .toList();
+    final existing = replace ? <String>{} : _items.map((e) => e.gid).toSet();
+    final fresh = resp.items.where((e) => !existing.contains(e.gid)).toList();
     setState(() {
       if (replace) _items = [];
       _items.addAll(fresh);
@@ -108,10 +104,7 @@ class _EhPopularPageState extends State<EhPopularPage> {
     if (_loadingMore || _initialLoading || _error != null || !_hasMore) return;
     setState(() => _loadingMore = true);
     try {
-      final resp = await fetchEhGalleryList(
-        popular: true,
-        page: _nextOffset,
-      );
+      final resp = await fetchEhGalleryList(popular: true, page: _nextOffset);
       if (!mounted) return;
       _apply(resp, false);
       setState(() => _loadingMore = false);
@@ -148,7 +141,10 @@ class _EhPopularPageState extends State<EhPopularPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(t.eh.networkError, style: Theme.of(context).textTheme.titleMedium),
+            Text(
+              t.eh.networkError,
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
             const SizedBox(height: 12),
             MiuixButton(onPressed: _reload, child: Text(t.eh.retry)),
           ],

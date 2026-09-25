@@ -66,9 +66,14 @@ const List<String> _langTagNames = <String>[
 
 final List<RegExp> _langTitlePatterns = <RegExp>[
   RegExp(r'[\(\[]eng(?:lish)?[\)\]]|英訳', caseSensitive: false),
-  RegExp(r'[(（\[]ch(?:inese)?[)）\]]|[汉漢]化|中[国國][语語]|中文|中国翻訳',
-      caseSensitive: false),
-  RegExp(r'[\(\[]spanish[\)\]]|[\(\[]Español[\)\]]|スペイン翻訳', caseSensitive: false),
+  RegExp(
+    r'[(（\[]ch(?:inese)?[)）\]]|[汉漢]化|中[国國][语語]|中文|中国翻訳',
+    caseSensitive: false,
+  ),
+  RegExp(
+    r'[\(\[]spanish[\)\]]|[\(\[]Español[\)\]]|スペイン翻訳',
+    caseSensitive: false,
+  ),
   RegExp(r'[\(\[]korean?[\)\]]|韓国翻訳', caseSensitive: false),
   RegExp(r'[\(\[]rus(?:sian)?[\)\]]|ロシア翻訳', caseSensitive: false),
   RegExp(r'[\(\[]fr(?:ench)?[\)\]]|フランス翻訳', caseSensitive: false),
@@ -76,7 +81,10 @@ final List<RegExp> _langTitlePatterns = <RegExp>[
   RegExp(r'[\(\[]thai(?: ภาษาไทย)?[\)\]]|แปลไทย|タイ翻訳', caseSensitive: false),
   RegExp(r'[\(\[]german[\)\]]|ドイツ翻訳', caseSensitive: false),
   RegExp(r'[\(\[]italiano?[\)\]]|イタリア翻訳', caseSensitive: false),
-  RegExp(r'[\(\[]vietnamese(?: Tiếng Việt)?[\)\]]|ベトナム翻訳', caseSensitive: false),
+  RegExp(
+    r'[\(\[]vietnamese(?: Tiếng Việt)?[\)\]]|ベトナム翻訳',
+    caseSensitive: false,
+  ),
   RegExp(r'[\(\[]polish[\)\]]|ポーランド翻訳', caseSensitive: false),
   RegExp(r'[\(\[]hun(?:garian)?[\)\]]|ハンガリー翻訳', caseSensitive: false),
   RegExp(r'[\(\[]dutch[\)\]]|オランダ翻訳', caseSensitive: false),
@@ -84,26 +92,26 @@ final List<RegExp> _langTitlePatterns = <RegExp>[
 
 const Map<String, EhGalleryCategory> _categoryAliases =
     <String, EhGalleryCategory>{
-  'misc': EhGalleryCategory.misc,
-  'doujinshi': EhGalleryCategory.doujinshi,
-  'manga': EhGalleryCategory.manga,
-  'artistcg': EhGalleryCategory.artistCg,
-  'artist cg sets': EhGalleryCategory.artistCg,
-  'artist cg': EhGalleryCategory.artistCg,
-  'gamecg': EhGalleryCategory.gameCg,
-  'game cg sets': EhGalleryCategory.gameCg,
-  'game cg': EhGalleryCategory.gameCg,
-  'imageset': EhGalleryCategory.imageSet,
-  'image sets': EhGalleryCategory.imageSet,
-  'image set': EhGalleryCategory.imageSet,
-  'cosplay': EhGalleryCategory.cosplay,
-  'asianporn': EhGalleryCategory.asianPorn,
-  'asian porn': EhGalleryCategory.asianPorn,
-  'non-h': EhGalleryCategory.nonH,
-  'western': EhGalleryCategory.western,
-  'private': EhGalleryCategory.privateCategory,
-  'unknown': EhGalleryCategory.unknown,
-};
+      'misc': EhGalleryCategory.misc,
+      'doujinshi': EhGalleryCategory.doujinshi,
+      'manga': EhGalleryCategory.manga,
+      'artistcg': EhGalleryCategory.artistCg,
+      'artist cg sets': EhGalleryCategory.artistCg,
+      'artist cg': EhGalleryCategory.artistCg,
+      'gamecg': EhGalleryCategory.gameCg,
+      'game cg sets': EhGalleryCategory.gameCg,
+      'game cg': EhGalleryCategory.gameCg,
+      'imageset': EhGalleryCategory.imageSet,
+      'image sets': EhGalleryCategory.imageSet,
+      'image set': EhGalleryCategory.imageSet,
+      'cosplay': EhGalleryCategory.cosplay,
+      'asianporn': EhGalleryCategory.asianPorn,
+      'asian porn': EhGalleryCategory.asianPorn,
+      'non-h': EhGalleryCategory.nonH,
+      'western': EhGalleryCategory.western,
+      'private': EhGalleryCategory.privateCategory,
+      'unknown': EhGalleryCategory.unknown,
+    };
 
 EhGalleryCategory ehCategoryFromName(String name) {
   return _categoryAliases[name.trim().toLowerCase()] ??
@@ -160,20 +168,20 @@ class EhGalleryInfo {
   }
 
   Map<String, dynamic> toJson() => <String, dynamic>{
-        'gid': gid,
-        'token': token,
-        'title': title,
-        'titleJpn': titleJpn,
-        'thumbUrl': thumbUrl,
-        'category': category,
-        'rating': rating,
-        'uploaded': uploaded,
-        'pages': pages,
-        'uploader': uploader,
-        'tags': tags,
-        'simpleLanguage': simpleLanguage,
-        'categoryIndex': categoryIndex,
-      };
+    'gid': gid,
+    'token': token,
+    'title': title,
+    'titleJpn': titleJpn,
+    'thumbUrl': thumbUrl,
+    'category': category,
+    'rating': rating,
+    'uploaded': uploaded,
+    'pages': pages,
+    'uploader': uploader,
+    'tags': tags,
+    'simpleLanguage': simpleLanguage,
+    'categoryIndex': categoryIndex,
+  };
 
   void generateSimpleLanguage() {
     simpleLanguage = _langFromTags(tags) ?? _langFromTitle(title) ?? '';
@@ -223,12 +231,12 @@ class EhGalleryComment {
   }
 
   Map<String, dynamic> toJson() => <String, dynamic>{
-        'id': id,
-        'author': author,
-        'content': content,
-        'score': score,
-        'postedAt': postedAt,
-      };
+    'id': id,
+    'author': author,
+    'content': content,
+    'score': score,
+    'postedAt': postedAt,
+  };
 }
 
 class EhTagGroup {
@@ -236,7 +244,7 @@ class EhTagGroup {
   List<String> tags;
 
   EhTagGroup({this.namespace = '', List<String>? tags})
-      : tags = tags ?? <String>[];
+    : tags = tags ?? <String>[];
 
   factory EhTagGroup.fromJson(Map<String, dynamic> json) {
     return EhTagGroup(
@@ -246,9 +254,9 @@ class EhTagGroup {
   }
 
   Map<String, dynamic> toJson() => <String, dynamic>{
-        'namespace': namespace,
-        'tags': tags,
-      };
+    'namespace': namespace,
+    'tags': tags,
+  };
 }
 
 class EhGalleryDetail extends EhGalleryInfo {
@@ -283,8 +291,8 @@ class EhGalleryDetail extends EhGalleryInfo {
     this.visible = true,
     this.previewPages = 0,
     this.previewPerPage = 0,
-  })  : comments = comments ?? <EhGalleryComment>[],
-        tagGroups = tagGroups ?? <EhTagGroup>[];
+  }) : comments = comments ?? <EhGalleryComment>[],
+       tagGroups = tagGroups ?? <EhTagGroup>[];
 
   factory EhGalleryDetail.fromJson(Map<String, dynamic> json) {
     final base = EhGalleryInfo.fromJson(json);
@@ -304,14 +312,20 @@ class EhGalleryDetail extends EhGalleryInfo {
       categoryIndex: base.categoryIndex,
       coverUrl: '${json['coverUrl'] ?? ''}',
       commentsCount: (json['commentsCount'] as num?)?.toInt() ?? 0,
-      comments: (json['comments'] as List?)
-              ?.map((e) =>
-                  EhGalleryComment.fromJson(Map<String, dynamic>.from(e as Map)))
+      comments:
+          (json['comments'] as List?)
+              ?.map(
+                (e) => EhGalleryComment.fromJson(
+                  Map<String, dynamic>.from(e as Map),
+                ),
+              )
               .toList() ??
           <EhGalleryComment>[],
-      tagGroups: (json['tagGroups'] as List?)
-              ?.map((e) =>
-                  EhTagGroup.fromJson(Map<String, dynamic>.from(e as Map)))
+      tagGroups:
+          (json['tagGroups'] as List?)
+              ?.map(
+                (e) => EhTagGroup.fromJson(Map<String, dynamic>.from(e as Map)),
+              )
               .toList() ??
           <EhTagGroup>[],
       torrentCount: (json['torrentCount'] as num?)?.toInt() ?? 0,
@@ -323,16 +337,16 @@ class EhGalleryDetail extends EhGalleryInfo {
 
   @override
   Map<String, dynamic> toJson() => <String, dynamic>{
-        ...super.toJson(),
-        'coverUrl': coverUrl,
-        'commentsCount': commentsCount,
-        'comments': comments.map((e) => e.toJson()).toList(),
-        'tagGroups': tagGroups.map((e) => e.toJson()).toList(),
-        'torrentCount': torrentCount,
-        'visible': visible,
-        'previewPages': previewPages,
-        'previewPerPage': previewPerPage,
-      };
+    ...super.toJson(),
+    'coverUrl': coverUrl,
+    'commentsCount': commentsCount,
+    'comments': comments.map((e) => e.toJson()).toList(),
+    'tagGroups': tagGroups.map((e) => e.toJson()).toList(),
+    'torrentCount': torrentCount,
+    'visible': visible,
+    'previewPages': previewPages,
+    'previewPerPage': previewPerPage,
+  };
 }
 
 class EhGalleryPageInfo {
@@ -373,9 +387,7 @@ class EhPageImage {
       imageUrl: '${json['imageUrl'] ?? ''}',
       width: (json['width'] as num?)?.toInt(),
       height: (json['height'] as num?)?.toInt(),
-      nextImgkey: json['nextImgkey'] == null
-          ? null
-          : '${json['nextImgkey']}',
+      nextImgkey: json['nextImgkey'] == null ? null : '${json['nextImgkey']}',
       showKey: '${json['showKey'] ?? ''}',
       skipHathKey: '${json['skipHathKey'] ?? ''}',
       originImageUrl: '${json['originImageUrl'] ?? ''}',
@@ -383,12 +395,12 @@ class EhPageImage {
   }
 
   Map<String, dynamic> toJson() => <String, dynamic>{
-        'imageUrl': imageUrl,
-        'width': width,
-        'height': height,
-        'nextImgkey': nextImgkey,
-        'showKey': showKey,
-        'skipHathKey': skipHathKey,
-        'originImageUrl': originImageUrl,
-      };
+    'imageUrl': imageUrl,
+    'width': width,
+    'height': height,
+    'nextImgkey': nextImgkey,
+    'showKey': showKey,
+    'skipHathKey': skipHathKey,
+    'originImageUrl': originImageUrl,
+  };
 }

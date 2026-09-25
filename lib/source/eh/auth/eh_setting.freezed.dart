@@ -16,7 +16,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$EhSettingState {
 
- String get site; String get ipbMemberId; String get ipbPassHash; String get igneous;
+ String get site; String get ipbMemberId; String get ipbPassHash; String get igneous; bool get builtInHosts;
 /// Create a copy of EhSettingState
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -30,20 +30,20 @@ $EhSettingStateCopyWith<EhSettingState> get copyWith => _$EhSettingStateCopyWith
 @override
 bool operator ==(Object other) {
   final _this = this as EhSettingState;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is EhSettingState&&(identical(other.site, _this.site) || other.site == _this.site)&&(identical(other.ipbMemberId, _this.ipbMemberId) || other.ipbMemberId == _this.ipbMemberId)&&(identical(other.ipbPassHash, _this.ipbPassHash) || other.ipbPassHash == _this.ipbPassHash)&&(identical(other.igneous, _this.igneous) || other.igneous == _this.igneous));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is EhSettingState&&(identical(other.site, _this.site) || other.site == _this.site)&&(identical(other.ipbMemberId, _this.ipbMemberId) || other.ipbMemberId == _this.ipbMemberId)&&(identical(other.ipbPassHash, _this.ipbPassHash) || other.ipbPassHash == _this.ipbPassHash)&&(identical(other.igneous, _this.igneous) || other.igneous == _this.igneous)&&(identical(other.builtInHosts, _this.builtInHosts) || other.builtInHosts == _this.builtInHosts));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
   final _this = this as EhSettingState;
-  return Object.hash(runtimeType,_this.site,_this.ipbMemberId,_this.ipbPassHash,_this.igneous);
+  return Object.hash(runtimeType,_this.site,_this.ipbMemberId,_this.ipbPassHash,_this.igneous,_this.builtInHosts);
 }
 
 @override
 String toString() {
   final _this = this as EhSettingState;
-  return 'EhSettingState(site: ${_this.site}, ipbMemberId: ${_this.ipbMemberId}, ipbPassHash: ${_this.ipbPassHash}, igneous: ${_this.igneous})';
+  return 'EhSettingState(site: ${_this.site}, ipbMemberId: ${_this.ipbMemberId}, ipbPassHash: ${_this.ipbPassHash}, igneous: ${_this.igneous}, builtInHosts: ${_this.builtInHosts})';
 }
 
 
@@ -54,7 +54,7 @@ abstract mixin class $EhSettingStateCopyWith<$Res>  {
   factory $EhSettingStateCopyWith(EhSettingState value, $Res Function(EhSettingState) _then) = _$EhSettingStateCopyWithImpl;
 @useResult
 $Res call({
- String site, String ipbMemberId, String ipbPassHash, String igneous
+ String site, String ipbMemberId, String ipbPassHash, String igneous, bool builtInHosts
 });
 
 
@@ -71,13 +71,14 @@ class _$EhSettingStateCopyWithImpl<$Res>
 
 /// Create a copy of EhSettingState
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? site = null,Object? ipbMemberId = null,Object? ipbPassHash = null,Object? igneous = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? site = null,Object? ipbMemberId = null,Object? ipbPassHash = null,Object? igneous = null,Object? builtInHosts = null,}) {
   return _then(EhSettingState(
 site: null == site ? _self.site : site // ignore: cast_nullable_to_non_nullable
 as String,ipbMemberId: null == ipbMemberId ? _self.ipbMemberId : ipbMemberId // ignore: cast_nullable_to_non_nullable
 as String,ipbPassHash: null == ipbPassHash ? _self.ipbPassHash : ipbPassHash // ignore: cast_nullable_to_non_nullable
 as String,igneous: null == igneous ? _self.igneous : igneous // ignore: cast_nullable_to_non_nullable
-as String,
+as String,builtInHosts: null == builtInHosts ? _self.builtInHosts : builtInHosts // ignore: cast_nullable_to_non_nullable
+as bool,
   ));
 }
 
@@ -162,10 +163,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String site,  String ipbMemberId,  String ipbPassHash,  String igneous)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String site,  String ipbMemberId,  String ipbPassHash,  String igneous,  bool builtInHosts)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _EhSettingState() when $default != null:
-return $default(_that.site,_that.ipbMemberId,_that.ipbPassHash,_that.igneous);case _:
+return $default(_that.site,_that.ipbMemberId,_that.ipbPassHash,_that.igneous,_that.builtInHosts);case _:
   return orElse();
 
 }
@@ -183,10 +184,10 @@ return $default(_that.site,_that.ipbMemberId,_that.ipbPassHash,_that.igneous);ca
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String site,  String ipbMemberId,  String ipbPassHash,  String igneous)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String site,  String ipbMemberId,  String ipbPassHash,  String igneous,  bool builtInHosts)  $default,) {final _that = this;
 switch (_that) {
 case _EhSettingState():
-return $default(_that.site,_that.ipbMemberId,_that.ipbPassHash,_that.igneous);case _:
+return $default(_that.site,_that.ipbMemberId,_that.ipbPassHash,_that.igneous,_that.builtInHosts);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -203,10 +204,10 @@ return $default(_that.site,_that.ipbMemberId,_that.ipbPassHash,_that.igneous);ca
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String site,  String ipbMemberId,  String ipbPassHash,  String igneous)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String site,  String ipbMemberId,  String ipbPassHash,  String igneous,  bool builtInHosts)?  $default,) {final _that = this;
 switch (_that) {
 case _EhSettingState() when $default != null:
-return $default(_that.site,_that.ipbMemberId,_that.ipbPassHash,_that.igneous);case _:
+return $default(_that.site,_that.ipbMemberId,_that.ipbPassHash,_that.igneous,_that.builtInHosts);case _:
   return null;
 
 }
@@ -218,13 +219,14 @@ return $default(_that.site,_that.ipbMemberId,_that.ipbPassHash,_that.igneous);ca
 @JsonSerializable()
 
 class _EhSettingState implements EhSettingState {
-  const _EhSettingState({this.site = ehDomainE, this.ipbMemberId = '', this.ipbPassHash = '', this.igneous = ''});
+  const _EhSettingState({this.site = ehDomainE, this.ipbMemberId = '', this.ipbPassHash = '', this.igneous = '', this.builtInHosts = true});
   factory _EhSettingState.fromJson(Map<String, dynamic> json) => _$EhSettingStateFromJson(json);
 
 @override@JsonKey() final  String site;
 @override@JsonKey() final  String ipbMemberId;
 @override@JsonKey() final  String ipbPassHash;
 @override@JsonKey() final  String igneous;
+@override@JsonKey() final  bool builtInHosts;
 
 /// Create a copy of EhSettingState
 /// with the given fields replaced by the non-null parameter values.
@@ -239,18 +241,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _EhSettingState&&(identical(other.site, site) || other.site == site)&&(identical(other.ipbMemberId, ipbMemberId) || other.ipbMemberId == ipbMemberId)&&(identical(other.ipbPassHash, ipbPassHash) || other.ipbPassHash == ipbPassHash)&&(identical(other.igneous, igneous) || other.igneous == igneous));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _EhSettingState&&(identical(other.site, site) || other.site == site)&&(identical(other.ipbMemberId, ipbMemberId) || other.ipbMemberId == ipbMemberId)&&(identical(other.ipbPassHash, ipbPassHash) || other.ipbPassHash == ipbPassHash)&&(identical(other.igneous, igneous) || other.igneous == igneous)&&(identical(other.builtInHosts, builtInHosts) || other.builtInHosts == builtInHosts));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
-    return Object.hash(runtimeType,site,ipbMemberId,ipbPassHash,igneous);
+    return Object.hash(runtimeType,site,ipbMemberId,ipbPassHash,igneous,builtInHosts);
 }
 
 @override
 String toString() {
-    return 'EhSettingState(site: $site, ipbMemberId: $ipbMemberId, ipbPassHash: $ipbPassHash, igneous: $igneous)';
+    return 'EhSettingState(site: $site, ipbMemberId: $ipbMemberId, ipbPassHash: $ipbPassHash, igneous: $igneous, builtInHosts: $builtInHosts)';
 }
 
 
@@ -261,7 +263,7 @@ abstract mixin class _$EhSettingStateCopyWith<$Res> implements $EhSettingStateCo
   factory _$EhSettingStateCopyWith(_EhSettingState value, $Res Function(_EhSettingState) _then) = __$EhSettingStateCopyWithImpl;
 @override @useResult
 $Res call({
- String site, String ipbMemberId, String ipbPassHash, String igneous
+ String site, String ipbMemberId, String ipbPassHash, String igneous, bool builtInHosts
 });
 
 
@@ -278,13 +280,14 @@ class __$EhSettingStateCopyWithImpl<$Res>
 
 /// Create a copy of EhSettingState
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? site = null,Object? ipbMemberId = null,Object? ipbPassHash = null,Object? igneous = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? site = null,Object? ipbMemberId = null,Object? ipbPassHash = null,Object? igneous = null,Object? builtInHosts = null,}) {
   return _then(_EhSettingState(
 site: null == site ? _self.site : site // ignore: cast_nullable_to_non_nullable
 as String,ipbMemberId: null == ipbMemberId ? _self.ipbMemberId : ipbMemberId // ignore: cast_nullable_to_non_nullable
 as String,ipbPassHash: null == ipbPassHash ? _self.ipbPassHash : ipbPassHash // ignore: cast_nullable_to_non_nullable
 as String,igneous: null == igneous ? _self.igneous : igneous // ignore: cast_nullable_to_non_nullable
-as String,
+as String,builtInHosts: null == builtInHosts ? _self.builtInHosts : builtInHosts // ignore: cast_nullable_to_non_nullable
+as bool,
   ));
 }
 

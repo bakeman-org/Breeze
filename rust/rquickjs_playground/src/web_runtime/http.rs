@@ -320,6 +320,7 @@ pub struct BuildHttpClientOptions {
     pub connect_timeout: Option<Duration>,
     pub follow_redirects: Option<bool>,
     pub user_agent: Option<String>,
+    pub resolve_hosts: Vec<(String, String)>,
 }
 
 /// 按当前/指定全局配置创建 `reqwest::Client`。
@@ -379,6 +380,11 @@ pub fn build_http_client_ex(
     }
     if let Some(ua) = options.user_agent.as_ref().filter(|s| !s.is_empty()) {
         builder = builder.user_agent(ua);
+    }
+    for (domain, ip) in &options.resolve_hosts {
+        if let Ok(addr) = ip.trim().parse::<std::net::IpAddr>() {
+            builder = builder.resolve(domain.trim(), std::net::SocketAddr::new(addr, 443));
+        }
     }
 
     let client = builder

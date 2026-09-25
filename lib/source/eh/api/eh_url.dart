@@ -9,9 +9,11 @@ class EhGalleryUrlParts {
 }
 
 final RegExp _ehDetailUrlStrictPattern = RegExp(
-    r'https?://(?:exhentai\.org|e-hentai\.org|lofi\.e-hentai\.org)/(?:g|mpv)/(\d+)/([0-9a-f]{10})');
-final RegExp _ehDetailUrlLoosePattern =
-    RegExp(r'(\d+)/([0-9a-f]{10})(?:[^0-9a-f]|$)');
+  r'https?://(?:exhentai\.org|e-hentai\.org|lofi\.e-hentai\.org)/(?:g|mpv)/(\d+)/([0-9a-f]{10})',
+);
+final RegExp _ehDetailUrlLoosePattern = RegExp(
+  r'(\d+)/([0-9a-f]{10})(?:[^0-9a-f]|$)',
+);
 
 String _ehDomain() => ehSettingState.domain;
 
@@ -19,10 +21,9 @@ String ehHost() => 'https://${_ehDomain()}/';
 
 String ehReferer() => 'https://${_ehDomain()}';
 
-String ehApiUrl() =>
-    _ehDomain() == ehDomainEx
-        ? 'https://exhentai.org/api.php'
-        : 'https://api.e-hentai.org/api.php';
+String ehApiUrl() => _ehDomain() == ehDomainEx
+    ? 'https://exhentai.org/api.php'
+    : 'https://api.e-hentai.org/api.php';
 
 String ehUConfigUrl() => '${ehHost()}uconfig.php';
 
@@ -38,8 +39,12 @@ String ehNewsUrl() => 'https://$ehDomainE/news.php';
 
 String ehForumsUrl() => 'https://forums.e-hentai.org/';
 
-String ehGalleryDetailUrl(String gid, String token,
-    {int page = 0, bool allComments = false}) {
+String ehGalleryDetailUrl(
+  String gid,
+  String token, {
+  int page = 0,
+  bool allComments = false,
+}) {
   var url = '${ehHost()}g/$gid/$token/';
   final params = <String>[];
   if (page > 0) params.add('p=$page');
@@ -75,8 +80,10 @@ String buildEhGalleryListUrl({
   if (kw.isNotEmpty) params['f_search'] = kw;
   if (page > 0) params[popular ? 'next' : 'page'] = '$page';
   final encoded = params.entries
-      .map((e) =>
-          '${Uri.encodeQueryComponent(e.key)}=${Uri.encodeQueryComponent(e.value)}')
+      .map(
+        (e) =>
+            '${Uri.encodeQueryComponent(e.key)}=${Uri.encodeQueryComponent(e.value)}',
+      )
       .join('&');
   final sort = sortParam.trim();
   if (sort.isNotEmpty) {

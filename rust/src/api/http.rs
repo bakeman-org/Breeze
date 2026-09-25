@@ -32,6 +32,8 @@ pub struct HttpClientOptions {
     /// 覆盖全局 TLS 校验；`None` 时跟随全局配置。
     pub danger_accept_invalid_certs: Option<bool>,
     pub user_agent: Option<String>,
+    /// 域名 → IP 列表，覆盖 DNS 解析（TLS SNI 仍为原域名）。
+    pub resolve_hosts: Option<HashMap<String, Vec<String>>>,
 }
 
 /// 单次 `fetch` 的 init（对齐 Fetch API 的 RequestInit）。
@@ -326,6 +328,17 @@ fn create_reqwest_client(options: &HttpClientOptions) -> Result<ClientWithMiddle
             )),
             follow_redirects: options.follow_redirects,
             user_agent: options.user_agent.clone(),
+            resolve_hosts: options
+                .resolve_hosts
+                .clone()
+                .unwrap_or_default()
+                .into_iter()
+                .flat_map(|(domain, ips)| {
+                    ips.into_iter()
+                        .map(move |ip| (domain.clone(), ip))
+                        .collect::<Vec<_>>()
+                })
+                .collect(),
         },
     )
     .map_err(|e| anyhow!("failed to create http client: {e:#}"))

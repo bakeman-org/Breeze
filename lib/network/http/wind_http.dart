@@ -31,6 +31,7 @@ class WindHttp {
     String? httpProxy,
     bool? dangerAcceptInvalidCerts,
     String? userAgent,
+    Map<String, List<String>>? resolveHosts,
   }) {
     final timeout = receiveTimeout ?? const Duration(seconds: 30);
     final connect = connectTimeout ?? const Duration(seconds: 15);
@@ -46,6 +47,7 @@ class WindHttp {
           httpProxy: httpProxy,
           dangerAcceptInvalidCerts: dangerAcceptInvalidCerts,
           userAgent: userAgent,
+          resolveHosts: resolveHosts,
         ),
       ),
     );
@@ -56,12 +58,14 @@ class WindHttp {
     Duration? connectTimeout,
     Duration? receiveTimeout,
     bool followRedirects = true,
+    Map<String, List<String>>? resolveHosts,
   }) {
     return WindHttp(
       connectTimeout: connectTimeout,
       receiveTimeout: receiveTimeout,
       followRedirects: followRedirects,
       noProxy: true,
+      resolveHosts: resolveHosts,
     );
   }
 

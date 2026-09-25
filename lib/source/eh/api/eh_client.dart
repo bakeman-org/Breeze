@@ -42,13 +42,11 @@ WindHttp _createEhHttp() {
     dangerAcceptInvalidCerts: true,
     connectTimeout: const Duration(seconds: 15),
     receiveTimeout: const Duration(seconds: 30),
+    resolveHosts: activeEhResolveHosts(),
   );
 }
 
-Map<String, String> _ehHeaders({
-  String? referer,
-  bool withOrigin = false,
-}) {
+Map<String, String> _ehHeaders({String? referer, bool withOrigin = false}) {
   final headers = <String, String>{
     'User-Agent': _ehUserAgent,
     'Accept': _ehAccept,
@@ -64,7 +62,8 @@ Map<String, String> _ehHeaders({
 void _checkEhResponse(FetchResponse response, String body) {
   if (response.status == 401 || response.status == 403) {
     throw EhLoginRequiredException(
-        'E-Hentai 拒绝访问（HTTP ${response.status}），登录信息可能已失效');
+      'E-Hentai 拒绝访问（HTTP ${response.status}），登录信息可能已失效',
+    );
   }
   final disposition = response.header('content-disposition') ?? '';
   if (disposition.trim() == _ehSadPandaDisposition) {
@@ -85,8 +84,10 @@ void _checkEhResponse(FetchResponse response, String body) {
 }
 
 Future<String> fetchEhHtml(String url, {String? referer}) async {
-  final response = await _createEhHttp()
-      .fetch(url, headers: _ehHeaders(referer: referer));
+  final response = await _createEhHttp().fetch(
+    url,
+    headers: _ehHeaders(referer: referer),
+  );
   final body = response.text;
   _checkEhResponse(response, body);
   return body;
@@ -110,15 +111,19 @@ Future<EhGalleryListResult> fetchEhGalleryList({
   return parseGalleryList(html);
 }
 
-Future<EhGalleryDetail> fetchEhGalleryDetail(String gid, String token,
-    {int page = 0}) async {
+Future<EhGalleryDetail> fetchEhGalleryDetail(
+  String gid,
+  String token, {
+  int page = 0,
+}) async {
   final url = ehGalleryDetailUrl(gid, token, page: page);
   final html = await fetchEhHtml(url);
   return parseGalleryDetail(html, gid: gid, token: token);
 }
 
 Future<List<EhGalleryInfo>> fetchEhGalleryMetadataByApi(
-    List<EhGalleryInfo> items) async {
+  List<EhGalleryInfo> items,
+) async {
   if (items.isEmpty) return items;
   final gidlist = [
     for (final item in items) [item.gid, item.token],
@@ -167,7 +172,8 @@ Future<List<EhGalleryInfo>> fetchEhGalleryMetadataByApi(
     target.uploader = '${entry['uploader'] ?? target.uploader}';
     final posted = int.tryParse('${entry['posted'] ?? ''}');
     if (posted != null) target.uploaded = _formatPostedTime(posted);
-    target.rating = double.tryParse('${entry['rating'] ?? ''}') ?? target.rating;
+    target.rating =
+        double.tryParse('${entry['rating'] ?? ''}') ?? target.rating;
     final tags = entry['tags'];
     if (tags is List) {
       target.tags = tags.map((e) => '$e').toList();
@@ -179,7 +185,10 @@ Future<List<EhGalleryInfo>> fetchEhGalleryMetadataByApi(
   return items;
 }
 
-Future<EhPageImage> fetchEhImagePage(String viewerUrl, {String? referer}) async {
+Future<EhPageImage> fetchEhImagePage(
+  String viewerUrl, {
+  String? referer,
+}) async {
   final html = await fetchEhHtml(viewerUrl, referer: referer);
   return parseGalleryPage(html);
 }
@@ -205,8 +214,7 @@ Future<List<String>> fetchEhGalleryPageTokens({
 }
 
 String _formatPostedTime(int seconds) {
-  final time =
-      DateTime.fromMillisecondsSinceEpoch(seconds * 1000).toLocal();
+  final time = DateTime.fromMillisecondsSinceEpoch(seconds * 1000).toLocal();
   String pad(int value) => value.toString().padLeft(2, '0');
   return '${time.year}-${pad(time.month)}-${pad(time.day)} '
       '${pad(time.hour)}:${pad(time.minute)}';

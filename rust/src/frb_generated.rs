@@ -30,7 +30,7 @@
 use crate::api::http::*;
 use crate::api::logger::*;
 use flutter_rust_bridge::for_generated::byteorder::{NativeEndian, ReadBytesExt, WriteBytesExt};
-use flutter_rust_bridge::for_generated::{Lifetimeable, Lockable, transform_result_dco};
+use flutter_rust_bridge::for_generated::{transform_result_dco, Lifetimeable, Lockable};
 use flutter_rust_bridge::{Handler, IntoIntoDart};
 
 // Section: boilerplate
@@ -3052,6 +3052,14 @@ impl SseDecode for std::collections::HashMap<String, String> {
     }
 }
 
+impl SseDecode for std::collections::HashMap<String, Vec<String>> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut inner = <Vec<(String, Vec<String>)>>::sse_decode(deserializer);
+        return inner.into_iter().collect();
+    }
+}
+
 impl SseDecode
     for RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<HttpClient>>
 {
@@ -3170,6 +3178,8 @@ impl SseDecode for crate::api::http::HttpClientOptions {
         let mut var_httpProxy = <Option<String>>::sse_decode(deserializer);
         let mut var_dangerAcceptInvalidCerts = <Option<bool>>::sse_decode(deserializer);
         let mut var_userAgent = <Option<String>>::sse_decode(deserializer);
+        let mut var_resolveHosts =
+            <Option<std::collections::HashMap<String, Vec<String>>>>::sse_decode(deserializer);
         return crate::api::http::HttpClientOptions {
             base_url: var_baseUrl,
             default_headers: var_defaultHeaders,
@@ -3180,6 +3190,7 @@ impl SseDecode for crate::api::http::HttpClientOptions {
             http_proxy: var_httpProxy,
             danger_accept_invalid_certs: var_dangerAcceptInvalidCerts,
             user_agent: var_userAgent,
+            resolve_hosts: var_resolveHosts,
         };
     }
 }
@@ -3250,6 +3261,18 @@ impl SseDecode for Vec<u8> {
     }
 }
 
+impl SseDecode for Vec<(String, Vec<String>)> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut len_ = <i32>::sse_decode(deserializer);
+        let mut ans_ = Vec::with_capacity(len_ as usize);
+        for idx_ in 0..len_ {
+            ans_.push(<(String, Vec<String>)>::sse_decode(deserializer));
+        }
+        return ans_;
+    }
+}
+
 impl SseDecode for Vec<(String, String)> {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
@@ -3283,6 +3306,19 @@ impl SseDecode for Option<std::collections::HashMap<String, String>> {
             return Some(<std::collections::HashMap<String, String>>::sse_decode(
                 deserializer,
             ));
+        } else {
+            return None;
+        }
+    }
+}
+
+impl SseDecode for Option<std::collections::HashMap<String, Vec<String>>> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        if (<bool>::sse_decode(deserializer)) {
+            return Some(
+                <std::collections::HashMap<String, Vec<String>>>::sse_decode(deserializer),
+            );
         } else {
             return None;
         }
@@ -3441,6 +3477,15 @@ impl SseDecode for crate::qjs::QjsRuntimeBundleBuild {
             bundle_name: var_bundleName,
             bundle_js: var_bundleJs,
         };
+    }
+}
+
+impl SseDecode for (String, Vec<String>) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_field0 = <String>::sse_decode(deserializer);
+        let mut var_field1 = <Vec<String>>::sse_decode(deserializer);
+        return (var_field0, var_field1);
     }
 }
 
@@ -3806,6 +3851,7 @@ impl flutter_rust_bridge::IntoDart for crate::api::http::HttpClientOptions {
                 .into_into_dart()
                 .into_dart(),
             self.user_agent.into_into_dart().into_dart(),
+            self.resolve_hosts.into_into_dart().into_dart(),
         ]
         .into_dart()
     }
@@ -4036,6 +4082,13 @@ impl SseEncode for std::collections::HashMap<String, String> {
     }
 }
 
+impl SseEncode for std::collections::HashMap<String, Vec<String>> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <Vec<(String, Vec<String>)>>::sse_encode(self.into_iter().collect(), serializer);
+    }
+}
+
 impl SseEncode
     for RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<HttpClient>>
 {
@@ -4135,6 +4188,10 @@ impl SseEncode for crate::api::http::HttpClientOptions {
         <Option<String>>::sse_encode(self.http_proxy, serializer);
         <Option<bool>>::sse_encode(self.danger_accept_invalid_certs, serializer);
         <Option<String>>::sse_encode(self.user_agent, serializer);
+        <Option<std::collections::HashMap<String, Vec<String>>>>::sse_encode(
+            self.resolve_hosts,
+            serializer,
+        );
     }
 }
 
@@ -4193,6 +4250,16 @@ impl SseEncode for Vec<u8> {
     }
 }
 
+impl SseEncode for Vec<(String, Vec<String>)> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(self.len() as _, serializer);
+        for item in self {
+            <(String, Vec<String>)>::sse_encode(item, serializer);
+        }
+    }
+}
+
 impl SseEncode for Vec<(String, String)> {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
@@ -4219,6 +4286,16 @@ impl SseEncode for Option<std::collections::HashMap<String, String>> {
         <bool>::sse_encode(self.is_some(), serializer);
         if let Some(value) = self {
             <std::collections::HashMap<String, String>>::sse_encode(value, serializer);
+        }
+    }
+}
+
+impl SseEncode for Option<std::collections::HashMap<String, Vec<String>>> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <bool>::sse_encode(self.is_some(), serializer);
+        if let Some(value) = self {
+            <std::collections::HashMap<String, Vec<String>>>::sse_encode(value, serializer);
         }
     }
 }
@@ -4346,6 +4423,14 @@ impl SseEncode for crate::qjs::QjsRuntimeBundleBuild {
     }
 }
 
+impl SseEncode for (String, Vec<String>) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <String>::sse_encode(self.0, serializer);
+        <Vec<String>>::sse_encode(self.1, serializer);
+    }
+}
+
 impl SseEncode for (String, String) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
@@ -4425,7 +4510,7 @@ mod io {
     use flutter_rust_bridge::for_generated::byteorder::{
         NativeEndian, ReadBytesExt, WriteBytesExt,
     };
-    use flutter_rust_bridge::for_generated::{Lifetimeable, Lockable, transform_result_dco};
+    use flutter_rust_bridge::for_generated::{transform_result_dco, Lifetimeable, Lockable};
     use flutter_rust_bridge::{Handler, IntoIntoDart};
 
     // Section: boilerplate
@@ -4479,7 +4564,7 @@ mod web {
     };
     use flutter_rust_bridge::for_generated::wasm_bindgen;
     use flutter_rust_bridge::for_generated::wasm_bindgen::prelude::*;
-    use flutter_rust_bridge::for_generated::{Lifetimeable, Lockable, transform_result_dco};
+    use flutter_rust_bridge::for_generated::{transform_result_dco, Lifetimeable, Lockable};
     use flutter_rust_bridge::{Handler, IntoIntoDart};
 
     // Section: boilerplate

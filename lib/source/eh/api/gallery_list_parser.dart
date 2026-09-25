@@ -27,8 +27,9 @@ List<EhGalleryInfo> _parseEntries(Document document) {
   final items = <EhGalleryInfo>[];
   final itg = document.querySelector('.itg');
   if (itg != null) {
-    final rows =
-        itg.localName == 'table' ? itg.querySelectorAll('tr') : itg.children;
+    final rows = itg.localName == 'table'
+        ? itg.querySelectorAll('tr')
+        : itg.children;
     for (final row in rows) {
       final info = _parseGalleryEntry(row);
       if (info != null) items.add(info);

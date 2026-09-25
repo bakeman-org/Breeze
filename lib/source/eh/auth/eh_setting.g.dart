@@ -12,6 +12,7 @@ _EhSettingState _$EhSettingStateFromJson(Map<String, dynamic> json) =>
       ipbMemberId: json['ipbMemberId'] as String? ?? '',
       ipbPassHash: json['ipbPassHash'] as String? ?? '',
       igneous: json['igneous'] as String? ?? '',
+      builtInHosts: json['builtInHosts'] as bool? ?? true,
     );
 
 Map<String, dynamic> _$EhSettingStateToJson(_EhSettingState instance) =>
@@ -20,4 +21,5 @@ Map<String, dynamic> _$EhSettingStateToJson(_EhSettingState instance) =>
       'ipbMemberId': instance.ipbMemberId,
       'ipbPassHash': instance.ipbPassHash,
       'igneous': instance.igneous,
+      'builtInHosts': instance.builtInHosts,
     };

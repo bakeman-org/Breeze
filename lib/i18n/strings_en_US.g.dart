@@ -1653,6 +1653,8 @@ class _Translations$eh$en_US extends Translations$eh$zh_CN {
 	@override String get saved => 'Saved';
 	@override String get logout => 'Log out';
 	@override String get notSet => 'Not set';
+	@override String get builtInHosts => 'Built-in hosts';
+	@override String get builtInHostsDesc => 'Use hardcoded IPs to bypass DNS pollution';
 }
 
 /// The flat map containing all translations for locale <en-US>.
@@ -2921,6 +2923,8 @@ extension on TranslationsEnUs {
 			'eh.saved' => 'Saved',
 			'eh.logout' => 'Log out',
 			'eh.notSet' => 'Not set',
+			'eh.builtInHosts' => 'Built-in hosts',
+			'eh.builtInHostsDesc' => 'Use hardcoded IPs to bypass DNS pollution',
 			_ => null,
 		};
 	}

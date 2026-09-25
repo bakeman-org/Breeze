@@ -431,6 +431,7 @@ fn build_client(host: &str, username: &str, password: &str) -> Result<WebDavClie
             connect_timeout: Some(Duration::from_secs(10)),
             follow_redirects: Some(true),
             user_agent: None,
+            resolve_hosts: Vec::new(),
         },
     )
     .map_err(|e| {

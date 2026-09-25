@@ -4,14 +4,17 @@ import 'package:zephyr/source/eh/models/eh_models.dart';
 
 final RegExp _ehErrorPattern = RegExp(r'<div class="d">\n<p>([^<]+)</p>');
 final RegExp _ehDetailVarPattern = RegExp(
-    r'var gid = (\d+);.+?var token = "([a-f0-9]+)";.+?var apiuid = ([\-\d]+);.+?var apikey = "([a-f0-9]+)";',
-    dotAll: true);
-final RegExp _torrentCountPattern =
-    RegExp(r'Torrent Download \((\d+)\)');
-final RegExp _coverPattern =
-    RegExp(r'width:(\d+)px; height:(\d+)px.+?url\((.+?)\)', dotAll: true);
-final RegExp _previewPerPagePattern =
-    RegExp(r'Showing \d+ - (\d+) of ([\d,]+) images');
+  r'var gid = (\d+);.+?var token = "([a-f0-9]+)";.+?var apiuid = ([\-\d]+);.+?var apikey = "([a-f0-9]+)";',
+  dotAll: true,
+);
+final RegExp _torrentCountPattern = RegExp(r'Torrent Download \((\d+)\)');
+final RegExp _coverPattern = RegExp(
+  r'width:(\d+)px; height:(\d+)px.+?url\((.+?)\)',
+  dotAll: true,
+);
+final RegExp _previewPerPagePattern = RegExp(
+  r'Showing \d+ - (\d+) of ([\d,]+) images',
+);
 final RegExp _intCommaPattern = RegExp(r'^[\d,]+$');
 
 const String _offensiveString =
@@ -19,8 +22,11 @@ const String _offensiveString =
 const String _piningString = '<p>This gallery is pining for the fjords.</p>';
 const String _unavailableString = 'This gallery is unavailable';
 
-EhGalleryDetail parseGalleryDetail(String html,
-    {String gid = '', String token = ''}) {
+EhGalleryDetail parseGalleryDetail(
+  String html, {
+  String gid = '',
+  String token = '',
+}) {
   if (html.contains(_offensiveString)) {
     throw const EhParseException('This gallery is offensive');
   }
@@ -45,8 +51,9 @@ EhGalleryDetail parseGalleryDetail(String html,
   }
 
   final torrentMatch = _torrentCountPattern.firstMatch(html);
-  detail.torrentCount =
-      torrentMatch == null ? 0 : int.tryParse(torrentMatch.group(1)!) ?? 0;
+  detail.torrentCount = torrentMatch == null
+      ? 0
+      : int.tryParse(torrentMatch.group(1)!) ?? 0;
 
   final gm = document.querySelector('.gm');
   if (gm == null) {
@@ -120,8 +127,8 @@ EhGalleryDetail parseGalleryDetail(String html,
   if (detail.previewPages <= 0 &&
       detail.pages > 0 &&
       detail.previewPerPage > 0) {
-    detail.previewPages = (detail.pages + detail.previewPerPage - 1) ~/
-        detail.previewPerPage;
+    detail.previewPages =
+        (detail.pages + detail.previewPerPage - 1) ~/ detail.previewPerPage;
   }
 
   detail.generateSimpleLanguage();
@@ -168,7 +175,8 @@ List<EhTagGroup> parseEhTagGroupRows(List<Element> rows) {
         if (index >= 0) tag = tag.substring(0, index).trim();
         if (tag.isNotEmpty) tags.add(tag);
       }
-      if (tags.isNotEmpty) groups.add(EhTagGroup(namespace: namespace, tags: tags));
+      if (tags.isNotEmpty)
+        groups.add(EhTagGroup(namespace: namespace, tags: tags));
     } catch (_) {
       continue;
     }
