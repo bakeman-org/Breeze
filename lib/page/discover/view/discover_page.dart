@@ -168,6 +168,19 @@ class _DiscoverView extends StatelessWidget {
           padding: padding.copyWith(bottom: padding.bottom + 120),
           children: [
             const SizedBox(height: 8),
+            _buildNativeSourceCard(
+              context,
+              title: t.bika.appName,
+              icon: Icons.favorite_border,
+              onTap: () => context.pushRoute(const BikaHomeRoute()),
+            ),
+            _buildNativeSourceCard(
+              context,
+              title: t.eh.appName,
+              icon: Icons.public,
+              onTap: () => context.pushRoute(const EhHomeRoute()),
+            ),
+            const SizedBox(height: 8),
             _buildPluginStoreButton(context),
             const SizedBox(height: 8),
             _buildSectionHeader(context, t.discover.pluginManagement),
@@ -238,6 +251,50 @@ class _DiscoverView extends StatelessWidget {
               currentFrom: cubit.currentFrom,
             ),
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNativeSourceCard(
+    BuildContext context, {
+    required String title,
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      child: MiuixCard(
+        onPressed: onTap,
+        insideMargin: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        child: Row(
+          children: [
+            Icon(icon, size: 22, color: colorScheme.primary),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                title,
+                style: const TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 16,
+                ),
+              ),
+            ),
+            Text(
+              t.discover.nativeSource,
+              style: TextStyle(
+                color: colorScheme.onSurfaceVariant,
+                fontSize: 13,
+              ),
+            ),
+            const SizedBox(width: 4),
+            Icon(
+              Icons.chevron_right,
+              size: 20,
+              color: colorScheme.onSurfaceVariant,
+            ),
+          ],
         ),
       ),
     );

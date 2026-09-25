@@ -1240,6 +1240,7 @@ class _Translations$discover$en_US extends Translations$discover$zh_CN {
 	@override String get resetOrder => 'Reset order';
 	@override String get noPlugins => 'No plugins available. Go to the plugin store to install one~';
 	@override String get pluginStore => 'Plugin Store';
+	@override String get nativeSource => 'Native source';
 	@override String get browseInstall => 'Browse & Install';
 	@override String get noPluginForSearch => 'No plugins available, cannot search';
 	@override String pluginInfoLoadFailed({required Object error}) => 'Failed to load plugin info: ${error}';
@@ -2647,6 +2648,7 @@ extension on TranslationsEnUs {
 			'discover.resetOrder' => 'Reset order',
 			'discover.noPlugins' => 'No plugins available. Go to the plugin store to install one~',
 			'discover.pluginStore' => 'Plugin Store',
+			'discover.nativeSource' => 'Native source',
 			'discover.browseInstall' => 'Browse & Install',
 			'discover.noPluginForSearch' => 'No plugins available, cannot search',
 			'discover.pluginInfoLoadFailed' => ({required Object error}) => 'Failed to load plugin info: ${error}',
@@ -2685,9 +2687,9 @@ extension on TranslationsEnUs {
 			'comicEntry.deleteDownloadConfirm' => ({required Object title}) => 'Delete download record and files for "${title}"?',
 			'comicEntry.deleteFailed' => 'Delete failed',
 			'comicFollow.title' => 'Updates',
-			'comicFollow.loadFailed' => ({required Object result}) => 'Load failed: ${result}',
 			_ => null,
 		} ?? switch (path) {
+			'comicFollow.loadFailed' => ({required Object result}) => 'Load failed: ${result}',
 			'comicFollow.empty' => 'No followed comics',
 			'comicFollow.emptyHint' => 'Tap the follow button on a comic detail page to add it here',
 			'comicFollow.unfollow' => 'Unfollow',

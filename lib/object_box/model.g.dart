@@ -571,9 +571,6 @@ UserSetting _$UserSettingFromJson(Map<String, dynamic> json) =>
       ..globalSetting = GlobalSettingState.fromJson(
         json['globalSetting'] as Map<String, dynamic>,
       )
-      ..bikaSetting = BikaSettingState.fromJson(
-        json['bikaSetting'] as Map<String, dynamic>,
-      )
       ..jmSetting = JmSettingState.fromJson(
         json['jmSetting'] as Map<String, dynamic>,
       )
@@ -593,7 +590,6 @@ Map<String, dynamic> _$UserSettingToJson(UserSetting instance) =>
       'ehSettingData': instance.ehSettingData,
       'jmJwt': instance.jmJwt,
       'globalSetting': instance.globalSetting.toJson(),
-      'bikaSetting': instance.bikaSetting.toJson(),
       'jmSetting': instance.jmSetting.toJson(),
       'ehSetting': instance.ehSetting.toJson(),
       'bikaNativeSetting': instance.bikaNativeSetting.toJson(),

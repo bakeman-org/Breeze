@@ -3,16 +3,10 @@ use std::fs;
 use std::io;
 use std::path::{Path, PathBuf};
 
-const PLUGIN_ASSETS: [(&str, &str); 2] = [
-    (
-        "https://cdn.jsdelivr.net/npm/breeze-plugin-jm-comic@latest/dist/breeze-plugin-jm-comic.bundle.cjs",
-        "jm-comic.bundle.cjs",
-    ),
-    (
-        "https://cdn.jsdelivr.net/npm/breeze-plugin-bika-comic@latest/dist/breeze-plugin-bika-comic.bundle.cjs",
-        "bika-comic.bundle.cjs",
-    ),
-];
+const PLUGIN_ASSETS: [(&str, &str); 1] = [(
+    "https://cdn.jsdelivr.net/npm/breeze-plugin-jm-comic@latest/dist/breeze-plugin-jm-comic.bundle.cjs",
+    "jm-comic.bundle.cjs",
+)];
 const USER_AGENT: &str = "Breeze-build-script";
 
 fn main() {

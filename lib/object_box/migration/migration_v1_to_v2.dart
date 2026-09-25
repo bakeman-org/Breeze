@@ -41,7 +41,9 @@ Future<void> _migrateV1ToV2InCurrentIsolate() async {
   _migrateLegacySearchHistory(box);
   _migrateLegacyPluginSettings(box);
   _debugLogMigrationSnapshot('before', _buildLegacySnapshot(box));
-  final proxy = box.userSettingBox.get(1)?.bikaSetting.proxy ?? 3;
+  final proxy = _legacyBikaProxyFromRaw(
+    box.userSettingBox.get(1)?.bikaSettingData,
+  );
 
   final jmFavoritesJson = box.jmFavoriteBox
       .getAll()
@@ -115,29 +117,7 @@ void _migrateLegacyPluginSettings(ObjectBox objectbox) {
     return;
   }
 
-  final bika = user.bikaSetting;
   final jm = user.jmSetting;
-
-  final bikaConfig = _upsertPluginConfigData(
-    objectbox,
-    pluginUuid: _kBikaPluginUuid,
-    patches: {
-      'auth.account': bika.account,
-      'auth.password': bika.password,
-      'auth.authorization': bika.authorization,
-      'network.proxy': bika.proxy.toString(),
-      'image.quality': bika.imageQuality,
-      'search.blockedCategories': _selectedKeysFromBoolMap(
-        bika.shieldCategoryMap,
-      ),
-      'home.blockedCategories': _selectedKeysFromBoolMap(
-        bika.shieldHomePageCategoriesMap,
-      ),
-    },
-  );
-  if (bikaConfig) {
-    logger.d('[migration_v1_to_v2][settings] migrated bika plugin settings');
-  }
 
   final jmConfig = _upsertPluginConfigData(
     objectbox,
@@ -179,11 +159,6 @@ bool _upsertPluginConfigData(
     changed = true;
   }
 
-  if (pluginUuid == _kBikaPluginUuid && data.containsKey('download.slow')) {
-    data.remove('download.slow');
-    changed = true;
-  }
-
   if (!changed) {
     return false;
   }
@@ -195,14 +170,6 @@ bool _upsertPluginConfigData(
     box.put(existing);
   }
   return true;
-}
-
-List<String> _selectedKeysFromBoolMap(Map<String, bool> raw) {
-  return raw.entries
-      .where((entry) => entry.value)
-      .map((entry) => entry.key.trim())
-      .where((value) => value.isNotEmpty)
-      .toList();
 }
 
 Map<String, dynamic> _parseLegacyUserInfo(String raw) {
@@ -220,6 +187,22 @@ Map<String, dynamic> _parseLegacyUserInfo(String raw) {
     }
   } catch (_) {}
   return const <String, dynamic>{};
+}
+
+int _legacyBikaProxyFromRaw(String? raw) {
+  if (raw == null || raw.trim().isEmpty) {
+    return 3;
+  }
+  try {
+    final decoded = jsonDecode(raw);
+    if (decoded is Map) {
+      final proxy = decoded['proxy'];
+      if (proxy is num) {
+        return proxy.toInt();
+      }
+    }
+  } catch (_) {}
+  return 3;
 }
 
 bool _shouldWriteLegacyValue(dynamic value) {
@@ -275,43 +258,24 @@ Future<void> migrateLegacyDownloadFilesToPluginUuidLayout() async {
 Future<void> _seedBuiltinPlugins(ObjectBox objectbox) async {
   final now = DateTime.now().toUtc();
 
-  final existing = objectbox.pluginInfoBox
-      .query(
-        PluginInfo_.uuid
-            .equals(_kBikaPluginUuid)
-            .or(PluginInfo_.uuid.equals(_kJmPluginUuid)),
-      )
+  final jmHistorys = objectbox.jmHistoryBox.getAll().length;
+  if (jmHistorys == 0) {
+    return;
+  }
+
+  final found = objectbox.pluginInfoBox
+      .query(PluginInfo_.uuid.equals(_kJmPluginUuid))
       .build()
       .find();
-  final existingByUuid = {for (final item in existing) item.uuid: item};
-
-  final upserts = <PluginInfo>[];
-
-  final bikaHistorys = objectbox.bikaHistoryBox.getAll().length;
-  if (bikaHistorys > 0) {
-    upserts.add(
-      _buildBuiltinPluginInfo(
-        existingByUuid[_kBikaPluginUuid],
-        uuid: _kBikaPluginUuid,
-        builtinBundle: getJsBundle(name: _kBikaPluginUuid),
-        now: now,
-      ),
-    );
-  }
-
-  final jmHistorys = objectbox.jmHistoryBox.getAll().length;
-  if (jmHistorys > 0) {
-    upserts.add(
-      _buildBuiltinPluginInfo(
-        existingByUuid[_kJmPluginUuid],
-        uuid: _kJmPluginUuid,
-        builtinBundle: getJsBundle(name: _kJmPluginUuid),
-        now: now,
-      ),
-    );
-  }
-
-  if (upserts.isNotEmpty) objectbox.pluginInfoBox.putMany(upserts);
+  final existing = found.isNotEmpty ? found.first : null;
+  objectbox.pluginInfoBox.put(
+    _buildBuiltinPluginInfo(
+      existing,
+      uuid: _kJmPluginUuid,
+      builtinBundle: getJsBundle(name: _kJmPluginUuid),
+      now: now,
+    ),
+  );
 }
 
 PluginInfo _buildBuiltinPluginInfo(

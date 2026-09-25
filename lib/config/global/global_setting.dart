@@ -131,7 +131,6 @@ abstract class GlobalSettingState with _$GlobalSettingState {
     @Default('') String socks5Proxy,
     @Default(false) bool needCleanCache,
     @Default(1) int comicChoice,
-    @Default(false) bool disableBika,
     @Default(false) bool bikaImageAcceleration,
     @Default(false) bool enableMemoryDebug,
     @Default(false) bool blockRustHttpRequests,

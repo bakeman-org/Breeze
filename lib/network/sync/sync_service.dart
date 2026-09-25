@@ -659,7 +659,6 @@ Map<String, Map<String, dynamic>> _extractSyncableSettingsBlocks(
     _libraryBlockName: <String, dynamic>{
       'maskedKeywords': json['maskedKeywords'],
       'comicChoice': json['comicChoice'],
-      'disableBika': json['disableBika'],
       'retryDownloadUntilSuccess': json['retryDownloadUntilSuccess'],
       'searchHistory': json['searchHistory'],
     },

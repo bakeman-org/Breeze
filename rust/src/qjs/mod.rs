@@ -67,9 +67,7 @@ static QJS_IN_FLIGHT_TASKS: OnceLock<RwLock<QjsInFlightTaskMap>> = OnceLock::new
 static QJS_TRACKED_TASKS: OnceLock<RwLock<QjsTrackedTaskMap>> = OnceLock::new();
 static QJS_RUNTIME_INIT_LOCK: OnceLock<AsyncMutex<()>> = OnceLock::new();
 
-const BIKA_JS_BUNDLE: &str = include_str!("../../assets/bika-comic.bundle.cjs");
 const JM_JS_BUNDLE: &str = include_str!("../../assets/jm-comic.bundle.cjs");
-const BIKA_PLUGIN_UUID: &str = "0a0e5858-a467-4702-994a-79e608a4589d";
 const JM_PLUGIN_UUID: &str = "bf99008d-010b-4f17-ac7c-61a9b57dc3d9";
 const QJS_RUNTIME_CANCELLED_ERROR_CODE: &str = "__QJS_RUNTIME_CANCELLED__";
 const BRIDGE_ROUTE_OPENCC_CONVERT: &str = "opencc.convert";
@@ -1632,7 +1630,6 @@ pub fn set_log_http_forward(url: String) -> Result<()> {
 
 pub fn get_js_bundle(name: String) -> Result<String> {
     match name.as_str() {
-        BIKA_PLUGIN_UUID => Ok(BIKA_JS_BUNDLE.to_string()),
         JM_PLUGIN_UUID => Ok(JM_JS_BUNDLE.to_string()),
         _ => Ok("".to_string()),
     }

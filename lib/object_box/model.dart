@@ -2,7 +2,6 @@ import 'dart:convert';
 
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:objectbox/objectbox.dart';
-import 'package:zephyr/config/bika/bika_setting.dart';
 import 'package:zephyr/config/global/global_setting.dart';
 import 'package:zephyr/config/jm/jm_setting.dart';
 import 'package:zephyr/service/download/models/download_task_json.dart';
@@ -742,8 +741,6 @@ class UserSetting {
   @Transient()
   GlobalSettingState? _globalSetting;
   @Transient()
-  BikaSettingState? _bikaSetting;
-  @Transient()
   JmSettingState? _jmSetting;
   @Transient()
   EhSettingState? _ehSetting;
@@ -773,20 +770,6 @@ class UserSetting {
   set globalSetting(GlobalSettingState value) {
     _globalSetting = value;
     globalSettingData = jsonEncode(value.toJson());
-  }
-
-  @Transient()
-  BikaSettingState get bikaSetting {
-    if (_bikaSetting == null && bikaSettingData != null) {
-      _bikaSetting = BikaSettingState.fromJson(jsonDecode(bikaSettingData!));
-    }
-    return _bikaSetting ??= BikaSettingState();
-  }
-
-  @Transient()
-  set bikaSetting(BikaSettingState value) {
-    _bikaSetting = value;
-    bikaSettingData = jsonEncode(value.toJson());
   }
 
   @Transient()
