@@ -3220,6 +3220,12 @@ class Translations$discover$zh_CN {
 	/// zh-CN: '原生图源'
 	String get nativeSource => '原生图源';
 
+	/// zh-CN: '已登录'
+	String get loggedIn => '已登录';
+
+	/// zh-CN: '未登录'
+	String get notLoggedIn => '未登录';
+
 	/// zh-CN: '浏览安装'
 	String get browseInstall => '浏览安装';
 
@@ -5160,6 +5166,8 @@ extension on Translations {
 			'discover.noPlugins' => '暂无可用插件，去插件商店安装一个吧~',
 			'discover.pluginStore' => '插件商店',
 			'discover.nativeSource' => '原生图源',
+			'discover.loggedIn' => '已登录',
+			'discover.notLoggedIn' => '未登录',
 			'discover.browseInstall' => '浏览安装',
 			'discover.noPluginForSearch' => '暂无可用插件，无法搜索',
 			'discover.pluginInfoLoadFailed' => ({required Object error}) => '插件信息加载失败: ${error}',
@@ -5195,10 +5203,10 @@ extension on Translations {
 			'comicEntry.deleteHistory' => '删除历史记录',
 			'comicEntry.deleteHistoryConfirm' => ({required Object title}) => '确定要删除（${title}）的历史记录吗？',
 			'comicEntry.deleteDownload' => '删除下载记录',
-			'comicEntry.deleteDownloadConfirm' => ({required Object title}) => '确定要删除（${title}）的下载记录及文件吗？',
-			'comicEntry.deleteFailed' => '删除失败',
 			_ => null,
 		} ?? switch (path) {
+			'comicEntry.deleteDownloadConfirm' => ({required Object title}) => '确定要删除（${title}）的下载记录及文件吗？',
+			'comicEntry.deleteFailed' => '删除失败',
 			'comicFollow.title' => '追更',
 			'comicFollow.loadFailed' => ({required Object result}) => '加载失败：${result}',
 			'comicFollow.empty' => '暂无追更漫画',

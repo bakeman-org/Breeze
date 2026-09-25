@@ -1026,6 +1026,8 @@
     "noPlugins": "No plugins available. Go to the plugin store to install one~",
     "pluginStore": "Plugin Store",
     "nativeSource": "Native source",
+    "loggedIn": "Signed in",
+    "notLoggedIn": "Not signed in",
     "browseInstall": "Browse & Install",
     "noPluginForSearch": "No plugins available, cannot search",
     "pluginInfoLoadFailed": "Failed to load plugin info: $error",

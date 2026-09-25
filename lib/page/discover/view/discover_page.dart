@@ -33,6 +33,8 @@ import 'package:zephyr/page/discover/view/plugin_order_dialog.dart';
 import 'package:zephyr/page/discover/widgets/plugin_card.dart';
 import 'package:zephyr/page/search/cubit/search_cubit.dart';
 import 'package:zephyr/plugin/plugin_registry_service.dart';
+import 'package:zephyr/source/bika/auth/bika_setting.dart';
+import 'package:zephyr/source/eh/auth/eh_setting.dart';
 import 'package:zephyr/widgets/toast.dart';
 
 // ─────────────────────────────────────────────────────────────────────
@@ -168,18 +170,7 @@ class _DiscoverView extends StatelessWidget {
           padding: padding.copyWith(bottom: padding.bottom + 120),
           children: [
             const SizedBox(height: 8),
-            _buildNativeSourceCard(
-              context,
-              title: t.bika.appName,
-              icon: Icons.favorite_border,
-              onTap: () => context.pushRoute(const BikaHomeRoute()),
-            ),
-            _buildNativeSourceCard(
-              context,
-              title: t.eh.appName,
-              icon: Icons.public,
-              onTap: () => context.pushRoute(const EhHomeRoute()),
-            ),
+            _buildNativeSourceEntries(context),
             const SizedBox(height: 8),
             _buildPluginStoreButton(context),
             const SizedBox(height: 8),
@@ -256,45 +247,133 @@ class _DiscoverView extends StatelessWidget {
     );
   }
 
+  Widget _buildNativeSourceEntries(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      child: Row(
+        children: [
+          Expanded(
+            child: _buildNativeSourceCard(
+              context,
+              title: t.bika.appName,
+              icon: Icons.favorite_rounded,
+              gradient: const [Color(0xFFFF7BA0), Color(0xFFF5477F)],
+              loggedIn: bikaNativeSetting.hasAuthorization,
+              onTap: () => context.pushRoute(const BikaHomeRoute()),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: _buildNativeSourceCard(
+              context,
+              title: t.eh.appName,
+              icon: Icons.language_rounded,
+              gradient: const [Color(0xFF7B6CF0), Color(0xFF4A3E9E)],
+              loggedIn: ehSettingState.hasCredentials,
+              onTap: () => context.pushRoute(const EhHomeRoute()),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildNativeSourceCard(
     BuildContext context, {
     required String title,
     required IconData icon,
+    required List<Color> gradient,
+    required bool loggedIn,
     required VoidCallback onTap,
   }) {
-    final colorScheme = Theme.of(context).colorScheme;
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-      child: MiuixCard(
-        onPressed: onTap,
-        insideMargin: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-        child: Row(
-          children: [
-            Icon(icon, size: 22, color: colorScheme.primary),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                title,
-                style: const TextStyle(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 16,
+    return SizedBox(
+      height: 116,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: InkWell(
+          onTap: onTap,
+          splashColor: Colors.white24,
+          highlightColor: Colors.white12,
+          child: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: gradient,
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+            ),
+            padding: const EdgeInsets.all(14),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      width: 34,
+                      height: 34,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.22),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Icon(icon, size: 20, color: Colors.white),
+                    ),
+                    const Spacer(),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 3,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.18),
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 6,
+                            height: 6,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: loggedIn
+                                  ? Colors.greenAccent
+                                  : Colors.white38,
+                            ),
+                          ),
+                          const SizedBox(width: 5),
+                          Text(
+                            loggedIn
+                                ? t.discover.loggedIn
+                                : t.discover.notLoggedIn,
+                            style: TextStyle(
+                              color: loggedIn ? Colors.white : Colors.white60,
+                              fontSize: 11,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
-              ),
+                const Spacer(),
+                Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 17,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  t.discover.nativeSource,
+                  style: const TextStyle(color: Colors.white70, fontSize: 12),
+                ),
+              ],
             ),
-            Text(
-              t.discover.nativeSource,
-              style: TextStyle(
-                color: colorScheme.onSurfaceVariant,
-                fontSize: 13,
-              ),
-            ),
-            const SizedBox(width: 4),
-            Icon(
-              Icons.chevron_right,
-              size: 20,
-              color: colorScheme.onSurfaceVariant,
-            ),
-          ],
+          ),
         ),
       ),
     );
