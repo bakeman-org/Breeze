@@ -1,4 +1,5 @@
 import 'package:auto_route/auto_route.dart';
+import 'package:flutter_miuix/miuix.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:zephyr/i18n/strings.g.dart';
 import 'package:zephyr/page/changelog/widgets/announcements_tab.dart';
@@ -18,21 +19,37 @@ class ChangelogPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return DefaultTabController(
       length: 3,
-      child: Scaffold(
-        appBar: AppBar(
-          title: Text(t.changelog.title),
-          centerTitle: true,
-          scrolledUnderElevation: 0,
-          bottom: const TabBar(
-            tabs: [
-              Tab(text: '更新日志'),
-              Tab(text: '公告'),
-              Tab(text: '本地追踪'),
-            ],
+      // Miuix 迁移：Scaffold + AppBar(bottom: TabBar) → MiuixScaffold + MiuixTopAppBar(bottomContent)。
+      child: MiuixScaffold(
+        topBar: MiuixTopAppBar(
+          title: t.changelog.title,
+          navigationIcon: MiuixIconButton(
+            onPressed: () => context.maybePop(),
+            child: const Icon(Icons.arrow_back),
+          ),
+          bottomContent: Material(
+            type: MaterialType.transparency,
+            child: const TabBar(
+              tabs: [
+                Tab(text: '更新日志'),
+                Tab(text: '公告'),
+                Tab(text: '本地追踪'),
+              ],
+            ),
           ),
         ),
-        body: const TabBarView(
-          children: [ReleasesTab(), AnnouncementsTab(), LocalIssueTrackerTab()],
+        content: (padding) => Material(
+          type: MaterialType.transparency,
+          child: Padding(
+            padding: padding,
+            child: const TabBarView(
+              children: [
+                ReleasesTab(),
+                AnnouncementsTab(),
+                LocalIssueTrackerTab(),
+              ],
+            ),
+          ),
         ),
       ),
     );

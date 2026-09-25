@@ -1,11 +1,18 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_miuix/miuix.dart';
 
 import 'package:zephyr/config/router/router.gr.dart';
 import 'package:zephyr/i18n/strings.g.dart';
 import 'package:zephyr/page/comic_follow/cubit/comic_follow_cubit.dart';
+import 'package:zephyr/page/setting/widgets/miuix_setting_helpers.dart';
 
+/// 「更多」Tab 的设置入口列表（Miuix 迁移版）。
+///
+/// 功能与旧版完全一致：下载任务 / 同步 / 追更 / 全局设置 / 更新日志 / 关于。
+/// 视觉元素从 ListTile + 自绘分组标题迁移为 Miuix 的
+/// `MiuixSmallTitle` + `GroupCard` + `MiuixArrowPreference`。
 class SettingsWidget extends StatelessWidget {
   const SettingsWidget({super.key});
 
@@ -14,86 +21,79 @@ class SettingsWidget extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildSectionTitle(context, t.more.common, Icons.widgets_outlined),
-        ListTile(
-          leading: const Icon(Icons.download_outlined),
-          title: Text(t.more.downloadTasks),
-          trailing: const Icon(Icons.chevron_right),
-          onTap: () => context.pushRoute(DownloadTaskRoute()),
-        ),
-        ListTile(
-          leading: const Icon(Icons.sync_outlined),
-          title: Text(t.more.sync),
-          trailing: const Icon(Icons.chevron_right),
-          onTap: () => context.pushRoute(SyncSettingRoute()),
-        ),
-        BlocSelector<ComicFollowCubit, ComicFollowState, int>(
-          selector: (state) => state.updateCount,
-          builder: (context, updateCount) {
-            return ListTile(
-              leading: const Icon(Icons.notifications_active_outlined),
-              title: Text(t.more.comicFollow),
-              trailing: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (updateCount > 0) _UpdateBadge(count: updateCount),
-                  const Icon(Icons.chevron_right),
-                ],
+        MiuixSmallTitle(t.more.common),
+        GroupCard(
+          children: [
+            MiuixArrowPreference(
+              title: t.more.downloadTasks,
+              startAction: MiuixSettingHelpers.icon(
+                fallback: Icons.download_outlined,
+                name: 'download',
               ),
-              onTap: () => context.pushRoute(ComicFollowRoute()),
-            );
-          },
+              insideMargin: MiuixSettingHelpers.itemMargin,
+              onClick: () => context.pushRoute(DownloadTaskRoute()),
+            ),
+            MiuixArrowPreference(
+              title: t.more.sync,
+              startAction: MiuixSettingHelpers.icon(
+                fallback: Icons.sync_outlined,
+                name: 'sync',
+              ),
+              insideMargin: MiuixSettingHelpers.itemMargin,
+              onClick: () => context.pushRoute(SyncSettingRoute()),
+            ),
+            BlocSelector<ComicFollowCubit, ComicFollowState, int>(
+              selector: (state) => state.updateCount,
+              builder: (context, updateCount) {
+                return MiuixArrowPreference(
+                  title: t.more.comicFollow,
+                  startAction: MiuixSettingHelpers.icon(
+                    fallback: Icons.notifications_active_outlined,
+                    name: 'notifications',
+                  ),
+                  endActions: [
+                    if (updateCount > 0) _UpdateBadge(count: updateCount),
+                  ],
+                  insideMargin: MiuixSettingHelpers.itemMargin,
+                  onClick: () => context.pushRoute(ComicFollowRoute()),
+                );
+              },
+            ),
+            MiuixArrowPreference(
+              title: t.settings.globalTitle,
+              startAction: MiuixSettingHelpers.icon(
+                fallback: Icons.settings_outlined,
+                name: 'settings',
+              ),
+              insideMargin: MiuixSettingHelpers.itemMargin,
+              onClick: () => context.pushRoute(GlobalSettingRoute()),
+            ),
+          ],
         ),
-        ListTile(
-          leading: const Icon(Icons.settings_outlined),
-          title: Text(t.settings.globalTitle),
-          trailing: const Icon(Icons.chevron_right),
-          onTap: () => context.pushRoute(GlobalSettingRoute()),
-        ),
-        const SizedBox(height: 8),
-        // const Divider(height: 1, thickness: 0.3),
-        // UI migrate: ... 其他 -> 关于与更多
-        _buildSectionTitle(
-          context,
-          t.settings.aboutAndMore,
-          Icons.info_outline,
-        ),
-        // 更新日志
-        ListTile(
-          leading: const Icon(Icons.history),
-          title: Text(t.more.changelog),
-          trailing: const Icon(Icons.chevron_right),
-          onTap: () => context.pushRoute(ChangelogRoute()),
-        ),
-        // 关于应用
-        ListTile(
-          leading: const Icon(Icons.info_outline),
-          title: Text(t.about.title),
-          trailing: const Icon(Icons.chevron_right),
-          onTap: () => context.pushRoute(AboutRoute()),
+        MiuixSmallTitle(t.settings.aboutAndMore),
+        GroupCard(
+          children: [
+            MiuixArrowPreference(
+              title: t.more.changelog,
+              startAction: MiuixSettingHelpers.icon(
+                fallback: Icons.history,
+                name: 'history',
+              ),
+              insideMargin: MiuixSettingHelpers.itemMargin,
+              onClick: () => context.pushRoute(ChangelogRoute()),
+            ),
+            MiuixArrowPreference(
+              title: t.about.title,
+              startAction: MiuixSettingHelpers.icon(
+                fallback: Icons.info_outline,
+                name: 'info',
+              ),
+              insideMargin: MiuixSettingHelpers.itemMargin,
+              onClick: () => context.pushRoute(AboutRoute()),
+            ),
+          ],
         ),
       ],
-    );
-  }
-
-  Widget _buildSectionTitle(BuildContext context, String title, IconData icon) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 24, 20, 8),
-      child: Row(
-        children: [
-          Icon(icon, size: 18, color: Theme.of(context).colorScheme.primary),
-          const SizedBox(width: 8),
-          Text(
-            title,
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: Theme.of(context).colorScheme.primary,
-              letterSpacing: 0.5,
-            ),
-          ),
-        ],
-      ),
     );
   }
 }

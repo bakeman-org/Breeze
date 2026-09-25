@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:auto_route/auto_route.dart';
 import 'package:file_selector/file_selector.dart';
+import 'package:flutter_miuix/miuix.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:open_file/open_file.dart';
 import 'package:path/path.dart' as p;
@@ -29,60 +30,67 @@ class _DataBackupPageState extends State<DataBackupPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          t.dataBackup.title,
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+    // Miuix 迁移：Scaffold + AppBar → MiuixScaffold + MiuixSmallTopAppBar
+    // （与 SettingPageShell 同款模式）；导入/导出逻辑不变。
+    return MiuixScaffold(
+      topBar: MiuixSmallTopAppBar(
+        title: t.dataBackup.title,
+        navigationIcon: MiuixIconButton(
+          onPressed: () => context.maybePop(),
+          child: const Icon(Icons.arrow_back),
         ),
-        centerTitle: false,
-        scrolledUnderElevation: 0,
       ),
-      body: Align(
-        alignment: Alignment.topCenter,
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 768),
-          child: ListView(
-            children: [
-              _buildSectionTitle(
-                context,
-                t.dataBackup.exportSection,
-                Icons.file_upload_outlined,
+      content: (padding) => Material(
+        type: MaterialType.transparency,
+        child: Padding(
+          padding: padding,
+          child: Align(
+            alignment: Alignment.topCenter,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 768),
+              child: ListView(
+                children: [
+                  _buildSectionTitle(
+                    context,
+                    t.dataBackup.exportSection,
+                    Icons.file_upload_outlined,
+                  ),
+                  SwitchListTile(
+                    secondary: const Icon(Icons.folder_outlined),
+                    title: Text(t.dataBackup.includeDownloads),
+                    subtitle: Text(t.dataBackup.includeDownloadsSubtitle),
+                    thumbIcon: kSettingSwitchThumbIcon,
+                    value: _includeDownloads,
+                    onChanged: _busy
+                        ? null
+                        : (value) => setState(() => _includeDownloads = value),
+                  ),
+                  const Divider(height: 1, thickness: 0.3),
+                  ListTile(
+                    leading: const Icon(Icons.archive_outlined),
+                    title: Text(t.dataBackup.exportData),
+                    subtitle: Text(t.dataBackup.exportDataSubtitle),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: _busy ? null : _exportData,
+                  ),
+                  const SizedBox(height: 8),
+                  const Divider(height: 1, thickness: 0.3),
+                  _buildSectionTitle(
+                    context,
+                    t.dataBackup.importSection,
+                    Icons.file_download_outlined,
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.unarchive_outlined),
+                    title: Text(t.dataBackup.importData),
+                    subtitle: Text(t.dataBackup.importDataSubtitle),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: _busy ? null : _importData,
+                  ),
+                  const SizedBox(height: 32),
+                ],
               ),
-              SwitchListTile(
-                secondary: const Icon(Icons.folder_outlined),
-                title: Text(t.dataBackup.includeDownloads),
-                subtitle: Text(t.dataBackup.includeDownloadsSubtitle),
-                thumbIcon: kSettingSwitchThumbIcon,
-                value: _includeDownloads,
-                onChanged: _busy
-                    ? null
-                    : (value) => setState(() => _includeDownloads = value),
-              ),
-              const Divider(height: 1, thickness: 0.3),
-              ListTile(
-                leading: const Icon(Icons.archive_outlined),
-                title: Text(t.dataBackup.exportData),
-                subtitle: Text(t.dataBackup.exportDataSubtitle),
-                trailing: const Icon(Icons.chevron_right),
-                onTap: _busy ? null : _exportData,
-              ),
-              const SizedBox(height: 8),
-              const Divider(height: 1, thickness: 0.3),
-              _buildSectionTitle(
-                context,
-                t.dataBackup.importSection,
-                Icons.file_download_outlined,
-              ),
-              ListTile(
-                leading: const Icon(Icons.unarchive_outlined),
-                title: Text(t.dataBackup.importData),
-                subtitle: Text(t.dataBackup.importDataSubtitle),
-                trailing: const Icon(Icons.chevron_right),
-                onTap: _busy ? null : _importData,
-              ),
-              const SizedBox(height: 32),
-            ],
+            ),
           ),
         ),
       ),

@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:auto_route/auto_route.dart';
 import 'package:file_selector/file_selector.dart';
+import 'package:flutter_miuix/miuix.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:zephyr/i18n/strings.g.dart';
@@ -407,7 +408,8 @@ class _RealSrSettingPageState extends State<RealSrSettingPage> {
       leading: const Icon(Icons.warning_amber_rounded),
       title: Text(t.realSr.modelNotDownloaded),
       subtitle: Text(t.realSr.modelNotDownloadedSubtitle),
-      trailing: ElevatedButton(
+      // Miuix 迁移：ElevatedButton → MiuixButton。
+      trailing: MiuixButton(
         onPressed: _downloadModel,
         child: Text(t.realSr.downloadModel),
       ),

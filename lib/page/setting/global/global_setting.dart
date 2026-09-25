@@ -75,129 +75,133 @@ class _GlobalSettingPageState extends State<GlobalSettingPage> {
       // ───────── 内容区 ─────────
       // MiuixScaffold 的 content 是一个 builder，参数 padding 已包含
       // 状态栏、导航栏安全区，直接拼到 ListView 上即可。
-      content: (padding) => ListView(
-        // 底部多留 32px，最后一项不至于贴屏幕底边。
-        padding: padding.copyWith(bottom: 32),
-        children: [
-          // ═════════ 分组：常用 ═════════
-          const Padding(
-            // 上下留白使标题与卡片、标题与标题之间不挤在一起。
-            padding: EdgeInsets.fromLTRB(20, 8, 20, 4),
-            child: MiuixSmallTitle('常用'),
-          ),
-          GroupCard(
-            children: [
-              // ── 外观与显示 ──
-              MiuixArrowPreference(
-                title: t.settings.appearance,
-                startAction: MiuixSettingHelpers.icon(
-                  fallback: Icons.palette_outlined,
-                  name: 'palette',
+      content: (padding) => Material(
+        type: MaterialType.transparency,
+        child: ListView(
+          // 底部多留 32px，最后一项不至于贴屏幕底边。
+          padding: padding.copyWith(bottom: 32),
+          children: [
+            // ═════════ 分组：常用 ═════════
+            const Padding(
+              // 上下留白使标题与卡片、标题与标题之间不挤在一起。
+              padding: EdgeInsets.fromLTRB(20, 8, 20, 4),
+              child: MiuixSmallTitle('常用'),
+            ),
+            GroupCard(
+              children: [
+                // ── 外观与显示 ──
+                MiuixArrowPreference(
+                  title: t.settings.appearance,
+                  startAction: MiuixSettingHelpers.icon(
+                    fallback: Icons.palette_outlined,
+                    name: 'palette',
+                  ),
+                  insideMargin: _m,
+                  onClick: () => _openSubPage(const AppearanceSettingRoute()),
                 ),
-                insideMargin: _m,
-                onClick: () => _openSubPage(const AppearanceSettingRoute()),
-              ),
 
-              // ── 阅读设置 ──
-              // 不走 pushRoute，直接弹出底部面板。
-              MiuixArrowPreference(
-                title: t.reader.settings,
-                startAction: MiuixSettingHelpers.icon(
-                  fallback: Icons.menu_book_outlined,
-                  name: 'menu_book',
+                // ── 阅读设置 ──
+                // 不走 pushRoute，直接弹出底部面板。
+                MiuixArrowPreference(
+                  title: t.reader.settings,
+                  startAction: MiuixSettingHelpers.icon(
+                    fallback: Icons.menu_book_outlined,
+                    name: 'menu_book',
+                  ),
+                  insideMargin: _m,
+                  onClick: () => showReaderSettingsSheet(context),
                 ),
-                insideMargin: _m,
-                onClick: () => showReaderSettingsSheet(context),
-              ),
 
-              // ── 内容与网络 ──
-              MiuixArrowPreference(
-                title: t.settings.contentAndNetwork,
-                startAction: MiuixSettingHelpers.icon(
-                  fallback: Icons.tune_outlined,
-                  name: 'tune',
+                // ── 内容与网络 ──
+                MiuixArrowPreference(
+                  title: t.settings.contentAndNetwork,
+                  startAction: MiuixSettingHelpers.icon(
+                    fallback: Icons.tune_outlined,
+                    name: 'tune',
+                  ),
+                  insideMargin: _m,
+                  onClick: () =>
+                      _openSubPage(const ContentNetworkSettingRoute()),
                 ),
-                insideMargin: _m,
-                onClick: () => _openSubPage(const ContentNetworkSettingRoute()),
-              ),
 
-              // ── 应用行为 ──
-              MiuixArrowPreference(
-                title: t.settings.appBehavior,
-                startAction: MiuixSettingHelpers.icon(
-                  fallback: Icons.settings_outlined,
-                  name: 'settings',
+                // ── 应用行为 ──
+                MiuixArrowPreference(
+                  title: t.settings.appBehavior,
+                  startAction: MiuixSettingHelpers.icon(
+                    fallback: Icons.settings_outlined,
+                    name: 'settings',
+                  ),
+                  insideMargin: _m,
+                  onClick: () => _openSubPage(const AppBehaviorSettingRoute()),
                 ),
-                insideMargin: _m,
-                onClick: () => _openSubPage(const AppBehaviorSettingRoute()),
-              ),
 
-              // ── 书架设置 ──
-              MiuixArrowPreference(
-                title: t.settings.bookshelf,
-                startAction: MiuixSettingHelpers.icon(
-                  fallback: Icons.collections_bookmark_outlined,
-                  name: 'collections_bookmark',
+                // ── 书架设置 ──
+                MiuixArrowPreference(
+                  title: t.settings.bookshelf,
+                  startAction: MiuixSettingHelpers.icon(
+                    fallback: Icons.collections_bookmark_outlined,
+                    name: 'collections_bookmark',
+                  ),
+                  insideMargin: _m,
+                  onClick: () => _openSubPage(const BookshelfSettingRoute()),
                 ),
-                insideMargin: _m,
-                onClick: () => _openSubPage(const BookshelfSettingRoute()),
-              ),
 
-              // ── 存储 ──
-              MiuixArrowPreference(
-                title: t.settings.storage,
-                startAction: MiuixSettingHelpers.icon(
-                  fallback: Icons.storage_outlined,
-                  name: 'storage',
+                // ── 存储 ──
+                MiuixArrowPreference(
+                  title: t.settings.storage,
+                  startAction: MiuixSettingHelpers.icon(
+                    fallback: Icons.storage_outlined,
+                    name: 'storage',
+                  ),
+                  insideMargin: _m,
+                  onClick: () => _openSubPage(const StorageSettingRoute()),
                 ),
-                insideMargin: _m,
-                onClick: () => _openSubPage(const StorageSettingRoute()),
-              ),
 
-              // ── 图片超分（条件显示） ──
-              // 只有设备支持 RealSR 时才出现；FutureBuilder 完成前
-              // 返回 SizedBox.shrink()，不占位。
-              FutureBuilder<bool>(
-                future: _realSrAvailable,
-                builder: (context, snapshot) {
-                  if (snapshot.data != true) {
-                    return const SizedBox.shrink();
-                  }
-                  return MiuixArrowPreference(
-                    title: t.settings.realSr,
-                    startAction: MiuixSettingHelpers.icon(
-                      fallback: Icons.auto_fix_high_outlined,
-                      name: 'auto_fix_high',
-                    ),
-                    insideMargin: _m,
-                    onClick: () => _openSubPage(const RealSrSettingRoute()),
-                  );
-                },
-              ),
-            ],
-          ),
-
-          // ═════════ 分组：调试 ═════════
-          // 单独一张卡片，避免和用户级设置混在一起。
-          const Padding(
-            padding: EdgeInsets.fromLTRB(20, 16, 20, 4),
-            child: MiuixSmallTitle('调试'),
-          ),
-          GroupCard(
-            children: [
-              // ── 日志转发 ──
-              MiuixArrowPreference(
-                title: t.settings.debug,
-                startAction: MiuixSettingHelpers.icon(
-                  fallback: Icons.bug_report_outlined,
-                  name: 'bug_report',
+                // ── 图片超分（条件显示） ──
+                // 只有设备支持 RealSR 时才出现；FutureBuilder 完成前
+                // 返回 SizedBox.shrink()，不占位。
+                FutureBuilder<bool>(
+                  future: _realSrAvailable,
+                  builder: (context, snapshot) {
+                    if (snapshot.data != true) {
+                      return const SizedBox.shrink();
+                    }
+                    return MiuixArrowPreference(
+                      title: t.settings.realSr,
+                      startAction: MiuixSettingHelpers.icon(
+                        fallback: Icons.auto_fix_high_outlined,
+                        name: 'auto_fix_high',
+                      ),
+                      insideMargin: _m,
+                      onClick: () => _openSubPage(const RealSrSettingRoute()),
+                    );
+                  },
                 ),
-                insideMargin: _m,
-                onClick: () => _openSubPage(const DebugSettingRoute()),
-              ),
-            ],
-          ),
-        ],
+              ],
+            ),
+
+            // ═════════ 分组：调试 ═════════
+            // 单独一张卡片，避免和用户级设置混在一起。
+            const Padding(
+              padding: EdgeInsets.fromLTRB(20, 16, 20, 4),
+              child: MiuixSmallTitle('调试'),
+            ),
+            GroupCard(
+              children: [
+                // ── 日志转发 ──
+                MiuixArrowPreference(
+                  title: t.settings.debug,
+                  startAction: MiuixSettingHelpers.icon(
+                    fallback: Icons.bug_report_outlined,
+                    name: 'bug_report',
+                  ),
+                  insideMargin: _m,
+                  onClick: () => _openSubPage(const DebugSettingRoute()),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

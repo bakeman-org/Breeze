@@ -1,3 +1,4 @@
+import 'package:flutter_miuix/miuix.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:zephyr/i18n/strings.g.dart';
 import 'package:zephyr/page/comic_info/models/preview_prefs.dart';
@@ -94,11 +95,16 @@ class PreviewControls extends StatelessWidget {
             ),
           ),
         ),
-        IconButton(
-          visualDensity: VisualDensity.compact,
-          tooltip: '刷新预览',
-          icon: const Icon(Icons.refresh, size: 20),
-          onPressed: onRefresh,
+        // Miuix 迁移：IconButton → 紧凑 MiuixIconButton（visualDensity 的
+        // 紧凑效果用 32x32 尺寸等价实现）。
+        Tooltip(
+          message: '刷新预览',
+          child: MiuixIconButton(
+            minWidth: 32,
+            minHeight: 32,
+            onPressed: onRefresh,
+            child: const Icon(Icons.refresh, size: 20),
+          ),
         ),
       ],
     );

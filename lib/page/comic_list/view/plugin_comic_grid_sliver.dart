@@ -1,3 +1,4 @@
+import 'package:flutter_miuix/miuix.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:zephyr/page/search_result/widgets/bottom_loader.dart';
 import 'package:zephyr/widgets/comic_simplify_entry/comic_simplify_entry_grid.dart';
@@ -94,7 +95,7 @@ class PluginComicGridSliver extends StatelessWidget {
               child: Column(
                 children: [
                   const SizedBox(height: 10),
-                  ElevatedButton(
+                  MiuixButton(
                     onPressed: onRetryLoadMore,
                     child: Text(t.oldHome.loadMoreFailed),
                   ),

@@ -1,3 +1,4 @@
+import 'package:flutter_miuix/miuix.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:zephyr/i18n/strings.g.dart';
 
@@ -25,7 +26,7 @@ class ErrorView extends StatelessWidget {
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 20),
-          ElevatedButton(onPressed: onRetry, child: Text(t.common.reload)),
+          MiuixButton(onPressed: onRetry, child: Text(t.common.reload)),
         ],
       ),
     );

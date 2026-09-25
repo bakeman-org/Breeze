@@ -1,3 +1,4 @@
+import 'package:flutter_miuix/miuix.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// 漫画详情页的浮动操作按钮组。
@@ -81,14 +82,46 @@ class _ReadFab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return FloatingActionButton.extended(
-      onPressed: onPressed,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-      icon: Icon(
-        hasHistory ? Icons.history_rounded : Icons.menu_book_rounded,
-        size: 18,
+    final colors = MiuixTheme.of(context).colors;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(18),
+        onTap: onPressed,
+        child: Ink(
+          decoration: BoxDecoration(
+            color: colors.primary,
+            borderRadius: BorderRadius.circular(18),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.18),
+                blurRadius: 10,
+                offset: const Offset(0, 3),
+              ),
+            ],
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 13),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                hasHistory ? Icons.history_rounded : Icons.menu_book_rounded,
+                size: 18,
+                color: colors.onPrimary,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                hasHistory ? '继续阅读' : '开始阅读',
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  color: colors.onPrimary,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
-      label: Text(hasHistory ? '继续阅读' : '开始阅读'),
     );
   }
 }
@@ -107,11 +140,16 @@ class _MiniFab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return FloatingActionButton.small(
-      heroTag: null,
-      tooltip: tooltip,
-      onPressed: onPressed,
-      child: Icon(icon, size: 20),
+    // Miuix 迁移：FloatingActionButton.small → 40x40 MiuixFloatingActionButton
+    // + Tooltip（Miuix FAB 无内建 tooltip）。
+    return Tooltip(
+      message: tooltip,
+      child: MiuixFloatingActionButton(
+        onPressed: onPressed,
+        minWidth: 40,
+        minHeight: 40,
+        child: Icon(icon, size: 20),
+      ),
     );
   }
 }

@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:auto_route/auto_route.dart';
+import 'package:flutter_miuix/miuix.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:zephyr/config/router/router.gr.dart';
@@ -44,49 +45,56 @@ class _ComicFollowPageContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(t.comicFollow.title),
+    // Miuix 迁移：Scaffold + AppBar → MiuixScaffold + MiuixTopAppBar。
+    return MiuixScaffold(
+      topBar: MiuixTopAppBar(
+        title: t.comicFollow.title,
         actions: [
           BlocBuilder<ComicFollowCubit, ComicFollowState>(
             buildWhen: (previous, current) =>
                 previous.isCheckingUpdates != current.isCheckingUpdates,
             builder: (context, state) {
-              return IconButton(
-                icon: state.isCheckingUpdates
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.refresh),
-                onPressed: state.isCheckingUpdates
-                    ? null
-                    : () => context.read<ComicFollowCubit>().checkUpdates(),
+              if (state.isCheckingUpdates) {
+                return const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                );
+              }
+              return MiuixIconButton(
+                onPressed: () =>
+                    context.read<ComicFollowCubit>().checkUpdates(),
+                child: const Icon(Icons.refresh),
               );
             },
           ),
         ],
       ),
-      body: BlocBuilder<ComicFollowCubit, ComicFollowState>(
-        builder: (context, state) {
-          switch (state.status) {
-            case ComicFollowStatus.initial:
-            case ComicFollowStatus.loading:
-              return const Center(child: CircularProgressIndicator());
-            case ComicFollowStatus.failure:
-              return ErrorView(
-                errorMessage: t.comicFollow.loadFailed(result: state.result),
-                onRetry: () =>
-                    context.read<ComicFollowCubit>().loadFromDatabase(),
-              );
-            case ComicFollowStatus.success:
-              if (state.items.isEmpty) {
-                return _buildEmptyView(context);
+      content: (padding) => Material(
+        type: MaterialType.transparency,
+        child: Padding(
+          padding: padding,
+          child: BlocBuilder<ComicFollowCubit, ComicFollowState>(
+            builder: (context, state) {
+              switch (state.status) {
+                case ComicFollowStatus.initial:
+                case ComicFollowStatus.loading:
+                  return const Center(child: CircularProgressIndicator());
+                case ComicFollowStatus.failure:
+                  return ErrorView(
+                    errorMessage: t.comicFollow.loadFailed(result: state.result),
+                    onRetry: () =>
+                        context.read<ComicFollowCubit>().loadFromDatabase(),
+                  );
+                case ComicFollowStatus.success:
+                  if (state.items.isEmpty) {
+                    return _buildEmptyView(context);
+                  }
+                  return _buildContent(context, state);
               }
-              return _buildContent(context, state);
-          }
-        },
+            },
+          ),
+        ),
       ),
     );
   }

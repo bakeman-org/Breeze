@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:auto_route/auto_route.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_miuix/miuix.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:open_file/open_file.dart';
 import 'package:path/path.dart' as p;
@@ -253,179 +254,211 @@ class _ComicInfoState extends State<_ComicInfo>
     // 每次 build 时算一次下载状态。
     final isDownloaded = _isDownloaded;
 
-    return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.pop(),
-        ),
-        actions: [
-          const SizedBox(width: 50),
-          IconButton(
-            icon: const Icon(Icons.home),
-            onPressed: () => popToRoot(context),
-          ),
-          Expanded(child: Container()),
-          TextButton.icon(
-            onPressed: _togglePreview,
-            icon: Icon(
-              _showPreview ? Icons.image_rounded : Icons.image_outlined,
-              size: 18,
-            ),
-            label: Text(_showPreview ? '关闭预览' : '预览'),
-          ),
-          BlocSelector<ComicFollowCubit, ComicFollowState, bool>(
-            selector: (state) => state.isFollowing(widget.from, _comicId),
-            builder: (context, isFollowing) {
-              return IconButton(
-                icon: Icon(
-                  isFollowing
-                      ? Icons.notifications_active
-                      : Icons.notifications_none,
-                ),
-                tooltip: isFollowing
-                    ? t.comicInfo.unfollow
-                    : t.comicInfo.follow,
-                onPressed: () => _toggleFollow(isFollowing),
-              );
-            },
-          ),
-          FluentPopupMenuButton<MenuOption>(
-            icon: const Icon(Icons.more_vert),
-            onSelected: (MenuOption item) {
-              switch (item) {
-                case MenuOption.export:
-                  _handleExport();
-                  break;
-                case MenuOption.cloudCollect:
-                  if (cloudFavoritePreferred) {
-                    _toggleLocalCollectFromMenu();
-                  } else {
-                    _toggleCloudCollectFromMenu();
-                  }
-                  break;
-                case MenuOption.follow:
-                  _toggleFollowFromMenu();
-                  break;
-              }
-            },
-            itemBuilder: (BuildContext context) {
-              final isFollowing = context.read<ComicFollowCubit>().isFollowing(
-                widget.from,
-                _comicId,
-              );
-              final menuItems = <FluentPopupMenuItem<MenuOption>>[
-                FluentPopupMenuItem<MenuOption>(
-                  value: MenuOption.follow,
-                  leading: Icon(
-                    isFollowing
-                        ? Icons.notifications_off
-                        : Icons.notifications_active,
+    // Miuix 迁移：Scaffold + AppBar → MiuixScaffold + 自绘顶栏。
+    // 顶栏用 Material 包裹，保留 FluentPopupMenuButton 内部 IconButton
+    // 所需的 Material 祖先；各按钮回调与菜单逻辑全部保持不变。
+    return MiuixScaffold(
+      topBar: Material(
+        color: Theme.of(context).colorScheme.surface,
+        child: SafeArea(
+          bottom: false,
+          child: SizedBox(
+            height: 52,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8.0),
+              child: Row(
+                children: [
+                  MiuixIconButton(
+                    onPressed: () => context.pop(),
+                    child: const Icon(Icons.arrow_back),
                   ),
-                  title: Text(
-                    isFollowing ? t.comicInfo.unfollow : t.comicInfo.follow,
+                  const SizedBox(width: 8),
+                  MiuixIconButton(
+                    onPressed: () => popToRoot(context),
+                    child: const Icon(Icons.home),
                   ),
-                ),
-              ];
-
-              // 已下载 → 菜单里保留导出入口（方便快速导出）。
-              if (isDownloaded) {
-                menuItems.add(
-                  FluentPopupMenuItem<MenuOption>(
-                    value: MenuOption.export,
-                    leading: const Icon(Icons.save_alt),
-                    title: Text(t.comicInfo.exportComic),
-                  ),
-                );
-              }
-
-              menuItems.add(
-                FluentPopupMenuItem<MenuOption>(
-                  value: MenuOption.cloudCollect,
-                  leading: Icon(
-                    cloudFavoritePreferred
-                        ? (_isLocalCollected ? Icons.star : Icons.star_border)
-                        : (_isCloudCollected ? Icons.star : Icons.star_border),
-                  ),
-                  title: Text(
-                    cloudFavoritePreferred
-                        ? (_isLocalCollected
-                              ? t.comicInfo.removeLocalCollection
-                              : t.comicInfo.collectToLocal)
-                        : (_isCloudCollected
-                              ? t.comicInfo.removeCloudCollection
-                              : t.comicInfo.collectToCloud),
-                  ),
-                ),
-              );
-
-              return menuItems;
-            },
-          ),
-        ],
-      ),
-      body: BlocBuilder<GetComicInfoBloc, GetComicInfoState>(
-        builder: (context, state) {
-          switch (state.status) {
-            case GetComicInfoStatus.initial:
-              _cloudFavoriteStateOverridden = false;
-              return const Center(child: CircularProgressIndicator());
-            case GetComicInfoStatus.failure:
-              if (state.result.contains("under review") &&
-                  state.result.contains("1014")) {
-                return Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        t.comicInfo.discontinued,
-                        style: const TextStyle(fontSize: 20),
+                  const Spacer(),
+                  Tooltip(
+                    message: _showPreview ? '关闭预览' : '预览',
+                    child: MiuixIconButton(
+                      onPressed: _togglePreview,
+                      child: Icon(
+                        _showPreview
+                            ? Icons.image_rounded
+                            : Icons.image_outlined,
                       ),
-                      const SizedBox(height: 10),
-                      ElevatedButton(
-                        onPressed: () => context.pop(),
-                        child: Text(t.comicInfo.back),
-                      ),
-                    ],
-                  ),
-                );
-              }
-              return ErrorView(
-                errorMessage: t.comicInfo.loadFailedWithError(
-                  error: state.result.toString(),
-                ),
-                onRetry: () {
-                  context.read<GetComicInfoBloc>().add(
-                    GetComicInfoEvent(
-                      comicId: _comicId,
-                      from: widget.from,
-                      type: _type,
-                      extern: widget.extern,
                     ),
-                  );
-                },
-              );
-            case GetComicInfoStatus.success:
-              comicInfoDyn = state.comicInfo;
-              _currentInfo = state.allInfo;
-              _comicId = state.comicId ?? _comicId;
-              if (!_cloudFavoriteStateOverridden) {
-                _isCloudCollected = state.allInfo?.isFavourite ?? false;
-              }
-              _syncLocalCollectStatus(state.allInfo!);
-              initHistory(
-                context,
-                _comicId,
-                widget.from,
-                chapters: state.allInfo!.eps,
-              );
-              return _infoView(state.allInfo!);
-          }
-        },
+                  ),
+                  BlocSelector<ComicFollowCubit, ComicFollowState, bool>(
+                    selector: (state) =>
+                        state.isFollowing(widget.from, _comicId),
+                    builder: (context, isFollowing) {
+                      return Tooltip(
+                        message: isFollowing
+                            ? t.comicInfo.unfollow
+                            : t.comicInfo.follow,
+                        child: MiuixIconButton(
+                          onPressed: () => _toggleFollow(isFollowing),
+                          child: Icon(
+                            isFollowing
+                                ? Icons.notifications_active
+                                : Icons.notifications_none,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                  FluentPopupMenuButton<MenuOption>(
+                    icon: const Icon(Icons.more_vert),
+                    onSelected: (MenuOption item) {
+                      switch (item) {
+                        case MenuOption.export:
+                          _handleExport();
+                          break;
+                        case MenuOption.cloudCollect:
+                          if (cloudFavoritePreferred) {
+                            _toggleLocalCollectFromMenu();
+                          } else {
+                            _toggleCloudCollectFromMenu();
+                          }
+                          break;
+                        case MenuOption.follow:
+                          _toggleFollowFromMenu();
+                          break;
+                      }
+                    },
+                    itemBuilder: (BuildContext context) {
+                      final isFollowing = context
+                          .read<ComicFollowCubit>()
+                          .isFollowing(widget.from, _comicId);
+                      final menuItems = <FluentPopupMenuItem<MenuOption>>[
+                        FluentPopupMenuItem<MenuOption>(
+                          value: MenuOption.follow,
+                          leading: Icon(
+                            isFollowing
+                                ? Icons.notifications_off
+                                : Icons.notifications_active,
+                          ),
+                          title: Text(
+                            isFollowing
+                                ? t.comicInfo.unfollow
+                                : t.comicInfo.follow,
+                          ),
+                        ),
+                      ];
+
+                      // 已下载 → 菜单里保留导出入口（方便快速导出）。
+                      if (isDownloaded) {
+                        menuItems.add(
+                          FluentPopupMenuItem<MenuOption>(
+                            value: MenuOption.export,
+                            leading: const Icon(Icons.save_alt),
+                            title: Text(t.comicInfo.exportComic),
+                          ),
+                        );
+                      }
+
+                      menuItems.add(
+                        FluentPopupMenuItem<MenuOption>(
+                          value: MenuOption.cloudCollect,
+                          leading: Icon(
+                            cloudFavoritePreferred
+                                ? (_isLocalCollected
+                                      ? Icons.star
+                                      : Icons.star_border)
+                                : (_isCloudCollected
+                                      ? Icons.star
+                                      : Icons.star_border),
+                          ),
+                          title: Text(
+                            cloudFavoritePreferred
+                                ? (_isLocalCollected
+                                      ? t.comicInfo.removeLocalCollection
+                                      : t.comicInfo.collectToLocal)
+                                : (_isCloudCollected
+                                      ? t.comicInfo.removeCloudCollection
+                                      : t.comicInfo.collectToCloud),
+                          ),
+                        ),
+                      );
+
+                      return menuItems;
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
       ),
-      floatingActionButtonLocation: leftHandMode
-          ? FloatingActionButtonLocation.startFloat
-          : FloatingActionButtonLocation.endFloat,
+      content: (padding) => Material(
+        type: MaterialType.transparency,
+        child: Padding(
+          padding: padding,
+          child: BlocBuilder<GetComicInfoBloc, GetComicInfoState>(
+            builder: (context, state) {
+              switch (state.status) {
+                case GetComicInfoStatus.initial:
+                  _cloudFavoriteStateOverridden = false;
+                  return const Center(child: CircularProgressIndicator());
+                case GetComicInfoStatus.failure:
+                  if (state.result.contains("under review") &&
+                      state.result.contains("1014")) {
+                    return Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            t.comicInfo.discontinued,
+                            style: const TextStyle(fontSize: 20),
+                          ),
+                          const SizedBox(height: 10),
+                          MiuixButton(
+                            onPressed: () => context.pop(),
+                            child: Text(t.comicInfo.back),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+                  return ErrorView(
+                    errorMessage: t.comicInfo.loadFailedWithError(
+                      error: state.result.toString(),
+                    ),
+                    onRetry: () {
+                      context.read<GetComicInfoBloc>().add(
+                        GetComicInfoEvent(
+                          comicId: _comicId,
+                          from: widget.from,
+                          type: _type,
+                          extern: widget.extern,
+                        ),
+                      );
+                    },
+                  );
+                case GetComicInfoStatus.success:
+                  comicInfoDyn = state.comicInfo;
+                  _currentInfo = state.allInfo;
+                  _comicId = state.comicId ?? _comicId;
+                  if (!_cloudFavoriteStateOverridden) {
+                    _isCloudCollected = state.allInfo?.isFavourite ?? false;
+                  }
+                  _syncLocalCollectStatus(state.allInfo!);
+                  initHistory(
+                    context,
+                    _comicId,
+                    widget.from,
+                    chapters: state.allInfo!.eps,
+                  );
+                  return _infoView(state.allInfo!);
+              }
+            },
+          ),
+        ),
+      ),
+      floatingActionButtonPosition: leftHandMode
+          ? MiuixFabPosition.start
+          : MiuixFabPosition.end,
       floatingActionButton: _loadingComplete
           ? BlocBuilder<StringSelectCubit, String>(
               builder: (context, stringSelectDate) {

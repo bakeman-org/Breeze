@@ -1,4 +1,5 @@
 import 'package:auto_route/auto_route.dart';
+import 'package:flutter_miuix/miuix.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:zephyr/i18n/strings.g.dart';
@@ -21,10 +22,7 @@ class ComicErrorWidget extends StatelessWidget {
           children: [
             Text(t.reader.chapterNotDownloaded, style: TextStyle(fontSize: 20)),
             SizedBox(height: 10),
-            ElevatedButton(
-              onPressed: () => context.pop(),
-              child: Text(t.common.back),
-            ),
+            MiuixButton(onPressed: () => context.pop(), child: Text(t.common.back)),
           ],
         ),
       );
@@ -40,7 +38,7 @@ class ComicErrorWidget extends StatelessWidget {
               style: TextStyle(fontSize: 20),
             ),
             SizedBox(height: 10),
-            ElevatedButton(
+            MiuixButton(
               onPressed: () => context.read<PageBloc>().add(event),
               child: Text(t.common.retry),
             ),

@@ -1,8 +1,9 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:auto_route/annotations.dart';
+import 'package:auto_route/auto_route.dart';
 import 'package:desktop_webview_linux/desktop_webview_linux.dart';
+import 'package:flutter_miuix/miuix.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -304,7 +305,7 @@ class _WebViewPageState extends State<WebViewPage> {
               runSpacing: 8,
               alignment: WrapAlignment.center,
               children: [
-                FilledButton.tonal(
+                MiuixButton(
                   onPressed: () {
                     setState(() {
                       _mainFrameError = null;
@@ -315,10 +316,16 @@ class _WebViewPageState extends State<WebViewPage> {
                   child: Text(t.webview.retry),
                 ),
                 if (uri != null)
-                  FilledButton.tonalIcon(
+                  MiuixButton(
                     onPressed: () => _openExternal(uri),
-                    icon: const Icon(Icons.open_in_browser),
-                    label: Text(t.webview.openInExternalBrowser),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.open_in_browser),
+                        const SizedBox(width: 6),
+                        Text(t.webview.openInExternalBrowser),
+                      ],
+                    ),
                   ),
               ],
             ),
@@ -356,7 +363,7 @@ class _WebViewPageState extends State<WebViewPage> {
           ),
           if (_isWebviewClosed) ...[
             const SizedBox(height: 24),
-            FilledButton.tonal(
+            MiuixButton(
               onPressed: () => Navigator.of(context).pop(),
               child: Text(t.webview.back),
             ),
@@ -499,31 +506,44 @@ class _WebViewPageState extends State<WebViewPage> {
   Widget build(BuildContext context) {
     final uri = _uri;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(_title),
+    // Miuix 迁移：Scaffold + AppBar → MiuixScaffold + MiuixTopAppBar。
+    return MiuixScaffold(
+      topBar: MiuixTopAppBar(
+        title: _title,
+        navigationIcon: MiuixIconButton(
+          onPressed: () => context.maybePop(),
+          child: const Icon(Icons.arrow_back),
+        ),
         actions: <Widget>[
           if (Platform.isLinux && !_isWebviewClosed)
-            IconButton(
-              icon: const Icon(Icons.close),
-              tooltip: t.webview.closeWindow,
-              onPressed: () {
-                _linuxWebview?.close();
-                if (mounted) {
-                  setState(() => _isWebviewClosed = true);
-                }
-              },
+            Tooltip(
+              message: t.webview.closeWindow,
+              child: MiuixIconButton(
+                onPressed: () {
+                  _linuxWebview?.close();
+                  if (mounted) {
+                    setState(() => _isWebviewClosed = true);
+                  }
+                },
+                child: const Icon(Icons.close),
+              ),
             ),
           if (uri != null)
-            IconButton(
-              icon: const Icon(Icons.open_in_browser),
+            MiuixIconButton(
               onPressed: () => _openExternal(uri),
+              child: const Icon(Icons.open_in_browser),
             ),
         ],
       ),
-      body: Platform.isLinux
-          ? _buildLinuxBody(context)
-          : _buildMobileBody(context),
+      content: (padding) => Material(
+        type: MaterialType.transparency,
+        child: Padding(
+          padding: padding,
+          child: Platform.isLinux
+              ? _buildLinuxBody(context)
+              : _buildMobileBody(context),
+        ),
+      ),
     );
   }
 }

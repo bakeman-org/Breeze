@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:auto_route/auto_route.dart';
 import 'package:file_selector/file_selector.dart';
+import 'package:flutter_miuix/miuix.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -454,41 +455,49 @@ class _PluginSettingsPageViewState extends State<_PluginSettingsPageView> {
     final pluginVersion = pluginState?.version ?? '';
     final state = context.watch<PluginSettingsCubit>().state;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          t.plugin.pluginSettingsTitle(name: widget.pluginDisplayName),
+    // Miuix 迁移：Scaffold + AppBar → MiuixScaffold + MiuixTopAppBar。
+    return MiuixScaffold(
+      topBar: MiuixTopAppBar(
+        title: t.plugin.pluginSettingsTitle(name: widget.pluginDisplayName),
+        navigationIcon: MiuixIconButton(
+          onPressed: () => context.maybePop(),
+          child: const Icon(Icons.arrow_back),
         ),
-        centerTitle: false,
-        elevation: 0,
-        backgroundColor: Colors.transparent,
         actions: [
           if (!deleted)
-            IconButton(
-              tooltip: t.plugin.sync,
-              onPressed: _syncPlugin,
-              icon: const Icon(Icons.sync),
+            Tooltip(
+              message: t.plugin.sync,
+              child: MiuixIconButton(
+                onPressed: _syncPlugin,
+                child: const Icon(Icons.sync),
+              ),
             ),
         ],
       ),
-      body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 680),
-          child: PluginSettingsContent(
-            from: widget.from,
-            pluginRuntimeName: widget.pluginRuntimeName,
-            state: state,
-            debugEnabled: debugEnabled,
-            debugUrl: debugUrl,
-            deleted: deleted,
-            pluginVersion: pluginVersion,
-            colorScheme: colorScheme,
-            onUpdateDebugConfig: _updateDebugConfig,
-            onConfirmDeletePlugin: _confirmDeletePlugin,
-            onUpdatePlugin: _updatePlugin,
-            onCommitField: _commitField,
-            onRunAction: (action) => _runAction(context, action),
-            onLogin: _openLoginPage,
+      content: (padding) => Material(
+        type: MaterialType.transparency,
+        child: Padding(
+          padding: padding,
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 680),
+              child: PluginSettingsContent(
+                from: widget.from,
+                pluginRuntimeName: widget.pluginRuntimeName,
+                state: state,
+                debugEnabled: debugEnabled,
+                debugUrl: debugUrl,
+                deleted: deleted,
+                pluginVersion: pluginVersion,
+                colorScheme: colorScheme,
+                onUpdateDebugConfig: _updateDebugConfig,
+                onConfirmDeletePlugin: _confirmDeletePlugin,
+                onUpdatePlugin: _updatePlugin,
+                onCommitField: _commitField,
+                onRunAction: (action) => _runAction(context, action),
+                onLogin: _openLoginPage,
+              ),
+            ),
           ),
         ),
       ),

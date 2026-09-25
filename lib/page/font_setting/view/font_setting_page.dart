@@ -1,5 +1,6 @@
-import 'package:auto_route/annotations.dart';
+import 'package:auto_route/auto_route.dart';
 import 'package:file_selector/file_selector.dart';
+import 'package:flutter_miuix/miuix.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:path/path.dart' as path;
 import 'package:zephyr/util/font/font_profile.dart';
@@ -15,47 +16,57 @@ class FontSettingPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          t.fontSetting.title,
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+    // Miuix 迁移：Scaffold + AppBar → MiuixScaffold + MiuixSmallTopAppBar。
+    return MiuixScaffold(
+      topBar: MiuixSmallTopAppBar(
+        title: t.fontSetting.title,
+        navigationIcon: MiuixIconButton(
+          onPressed: () => context.maybePop(),
+          child: const Icon(Icons.arrow_back),
         ),
         actions: [
-          IconButton(
-            tooltip: t.fontSetting.clear,
-            onPressed: _clearAll,
-            icon: const Icon(Icons.restart_alt_outlined),
+          Tooltip(
+            message: t.fontSetting.clear,
+            child: MiuixIconButton(
+              onPressed: _clearAll,
+              child: const Icon(Icons.restart_alt_outlined),
+            ),
           ),
         ],
       ),
-      body: AnimatedBuilder(
-        animation: FontProfileController.instance,
-        builder: (context, _) {
-          final controller = FontProfileController.instance;
-          return ListView(
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                child: Text(t.fontSetting.hint),
-              ),
-              ..._weights.map((weight) {
-                final filePath = controller.pathForWeight(weight) ?? '';
-                return _FontWeightTile(
-                  weight: weight,
-                  label: fontWeightLabels[weight]!,
-                  filePath: filePath,
-                  sampleText: _sampleText,
-                  onPick: () => _pickWeight(weight),
-                  onClear: filePath.isEmpty
-                      ? null
-                      : () => _saveWeight(weight, ''),
-                );
-              }),
-              const SizedBox(height: 24),
-            ],
-          );
-        },
+      content: (padding) => Material(
+        type: MaterialType.transparency,
+        child: Padding(
+          padding: padding,
+          child: AnimatedBuilder(
+            animation: FontProfileController.instance,
+            builder: (context, _) {
+              final controller = FontProfileController.instance;
+              return ListView(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                    child: Text(t.fontSetting.hint),
+                  ),
+                  ..._weights.map((weight) {
+                    final filePath = controller.pathForWeight(weight) ?? '';
+                    return _FontWeightTile(
+                      weight: weight,
+                      label: fontWeightLabels[weight]!,
+                      filePath: filePath,
+                      sampleText: _sampleText,
+                      onPick: () => _pickWeight(weight),
+                      onClear: filePath.isEmpty
+                          ? null
+                          : () => _saveWeight(weight, ''),
+                    );
+                  }),
+                  const SizedBox(height: 24),
+                ],
+              );
+            },
+          ),
+        ),
       ),
     );
   }
@@ -151,15 +162,19 @@ class _FontWeightTile extends StatelessWidget {
         spacing: 4,
         children: [
           if (onClear != null)
-            IconButton(
-              tooltip: t.fontSetting.clearFile,
-              onPressed: onClear,
-              icon: const Icon(Icons.close_outlined),
+            Tooltip(
+              message: t.fontSetting.clearFile,
+              child: MiuixIconButton(
+                onPressed: onClear,
+                child: const Icon(Icons.close_outlined),
+              ),
             ),
-          IconButton(
-            tooltip: t.fontSetting.selectFile,
-            onPressed: onPick,
-            icon: const Icon(Icons.folder_open_outlined),
+          Tooltip(
+            message: t.fontSetting.selectFile,
+            child: MiuixIconButton(
+              onPressed: onPick,
+              child: const Icon(Icons.folder_open_outlined),
+            ),
           ),
         ],
       ),

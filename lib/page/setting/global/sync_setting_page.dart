@@ -1,4 +1,5 @@
 import 'package:auto_route/auto_route.dart';
+import 'package:flutter_miuix/miuix.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:zephyr/config/global/global_setting.dart';
@@ -131,7 +132,7 @@ class _SyncSettingPageState extends State<SyncSettingPage> {
               height: 22,
               child: CircularProgressIndicator(strokeWidth: 2),
             )
-          : FilledButton.tonal(onPressed: onPressed, child: Text(actionLabel)),
+          : MiuixButton(onPressed: onPressed, child: Text(actionLabel)),
     );
   }
 

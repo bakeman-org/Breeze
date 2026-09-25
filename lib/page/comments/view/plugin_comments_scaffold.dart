@@ -1,4 +1,5 @@
 import 'package:auto_route/auto_route.dart';
+import 'package:flutter_miuix/miuix.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:zephyr/config/global/global_setting.dart';
@@ -62,15 +63,31 @@ class _PluginCommentsScaffoldState extends State<PluginCommentsScaffold> {
           builder: (context, state) {
             final cubit = context.read<CommentsCubit>();
             _commentsCubit = cubit;
-            return Scaffold(
-              appBar: AppBar(title: Text(widget.comicTitle)),
-              body: _buildBody(state, cubit),
-              floatingActionButtonLocation:
-                  context.watch<GlobalSettingCubit>().state.leftHandModeEnabled
-                  ? FloatingActionButtonLocation.startFloat
-                  : FloatingActionButtonLocation.endFloat,
+            // Miuix 迁移：Scaffold + AppBar → MiuixScaffold + MiuixTopAppBar；
+            // Snackbar 监听、评论/回复/加载更多逻辑不变。
+            return MiuixScaffold(
+              topBar: MiuixTopAppBar(
+                title: widget.comicTitle,
+                navigationIcon: MiuixIconButton(
+                  onPressed: () => context.maybePop(),
+                  child: const Icon(Icons.arrow_back),
+                ),
+              ),
+              content: (padding) => Material(
+                type: MaterialType.transparency,
+                child: Padding(
+                  padding: padding,
+                  child: _buildBody(state, cubit),
+                ),
+              ),
+              floatingActionButtonPosition: context
+                  .watch<GlobalSettingCubit>()
+                  .state
+                  .leftHandModeEnabled
+                  ? MiuixFabPosition.start
+                  : MiuixFabPosition.end,
               floatingActionButton: state.canCommentComic
-                  ? FloatingActionButton(
+                  ? MiuixFloatingActionButton(
                       onPressed: state.posting
                           ? null
                           : () => _postComicComment(cubit),
@@ -96,7 +113,7 @@ class _PluginCommentsScaffoldState extends State<PluginCommentsScaffold> {
             children: [
               Text(state.error!),
               const SizedBox(height: 12),
-              ElevatedButton(
+              MiuixButton(
                 onPressed: cubit.loadInitial,
                 child: Text(t.comments.retry),
               ),
@@ -135,10 +152,17 @@ class _PluginCommentsScaffoldState extends State<PluginCommentsScaffold> {
             return Padding(
               padding: const EdgeInsets.all(16),
               child: Center(
-                child: FilledButton.tonalIcon(
+                // Miuix 迁移：FilledButton.tonalIcon → MiuixButton。
+                child: MiuixButton(
                   onPressed: cubit.loadMore,
-                  icon: const Icon(Icons.expand_more_rounded),
-                  label: Text(t.comments.loadMore),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.expand_more_rounded, size: 18),
+                      const SizedBox(width: 8),
+                      Text(t.comments.loadMore),
+                    ],
+                  ),
                 ),
               ),
             );

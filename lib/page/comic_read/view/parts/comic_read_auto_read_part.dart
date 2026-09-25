@@ -62,22 +62,27 @@ extension _ComicReadAutoReadPart on _ComicReadPageState {
               left: leftHandMode ? 14 : null,
               right: leftHandMode ? null : 14,
               bottom: (isMenuVisible ? 122.0 : 14.0) + bottomSafe,
-              child: FloatingActionButton.small(
-                heroTag: 'comic_auto_read_toggle',
-                tooltip: _autoReadController.isPaused
+              child: Tooltip(
+                // Miuix 迁移：FloatingActionButton.small → 40x40
+                // MiuixFloatingActionButton + Tooltip（heroTag 无需保留）。
+                message: _autoReadController.isPaused
                     ? t.reader.resumeAutoRead
                     : t.reader.pauseAutoRead,
-                onPressed: _toggleAutoReadPaused,
-                child: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 220),
-                  transitionBuilder: (child, animation) {
-                    return ScaleTransition(scale: animation, child: child);
-                  },
-                  child: Icon(
-                    _autoReadController.isPaused
-                        ? Icons.play_arrow_rounded
-                        : Icons.pause_rounded,
-                    key: ValueKey(_autoReadController.isPaused),
+                child: MiuixFloatingActionButton(
+                  minWidth: 40,
+                  minHeight: 40,
+                  onPressed: _toggleAutoReadPaused,
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 220),
+                    transitionBuilder: (child, animation) {
+                      return ScaleTransition(scale: animation, child: child);
+                    },
+                    child: Icon(
+                      _autoReadController.isPaused
+                          ? Icons.play_arrow_rounded
+                          : Icons.pause_rounded,
+                      key: ValueKey(_autoReadController.isPaused),
+                    ),
                   ),
                 ),
               ),

@@ -1,5 +1,6 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:file_selector/file_selector.dart';
+import 'package:flutter_miuix/miuix.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -55,21 +56,34 @@ class _PluginStorePageContentState extends State<_PluginStorePageContent> {
     final colorScheme = Theme.of(context).colorScheme;
     return BlocBuilder<PluginStoreCubit, PluginStoreState>(
       builder: (context, state) {
-        return Scaffold(
-          appBar: AppBar(title: Text(t.plugin.store)),
-          body: Align(
-            alignment: Alignment.topCenter,
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 800),
-              child: ListView(
-                padding: const EdgeInsets.all(16),
-                children: [
-                  _buildSearchCard(colorScheme, state.installing),
-                  const SizedBox(height: 14),
-                  _buildInstallButtons(state.installing),
-                  const SizedBox(height: 16),
-                  _buildCloudPluginsSection(state),
-                ],
+        // Miuix 迁移：Scaffold + AppBar → MiuixScaffold + MiuixTopAppBar。
+        return MiuixScaffold(
+          topBar: MiuixTopAppBar(
+            title: t.plugin.store,
+            navigationIcon: MiuixIconButton(
+              onPressed: () => context.maybePop(),
+              child: const Icon(Icons.arrow_back),
+            ),
+          ),
+          content: (padding) => Material(
+            type: MaterialType.transparency,
+            child: Padding(
+              padding: padding,
+              child: Align(
+                alignment: Alignment.topCenter,
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 800),
+                  child: ListView(
+                    padding: const EdgeInsets.all(16),
+                    children: [
+                      _buildSearchCard(colorScheme, state.installing),
+                      const SizedBox(height: 14),
+                      _buildInstallButtons(state.installing),
+                      const SizedBox(height: 16),
+                      _buildCloudPluginsSection(state),
+                    ],
+                  ),
+                ),
               ),
             ),
           ),
@@ -105,15 +119,27 @@ class _PluginStorePageContentState extends State<_PluginStorePageContent> {
       spacing: 12,
       runSpacing: 12,
       children: [
-        OutlinedButton.icon(
+        MiuixButton(
           onPressed: installing ? null : _installFromLocal,
-          icon: const Icon(Icons.folder_open_outlined, size: 18),
-          label: Text(t.plugin.localInstall),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.folder_open_outlined, size: 18),
+              const SizedBox(width: 6),
+              Text(t.plugin.localInstall),
+            ],
+          ),
         ),
-        OutlinedButton.icon(
+        MiuixButton(
           onPressed: installing ? null : _installFromNetwork,
-          icon: const Icon(Icons.language_outlined, size: 18),
-          label: Text(t.plugin.networkInstall),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.language_outlined, size: 18),
+              const SizedBox(width: 6),
+              Text(t.plugin.networkInstall),
+            ],
+          ),
         ),
       ],
     );
@@ -185,12 +211,18 @@ class _PluginStorePageContentState extends State<_PluginStorePageContent> {
                   ).textTheme.bodySmall?.copyWith(color: colorScheme.error),
                 ),
                 const SizedBox(height: 8),
-                OutlinedButton.icon(
+                MiuixButton(
                   onPressed: state.cloudLoading
                       ? null
                       : context.read<PluginStoreCubit>().loadCloudPlugins,
-                  icon: const Icon(Icons.refresh),
-                  label: Text(t.common.retry),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.refresh),
+                      const SizedBox(width: 6),
+                      Text(t.common.retry),
+                    ],
+                  ),
                 ),
               ],
             ),

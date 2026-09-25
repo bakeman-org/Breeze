@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart' as m;
 import 'package:flutter_miuix/miuix.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -277,7 +278,7 @@ class _PluginSettingsContentState extends State<PluginSettingsContent> {
               children: [
                 Text(widget.state.error),
                 const SizedBox(height: 12),
-                OutlinedButton(
+                MiuixButton(
                   onPressed: () =>
                       context.read<PluginSettingsCubit>().load(widget.from),
                   child: Text(t.common.retry),
@@ -322,7 +323,7 @@ class _PluginSettingsContentState extends State<PluginSettingsContent> {
           child: Row(
             children: [
               Expanded(child: Text(widget.state.userInfoError)),
-              OutlinedButton(
+              MiuixButton(
                 onPressed: () => context
                     .read<PluginSettingsCubit>()
                     .loadUserInfo(widget.from),
@@ -725,8 +726,8 @@ class _PluginSettingsContentState extends State<PluginSettingsContent> {
         title: Text(title),
         content: SizedBox(
           width: 320,
-          child: Material(
-            type: MaterialType.transparency,
+          child: m.Material(
+            type: m.MaterialType.transparency,
             child: MiuixTextField(
               controller: controller,
               label: title,

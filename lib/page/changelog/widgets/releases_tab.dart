@@ -1,5 +1,6 @@
 // lib/page/changelog/widgets/releases_tab.dart
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:flutter_miuix/miuix.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -163,7 +164,7 @@ class _ReleasesTabState extends State<ReleasesTab>
               style: TextStyle(color: colorScheme.onSurfaceVariant),
             ),
             const SizedBox(height: 24),
-            FilledButton.tonal(
+            MiuixButton(
               onPressed: () {
                 setState(() {
                   _isLoading = true;

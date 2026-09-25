@@ -1,4 +1,5 @@
 import 'package:auto_route/auto_route.dart';
+import 'package:flutter_miuix/miuix.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:uuid/uuid.dart';
@@ -106,37 +107,68 @@ class _SearchAggregateResultPageState
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        titleSpacing: 0,
-        title: _SearchBarTrigger(searchEvent: widget.searchEvent),
-      ),
-      body: Column(
-        children: [
-          const _FilterChipsRow(),
-          Expanded(
-            child: BlocBuilder<AggregateSearchCubit, AggregateSearchState>(
-              builder: (context, state) {
-                final hasAnyResponse =
-                    state.results.isNotEmpty || state.errors.isNotEmpty;
-                if (state.status == AggregateSearchStatus.loading &&
-                    !hasAnyResponse) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-                return Stack(
-                  children: [
-                    _ResultList(searchEvent: widget.searchEvent, state: state),
-                    if (state.status == AggregateSearchStatus.loading)
-                      const Align(
-                        alignment: Alignment.topCenter,
-                        child: LinearProgressIndicator(minHeight: 2),
-                      ),
-                  ],
-                );
-              },
-            ),
+    final colorScheme = Theme.of(context).colorScheme;
+    // Miuix 迁移：Scaffold + AppBar → MiuixScaffold + 自绘顶栏（与
+    // SearchResultBar 同款模式，topBar 槽位接受任意 widget）。
+    // 搜索触发器、筛选 chips、加载指示、结果列表逻辑全部保持不变。
+    return MiuixScaffold(
+      topBar: Material(
+        color: colorScheme.surface,
+        child: SafeArea(
+          bottom: false,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SizedBox(
+                height: 52,
+                child: _SearchBarTrigger(searchEvent: widget.searchEvent),
+              ),
+              Divider(
+                height: 1,
+                thickness: 1,
+                color: colorScheme.outlineVariant.withValues(
+                  alpha: 0.5,
+                ), // 淡淡的分割线
+              ),
+            ],
           ),
-        ],
+        ),
+      ),
+      content: (padding) => Material(
+        type: MaterialType.transparency,
+        child: Padding(
+          padding: padding,
+          child: Column(
+            children: [
+              const _FilterChipsRow(),
+              Expanded(
+                child: BlocBuilder<AggregateSearchCubit, AggregateSearchState>(
+                  builder: (context, state) {
+                    final hasAnyResponse =
+                        state.results.isNotEmpty || state.errors.isNotEmpty;
+                    if (state.status == AggregateSearchStatus.loading &&
+                        !hasAnyResponse) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+                    return Stack(
+                      children: [
+                        _ResultList(
+                          searchEvent: widget.searchEvent,
+                          state: state,
+                        ),
+                        if (state.status == AggregateSearchStatus.loading)
+                          const Align(
+                            alignment: Alignment.topCenter,
+                            child: LinearProgressIndicator(minHeight: 2),
+                          ),
+                      ],
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -195,10 +227,12 @@ class _SearchBarTrigger extends StatelessWidget {
               ),
             ),
           ),
-          IconButton(
-            tooltip: t.search.selectSourceTooltip,
-            onPressed: () => _showSourceDialog(context),
-            icon: const Icon(Icons.tune),
+          Tooltip(
+            message: t.search.selectSourceTooltip,
+            child: MiuixIconButton(
+              onPressed: () => _showSourceDialog(context),
+              child: const Icon(Icons.tune),
+            ),
           ),
         ],
       ),
@@ -354,7 +388,8 @@ class _ResultList extends StatelessWidget {
         children.add(
           Padding(
             padding: const EdgeInsets.fromLTRB(12, 0, 12, 10),
-            child: Card(
+            child: MiuixCard(
+              insideMargin: EdgeInsets.zero,
               child: ListTile(
                 leading: const Icon(Icons.error_outline),
                 title: Text(
@@ -371,12 +406,14 @@ class _ResultList extends StatelessWidget {
                         height: 20,
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
-                    : IconButton(
-                        tooltip: t.common.refresh,
-                        icon: const Icon(Icons.refresh),
-                        onPressed: () => context
-                            .read<AggregateSearchCubit>()
-                            .refreshSource(pluginId),
+                    : Tooltip(
+                        message: t.common.refresh,
+                        child: MiuixIconButton(
+                          onPressed: () => context
+                              .read<AggregateSearchCubit>()
+                              .refreshSource(pluginId),
+                          child: const Icon(Icons.refresh),
+                        ),
                       ),
               ),
             ),

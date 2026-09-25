@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:auto_route/auto_route.dart';
+import 'package:flutter_miuix/miuix.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:zephyr/config/global/global_setting.dart';
@@ -141,101 +142,120 @@ class _CacheSettingPageState extends State<CacheSettingPage> {
     final cubit = context.watch<GlobalSettingCubit>();
     final state = cubit.state;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          t.cache.title,
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+    // Miuix 迁移：Scaffold + AppBar → MiuixScaffold + MiuixSmallTopAppBar
+    // （与 SettingPageShell 同款模式）；缓存统计/清理逻辑不变。
+    return MiuixScaffold(
+      topBar: MiuixSmallTopAppBar(
+        title: t.cache.title,
+        navigationIcon: MiuixIconButton(
+          onPressed: () => context.maybePop(),
+          child: const Icon(Icons.arrow_back),
         ),
-        centerTitle: false,
-        scrolledUnderElevation: 0,
       ),
-      body: Align(
-        alignment: Alignment.topCenter,
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 768),
-          child: ListView(
-            children: [
-              _buildSectionTitle(context, t.cache.currentCache),
-              ListTile(
-                leading: const Icon(Icons.storage_outlined),
-                title: Text(t.cache.cacheSize),
-                subtitle: Text(
-                  _calculating
-                      ? t.cache.calculating
-                      : _formatSize(_cacheSizeBytes),
-                ),
-                trailing: _calculating
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : IconButton(
-                        icon: const Icon(Icons.refresh, size: 20),
-                        tooltip: t.cache.recalculate,
-                        onPressed: _calculateCacheSize,
+      content: (padding) => Material(
+        type: MaterialType.transparency,
+        child: Padding(
+          padding: padding,
+          child: Align(
+            alignment: Alignment.topCenter,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 768),
+              child: ListView(
+                children: [
+                  _buildSectionTitle(context, t.cache.currentCache),
+                  ListTile(
+                    leading: const Icon(Icons.storage_outlined),
+                    title: Text(t.cache.cacheSize),
+                    subtitle: Text(
+                      _calculating
+                          ? t.cache.calculating
+                          : _formatSize(_cacheSizeBytes),
+                    ),
+                    trailing: _calculating
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : Tooltip(
+                            message: t.cache.recalculate,
+                            child: MiuixIconButton(
+                              minWidth: 32,
+                              minHeight: 32,
+                              onPressed: _calculateCacheSize,
+                              child: const Icon(Icons.refresh, size: 20),
+                            ),
+                          ),
+                  ),
+                  const Divider(height: 1, thickness: 0.3),
+                  ListTile(
+                    leading: const Icon(Icons.cleaning_services_outlined),
+                    title: Text(t.cache.manualClear),
+                    subtitle: Text(t.cache.manualClearSubtitle),
+                    // Miuix 迁移：FilledButton.tonalIcon → MiuixButton。
+                    trailing: MiuixButton(
+                      onPressed: _handleClearCache,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.delete_outline, size: 18),
+                          const SizedBox(width: 8),
+                          Text(t.cache.clear),
+                        ],
                       ),
-              ),
-              const Divider(height: 1, thickness: 0.3),
-              ListTile(
-                leading: const Icon(Icons.cleaning_services_outlined),
-                title: Text(t.cache.manualClear),
-                subtitle: Text(t.cache.manualClearSubtitle),
-                trailing: FilledButton.tonalIcon(
-                  onPressed: _handleClearCache,
-                  icon: const Icon(Icons.delete_outline, size: 18),
-                  label: Text(t.cache.clear),
-                ),
-              ),
+                    ),
+                  ),
 
-              const SizedBox(height: 8),
-              const Divider(height: 1, thickness: 0.3),
-              _buildSectionTitle(context, t.cache.cacheLimit),
-              ListTile(
-                leading: const Icon(Icons.data_thresholding_outlined),
-                title: Text(t.cache.sizeLimit),
-                subtitle: Text(t.cache.sizeLimitSubtitle),
-                trailing: Builder(
-                  builder: (context) {
-                    final effectiveCacheLimit =
-                        _cacheLimitOptions.contains(
-                          state.cacheSetting.cacheSizeLimit,
-                        )
-                        ? state.cacheSetting.cacheSizeLimit
-                        : 1073741824;
-                    return FluentDropdown<int>(
-                      value: effectiveCacheLimit,
-                      displayValue: _cacheLimitLabels[effectiveCacheLimit]!,
-                      items: _cacheLimitLabels,
-                      onChanged: (int value) {
-                        cubit.updateCacheSetting(
-                          (current) => current.copyWith(cacheSizeLimit: value),
+                  const SizedBox(height: 8),
+                  const Divider(height: 1, thickness: 0.3),
+                  _buildSectionTitle(context, t.cache.cacheLimit),
+                  ListTile(
+                    leading: const Icon(Icons.data_thresholding_outlined),
+                    title: Text(t.cache.sizeLimit),
+                    subtitle: Text(t.cache.sizeLimitSubtitle),
+                    trailing: Builder(
+                      builder: (context) {
+                        final effectiveCacheLimit =
+                            _cacheLimitOptions.contains(
+                              state.cacheSetting.cacheSizeLimit,
+                            )
+                            ? state.cacheSetting.cacheSizeLimit
+                            : 1073741824;
+                        return FluentDropdown<int>(
+                          value: effectiveCacheLimit,
+                          displayValue: _cacheLimitLabels[effectiveCacheLimit]!,
+                          items: _cacheLimitLabels,
+                          onChanged: (int value) {
+                            cubit.updateCacheSetting(
+                              (current) =>
+                                  current.copyWith(cacheSizeLimit: value),
+                            );
+                          },
                         );
                       },
-                    );
-                  },
-                ),
-              ),
+                    ),
+                  ),
 
-              const SizedBox(height: 8),
-              const Divider(height: 1, thickness: 0.3),
-              _buildSectionTitle(context, t.cache.autoClean),
-              SwitchListTile(
-                secondary: const Icon(Icons.auto_delete_outlined),
-                title: Text(t.cache.autoClean),
-                subtitle: Text(t.cache.autoCleanSubtitle),
-                thumbIcon: kSettingSwitchThumbIcon,
-                value: state.cacheSetting.autoCleanCache,
-                onChanged: (bool value) {
-                  cubit.updateCacheSetting(
-                    (current) => current.copyWith(autoCleanCache: value),
-                  );
-                },
-              ),
+                  const SizedBox(height: 8),
+                  const Divider(height: 1, thickness: 0.3),
+                  _buildSectionTitle(context, t.cache.autoClean),
+                  SwitchListTile(
+                    secondary: const Icon(Icons.auto_delete_outlined),
+                    title: Text(t.cache.autoClean),
+                    subtitle: Text(t.cache.autoCleanSubtitle),
+                    thumbIcon: kSettingSwitchThumbIcon,
+                    value: state.cacheSetting.autoCleanCache,
+                    onChanged: (bool value) {
+                      cubit.updateCacheSetting(
+                        (current) => current.copyWith(autoCleanCache: value),
+                      );
+                    },
+                  ),
 
-              const SizedBox(height: 32),
-            ],
+                  const SizedBox(height: 32),
+                ],
+              ),
+            ),
           ),
         ),
       ),

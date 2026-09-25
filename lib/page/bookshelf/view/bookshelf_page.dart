@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart' as m;
+import 'package:flutter_miuix/miuix.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:zephyr/config/global/global_setting.dart';
@@ -11,7 +13,6 @@ import 'package:zephyr/page/bookshelf/bookshelf.dart' hide SearchEnter;
 import 'package:zephyr/page/bookshelf/service/download_folder_service.dart';
 import 'package:zephyr/page/bookshelf/service/favorite_folder_service.dart';
 import 'package:zephyr/plugin/plugin_registry_service.dart';
-import 'package:zephyr/util/context/context_extensions.dart';
 
 @RoutePage()
 class BookshelfPage extends StatelessWidget {
@@ -105,6 +106,8 @@ class _BookshelfPageContentState extends State<_BookshelfPageContent>
   @override
   Widget build(BuildContext context) {
     final isDesktop = MediaQuery.of(context).size.width >= 600;
+    // 桌面端搜索框常驻（原桌面 AppBar 布局语义）；移动端点搜索图标展开。
+    final showSearchField = isDesktop || _isSearchExpanded;
 
     return BlocListener<PluginRegistryCubit, Map<String, PluginRuntimeState>>(
       listenWhen: (previous, current) =>
@@ -114,187 +117,109 @@ class _BookshelfPageContentState extends State<_BookshelfPageContent>
         _syncSourcesFromRegistry(pluginStates);
         _triggerRefreshAll();
       },
-      child: Scaffold(
-        appBar: AppBar(
-          titleSpacing: isDesktop ? 16 : 8,
-          title: isDesktop ? _buildDesktopHeader() : _buildMobileHeader(),
-        ),
-        body: TabBarView(
-          controller: _tabController,
-          children: [
-            FolderShelfPage(
-              mode: ShelfPageMode.favorite,
-              refreshSignal: _refreshSignals[0],
-              isActive: _currentIndex == 0,
-            ),
-            LocalShelfPage(
-              mode: ShelfPageMode.history,
-              refreshSignal: _refreshSignals[1],
-            ),
-            FolderShelfPage(
-              mode: ShelfPageMode.download,
-              refreshSignal: _refreshSignals[2],
-              isActive: _currentIndex == 2,
+      // Miuix 迁移：Scaffold + AppBar(自绘 tabs/搜索头) → MiuixScaffold +
+      // MiuixSmallTopAppBar + MiuixTabRowWithContour。三页签、搜索防抖、
+      // 筛选弹窗、刷新信号等行为全部保持不变。
+      child: MiuixScaffold(
+        topBar: MiuixSmallTopAppBar(
+          title: t.navigation.bookshelf,
+          actions: [
+            if (!isDesktop)
+              Tooltip(
+                message: t.bookshelf.searchList,
+                child: MiuixIconButton(
+                  onPressed: () =>
+                      setState(() => _isSearchExpanded = !_isSearchExpanded),
+                  child: Icon(_isSearchExpanded ? Icons.close : Icons.search),
+                ),
+              ),
+            Tooltip(
+              message: t.bookshelf.filter,
+              child: MiuixIconButton(
+                onPressed: _openFilter,
+                child: const Icon(Icons.tune),
+              ),
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildDesktopHeader() {
-    return Row(
-      children: [
-        _buildSleekTabs(),
-        const SizedBox(width: 24),
-        Expanded(
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.start,
-            children: [
-              Flexible(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 400),
-                  child: _buildMinimalistSearchField(false),
+        content: (padding) => Material(
+          type: MaterialType.transparency,
+          child: Padding(
+            padding: padding,
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                  child: MiuixTabRowWithContour(
+                    tabs: _labels,
+                    selectedTabIndex: _currentIndex,
+                    onTabSelected: _onTabChanged,
+                  ),
                 ),
-              ),
-              const SizedBox(width: 8),
-              IconButton(
-                tooltip: t.bookshelf.filter,
-                icon: const Icon(Icons.tune),
-                onPressed: _openFilter,
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildMobileHeader() {
-    if (_isSearchExpanded) {
-      return Row(
-        children: [
-          Expanded(child: _buildMinimalistSearchField(true)),
-          const SizedBox(width: 8),
-          IconButton(
-            icon: const Icon(Icons.close),
-            onPressed: () {
-              setState(() => _isSearchExpanded = false);
-            },
-          ),
-        ],
-      );
-    }
-
-    return Row(
-      children: [
-        _buildSleekTabs(),
-        const Spacer(),
-        IconButton(
-          icon: const Icon(Icons.search),
-          onPressed: () => setState(() => _isSearchExpanded = true),
-        ),
-        IconButton(
-          tooltip: t.bookshelf.filter,
-          icon: const Icon(Icons.tune),
-          onPressed: _openFilter,
-        ),
-      ],
-    );
-  }
-
-  Widget _buildSleekTabs() {
-    return Container(
-      decoration: BoxDecoration(
-        color: context.theme.colorScheme.surfaceContainerHighest.withValues(
-          alpha: 0.5,
-        ),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      padding: const EdgeInsets.all(4),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: List.generate(_labels.length, (index) {
-          final isSelected = _currentIndex == index;
-          return GestureDetector(
-            onTap: () => _onTabChanged(index),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 180),
-              curve: Curves.easeOutCubic,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-              decoration: BoxDecoration(
-                color: isSelected
-                    ? context.theme.colorScheme.surface
-                    : Colors.transparent,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: isSelected
-                    ? [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.05),
-                          blurRadius: 4,
-                          offset: const Offset(0, 1),
-                        ),
-                      ]
-                    : [],
-              ),
-              child: Text(
-                _labels[index],
-                style: TextStyle(
-                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
-                  fontSize: 14,
-                  color: isSelected
-                      ? context.textColor
-                      : context.textColor.withValues(alpha: 0.6),
+                if (showSearchField)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                    child: _buildSearchField(),
+                  ),
+                Expanded(
+                  child: TabBarView(
+                    controller: _tabController,
+                    children: [
+                      FolderShelfPage(
+                        mode: ShelfPageMode.favorite,
+                        refreshSignal: _refreshSignals[0],
+                        isActive: _currentIndex == 0,
+                      ),
+                      LocalShelfPage(
+                        mode: ShelfPageMode.history,
+                        refreshSignal: _refreshSignals[1],
+                      ),
+                      FolderShelfPage(
+                        mode: ShelfPageMode.download,
+                        refreshSignal: _refreshSignals[2],
+                        isActive: _currentIndex == 2,
+                      ),
+                    ],
+                  ),
                 ),
-              ),
+              ],
             ),
-          );
-        }),
+          ),
+        ),
       ),
     );
   }
 
-  Widget _buildMinimalistSearchField(bool isMobile) {
-    return Container(
-      height: 38,
-      decoration: BoxDecoration(
-        color: context.theme.colorScheme.surfaceContainerHighest.withValues(
-          alpha: 0.4,
-        ),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: TextField(
+  /// 列表内搜索框（Miuix 迁移版）。
+  ///
+  /// 行为与旧版一致：
+  ///   - 输入 250ms 防抖后写入 [BookshelfSearchCubit] 并刷新列表；
+  ///   - 提交（键盘搜索键）立即生效；
+  ///   - 非空时显示清空按钮，点击后立即重置并刷新。
+  Widget _buildSearchField() {
+    return m.Material(
+      type: m.MaterialType.transparency,
+      child: MiuixTextField(
         controller: _searchController,
+        singleLine: true,
         textInputAction: TextInputAction.search,
-        textAlignVertical: TextAlignVertical.center,
-        style: const TextStyle(fontSize: 14),
-        decoration: InputDecoration(
-          hintText: t.bookshelf.searchList,
-          hintStyle: TextStyle(color: context.textColor.withValues(alpha: 0.5)),
-          isCollapsed: true,
-          border: InputBorder.none,
-          prefixIcon: Icon(
-            Icons.search,
-            size: 18,
-            color: context.textColor.withValues(alpha: 0.6),
-          ),
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 14,
-            vertical: 0,
-          ),
-          suffixIcon: _searchController.text.isEmpty
-              ? null
-              : IconButton(
-                  icon: const Icon(Icons.close, size: 16),
-                  onPressed: () {
-                    _searchDebounce?.cancel();
-                    _searchController.clear();
-                    _setKeyword('');
-                    _triggerRefresh(goTop: true);
-                    setState(() {});
-                  },
-                ),
-        ),
+        label: t.bookshelf.searchList,
+        useLabelAsPlaceholder: true,
+        leadingIcon: const Icon(Icons.search, size: 18),
+        trailingIcon: _searchController.text.isEmpty
+            ? null
+            : MiuixIconButton(
+                minWidth: 28,
+                minHeight: 28,
+                onPressed: () {
+                  _searchDebounce?.cancel();
+                  _searchController.clear();
+                  _setKeyword('');
+                  _triggerRefresh(goTop: true);
+                  setState(() {});
+                },
+                child: const Icon(Icons.close, size: 16),
+              ),
         onChanged: (value) {
           setState(() {});
           // 250ms 防抖：避免每次按键都触发 worker 往返。

@@ -1,4 +1,5 @@
 import 'package:auto_route/auto_route.dart';
+import 'package:flutter_miuix/miuix.dart';
 import 'package:material_ui/material_ui.dart' hide SearchBar;
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:zephyr/page/search/cubit/search_cubit.dart';
@@ -57,11 +58,14 @@ class _SearchPageState extends State<_SearchPageContent> {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return Scaffold(
-      backgroundColor: colorScheme.surface,
-      body: SafeArea(child: _renderer.build()),
+    // Miuix 迁移：Scaffold + SafeArea → MiuixScaffold。
+    // content 的 padding 已含系统栏内边距，替代原 SafeArea；
+    // scheme 渲染器（搜索栏 / 分隔线 / 历史）结构不变。
+    return MiuixScaffold(
+      content: (padding) => Material(
+        type: MaterialType.transparency,
+        child: Padding(padding: padding, child: _renderer.build()),
+      ),
     );
   }
 }

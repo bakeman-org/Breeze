@@ -1,4 +1,5 @@
 import 'package:auto_route/auto_route.dart';
+import 'package:flutter_miuix/miuix.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:zephyr/config/global/global_setting.dart';
@@ -110,6 +111,8 @@ class _OldRankingPageState extends State<OldRankingPage> {
         ? 0
         : _panelIndex.clamp(0, panels.length - 1);
 
+    // Miuix 迁移：body 嵌套完整 ComicListPage（各自带顶栏），
+    // 外层保留 Scaffold 仅作布局容器，避免系统 inset 双重计算；仅迁移 FAB。
     return Scaffold(
       body: hasAnyPanel
           ? IndexedStack(index: effectiveIndex, children: panels)
@@ -119,14 +122,16 @@ class _OldRankingPageState extends State<OldRankingPage> {
           ? FloatingActionButtonLocation.startFloat
           : FloatingActionButtonLocation.endFloat,
       floatingActionButton: panels.length > 1
-          ? FloatingActionButton(
-              onPressed: () {
-                setState(() {
-                  _panelIndex = effectiveIndex == 0 ? 1 : 0;
-                });
-              },
-              tooltip: t.oldRanking.switchSource,
-              child: const Icon(Icons.swap_horiz),
+          ? Tooltip(
+              message: t.oldRanking.switchSource,
+              child: MiuixFloatingActionButton(
+                onPressed: () {
+                  setState(() {
+                    _panelIndex = effectiveIndex == 0 ? 1 : 0;
+                  });
+                },
+                child: const Icon(Icons.swap_horiz),
+              ),
             )
           : null,
     );

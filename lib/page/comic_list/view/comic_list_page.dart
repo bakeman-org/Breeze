@@ -1,4 +1,5 @@
 import 'package:auto_route/annotations.dart';
+import 'package:flutter_miuix/miuix.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:zephyr/page/comic_list/cubit/comic_list_cubit.dart';
@@ -60,18 +61,29 @@ class _ComicListViewState extends State<_ComicListView>
         final title =
             widget.title ?? (state.scene?.title ?? t.comicList.defaultTitle);
 
-        return Scaffold(
-          appBar: AppBar(
-            title: Text(title),
+        // Miuix 迁移：Scaffold/AppBar → MiuixScaffold/MiuixTopAppBar。
+        // 筛选入口、场景加载、错误重试等逻辑全部保持不变。
+        return MiuixScaffold(
+          topBar: MiuixTopAppBar(
+            title: title,
             actions: [
               if (state.requiresFilter)
-                IconButton(
-                  icon: const Icon(Icons.filter_alt),
-                  onPressed: () => _openFilterDialog(context),
+                Tooltip(
+                  message: t.comicList.filter,
+                  child: MiuixIconButton(
+                    onPressed: () => _openFilterDialog(context),
+                    child: const Icon(Icons.filter_alt),
+                  ),
                 ),
             ],
           ),
-          body: _buildBody(context, state),
+          content: (padding) => Material(
+            type: MaterialType.transparency,
+            child: Padding(
+              padding: padding,
+              child: _buildBody(context, state),
+            ),
+          ),
         );
       },
     );
@@ -95,7 +107,7 @@ class _ComicListViewState extends State<_ComicListView>
           children: [
             Text(state.sceneError!),
             const SizedBox(height: 12),
-            ElevatedButton(
+            MiuixButton(
               onPressed: () => context.read<ComicListCubit>().reload(),
               child: Text(t.comicList.reload),
             ),
@@ -119,7 +131,7 @@ class _ComicListViewState extends State<_ComicListView>
           children: [
             Text(state.filterError!),
             const SizedBox(height: 12),
-            ElevatedButton(
+            MiuixButton(
               onPressed: () => context.read<ComicListCubit>().loadFilter(),
               child: Text(t.comicList.reload),
             ),

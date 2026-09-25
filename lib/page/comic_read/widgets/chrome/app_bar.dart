@@ -1,5 +1,6 @@
 import 'dart:ui';
 
+import 'package:flutter_miuix/miuix.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:zephyr/page/comic_read/cubit/reader_cubit.dart';
@@ -49,16 +50,20 @@ class ComicReadAppBar extends StatelessWidget {
                 title: ScrollableTitle(text: title),
                 titleSpacing: 6,
                 actions: [
+                  // Miuix 迁移：IconButton → MiuixIconButton（仍处于 AppBar
+                  // 提供的 Material 祖先内，模糊/圆角容器保持原样）。
                   if (onToggleFullscreen != null)
-                    IconButton(
-                      tooltip: isDesktopFullscreen
+                    Tooltip(
+                      message: isDesktopFullscreen
                           ? t.reader.exitFullscreen
                           : t.reader.enterFullscreen,
-                      onPressed: onToggleFullscreen,
-                      icon: Icon(
-                        isDesktopFullscreen
-                            ? Icons.fullscreen_exit_rounded
-                            : Icons.fullscreen_rounded,
+                      child: MiuixIconButton(
+                        onPressed: onToggleFullscreen,
+                        child: Icon(
+                          isDesktopFullscreen
+                              ? Icons.fullscreen_exit_rounded
+                              : Icons.fullscreen_rounded,
+                        ),
                       ),
                     ),
                 ],

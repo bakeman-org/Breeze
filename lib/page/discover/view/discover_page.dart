@@ -22,6 +22,7 @@
 
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_miuix/miuix.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:zephyr/config/global/global_setting.dart';
 import 'package:zephyr/config/router/router.gr.dart';
@@ -78,15 +79,19 @@ class _DiscoverView extends StatelessWidget {
         .state
         .leftHandModeEnabled;
 
-    return Scaffold(
-      appBar: _buildAppBar(context),
-      // 键盘弹出时不重设布局（这个页面没有输入框，保持稳定）。
-      resizeToAvoidBottomInset: false,
-      body: _buildBody(context),
-      floatingActionButtonLocation: leftHandMode
-          ? FloatingActionButtonLocation.startFloat
-          : FloatingActionButtonLocation.endFloat,
+    // Miuix 迁移：Scaffold → MiuixScaffold。
+    // 原 Scaffold 的 resizeToAvoidBottomInset: false 在 MiuixScaffold 中
+    // 天然成立（body 不随键盘重排），无需额外处理。
+    return MiuixScaffold(
+      topBar: _buildAppBar(context),
       floatingActionButton: _buildFloatingActions(context, leftHandMode),
+      floatingActionButtonPosition: leftHandMode
+          ? MiuixFabPosition.start
+          : MiuixFabPosition.end,
+      content: (padding) => Material(
+        type: MaterialType.transparency,
+        child: _buildBody(context, padding),
+      ),
     );
   }
 
@@ -99,21 +104,24 @@ class _DiscoverView extends StatelessWidget {
   /// 右侧两个按钮：
   ///   - 自定义插件顺序（弹出 dialog 调整插件卡片的前后顺序）
   ///   - 搜索（默认插件）
-  AppBar _buildAppBar(BuildContext context) {
-    return AppBar(
-      title: Text(t.discover.title),
+  MiuixTopAppBar _buildAppBar(BuildContext context) {
+    return MiuixTopAppBar(
+      title: t.discover.title,
       actions: [
-        IconButton(
-          tooltip: t.discover.customOrder,
-          icon: const Icon(Icons.reorder),
-          onPressed: () => showPluginOrderDialog(context),
+        Tooltip(
+          message: t.discover.customOrder,
+          child: MiuixIconButton(
+            onPressed: () => showPluginOrderDialog(context),
+            child: const Icon(Icons.reorder),
+          ),
         ),
-        IconButton(
-          tooltip: t.discover.search,
-          icon: const Icon(Icons.search),
-          onPressed: () => _search(context),
+        Tooltip(
+          message: t.discover.search,
+          child: MiuixIconButton(
+            onPressed: () => _search(context),
+            child: const Icon(Icons.search),
+          ),
         ),
-        const SizedBox(width: 8),
       ],
     );
   }
@@ -125,14 +133,15 @@ class _DiscoverView extends StatelessWidget {
   /// Body 骨架：下拉刷新 + 居中 + 最大宽度约束。
   ///
   /// [ConstrainedBox] 到 800 是为了桌面/平板上不至于卡片被拉太长。
-  Widget _buildBody(BuildContext context) {
+  /// [padding] 来自 MiuixScaffold（顶栏高度 + 系统栏），由内容根部应用。
+  Widget _buildBody(BuildContext context, EdgeInsets padding) {
     return RefreshIndicator(
       onRefresh: () => context.read<DiscoverCubit>().reload(),
       child: Align(
         alignment: Alignment.topCenter,
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 800),
-          child: _buildPluginHome(context),
+          child: _buildPluginHome(context, padding),
         ),
       ),
     );
@@ -148,7 +157,7 @@ class _DiscoverView extends StatelessWidget {
   ///   1. 插件商店入口
   ///   2. 「插件管理」分组标题
   ///   3. 插件卡片列表（每个插件一张卡）
-  Widget _buildPluginHome(BuildContext context) {
+  Widget _buildPluginHome(BuildContext context, EdgeInsets padding) {
     return BlocBuilder<DiscoverCubit, DiscoverState>(
       builder: (context, state) {
         final plugins = state.plugins.values.toList();
@@ -156,9 +165,9 @@ class _DiscoverView extends StatelessWidget {
         return ListView(
           physics: const AlwaysScrollableScrollPhysics(),
           // 底部留 120 给 FAB 遮挡空间，保证最后一个卡片能完整滚到可点区域。
-          padding: const EdgeInsets.only(bottom: 120),
+          padding: padding.copyWith(bottom: padding.bottom + 120),
           children: [
-            const SizedBox(height: 16),
+            const SizedBox(height: 8),
             _buildPluginStoreButton(context),
             const SizedBox(height: 8),
             _buildSectionHeader(context, t.discover.pluginManagement),
@@ -187,7 +196,10 @@ class _DiscoverView extends StatelessWidget {
   /// [PluginCard] 是个独立的 widget（在 widgets/plugin_card.dart），把
   /// 卡片的 UI 和交互细节都封装在那边；这里只负责：
   ///   - 从 state 里挑出该插件当前的 info 加载状态
-  ///   - 构造 4 个回调：搜索 / 设置 / 启用切换 / 重试 / 自定义 action
+  ///   - 构造 5 个回调：搜索 / 设置 / 启用切换 / 重试 / 自定义 action
+  ///
+  /// Miuix 迁移：Material Card → MiuixCard（零内边距，内部布局交还给
+  /// PluginCard；圆角裁剪用 ClipRRect 补齐，MiuixCard 本身不裁切子树）。
   Widget _buildPluginCard(
     BuildContext context,
     PluginRuntimeState plugin,
@@ -199,28 +211,33 @@ class _DiscoverView extends StatelessWidget {
         state.infoStates[plugin.uuid] ??
         const DiscoverPluginInfoState(loading: true);
 
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-      elevation: 0,
-      color: Theme.of(context).colorScheme.surfaceContainerLow,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      clipBehavior: Clip.antiAlias,
-      child: PluginCard(
-        pluginUuid: plugin.uuid,
-        pluginState: plugin,
-        infoState: infoState,
-        // 该插件是否正在被 toggle 启用状态。禁用按钮防连点。
-        isToggling: state.togglingUuids.contains(plugin.uuid),
-        onSearch: () => _openPluginSearch(context, plugin.uuid),
-        onSettings: (title) => _openPluginSettings(context, plugin.uuid, title),
-        onToggleEnabled: (enabled) => cubit.toggleEnabled(plugin.uuid, enabled),
-        onRetry: () => cubit.retryLoadInfo(plugin.uuid),
-        // 插件在 getInfo 里声明的快捷 action（例如「推荐」「排行榜」），
-        // 点一下就跳到对应页面。attachSource 会把插件 uuid 注入 payload。
-        onAction: (action) => DiscoverRouter.route(
-          context,
-          action: DiscoverRouter.attachSource(action, plugin.uuid),
-          currentFrom: cubit.currentFrom,
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      child: MiuixCard(
+        cornerRadius: 16,
+        insideMargin: EdgeInsets.zero,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(16),
+          child: PluginCard(
+            pluginUuid: plugin.uuid,
+            pluginState: plugin,
+            infoState: infoState,
+            // 该插件是否正在被 toggle 启用状态。禁用按钮防连点。
+            isToggling: state.togglingUuids.contains(plugin.uuid),
+            onSearch: () => _openPluginSearch(context, plugin.uuid),
+            onSettings: (title) =>
+                _openPluginSettings(context, plugin.uuid, title),
+            onToggleEnabled: (enabled) =>
+                cubit.toggleEnabled(plugin.uuid, enabled),
+            onRetry: () => cubit.retryLoadInfo(plugin.uuid),
+            // 插件在 getInfo 里声明的快捷 action（例如「推荐」「排行榜」），
+            // 点一下就跳到对应页面。attachSource 会把插件 uuid 注入 payload。
+            onAction: (action) => DiscoverRouter.route(
+              context,
+              action: DiscoverRouter.attachSource(action, plugin.uuid),
+              currentFrom: cubit.currentFrom,
+            ),
+          ),
         ),
       ),
     );
@@ -233,12 +250,14 @@ class _DiscoverView extends StatelessWidget {
   /// 顶部「插件商店」入口行。
   ///
   /// 布局：[图标] [标题展开] [右侧提示] [箭头]
+  /// Miuix 迁移：InkWell 裸行 → 可点击的 MiuixCard。
   Widget _buildPluginStoreButton(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    return InkWell(
-      onTap: () => context.pushRoute(const PluginStoreRoute()),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      child: MiuixCard(
+        onPressed: () => context.pushRoute(const PluginStoreRoute()),
+        insideMargin: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
         child: Row(
           children: [
             Icon(
@@ -281,18 +300,9 @@ class _DiscoverView extends StatelessWidget {
 
   /// 分组标题（「插件管理」这种）。
   ///
-  /// 用 primary 色 + 小号字，视觉上作为分隔但不抢眼。
+  /// Miuix 迁移：自绘 primary 色小标题 → MiuixSmallTitle。
   Widget _buildSectionHeader(BuildContext context, String title) {
-    return Padding(
-      padding: const EdgeInsets.only(left: 20, bottom: 8, top: 4),
-      child: Text(
-        title,
-        style: Theme.of(context).textTheme.titleSmall?.copyWith(
-          color: Theme.of(context).colorScheme.primary,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
-    );
+    return MiuixSmallTitle(title);
   }
 
   // ─────────────────────────────────────────────────────────────────
@@ -305,14 +315,13 @@ class _DiscoverView extends StatelessWidget {
   ///   - 上面小 FAB：下载任务
   ///   - 下面大 FAB：搜索（主操作）
   ///
-  /// **两个 FAB 必须有不同的 heroTag。** Flutter 的 Hero 动画通过 tag 匹配，
-  /// 同页面出现两个默认 tag（`_defaultHeroTag`）会抛：
-  ///   "There are multiple heroes that share the same tag"
-  /// 所以这里显式给每个 FAB 一个稳定字符串 tag。
+  /// Miuix 迁移：Material FAB → MiuixFloatingActionButton。
+  /// miuix 版没有 heroTag（也不用 Hero），旧代码里"两个 FAB 必须不同
+  /// heroTag"的约束随之消失；小号 FAB 用 minWidth/minHeight 44 缩小。
   ///
   /// [leftHandMode] 决定 Column 内 FAB 的横向对齐：左手模式下 FAB 组整体
-  /// 靠左（因为 Scaffold 的 `floatingActionButtonLocation` 已经改到 start），
-  /// 内部对齐也要跟着改，否则小 FAB 会脱离大 FAB。
+  /// 靠左（因为 MiuixScaffold 的 `floatingActionButtonPosition` 已经改到
+  /// start），内部对齐也要跟着改，否则小 FAB 会脱离大 FAB。
   Widget _buildFloatingActions(BuildContext context, bool leftHandMode) {
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -320,16 +329,14 @@ class _DiscoverView extends StatelessWidget {
           ? CrossAxisAlignment.start
           : CrossAxisAlignment.end,
       children: [
-        FloatingActionButton.small(
-          heroTag: 'discover_download_task',
-          tooltip: t.more.downloadTasks,
+        MiuixFloatingActionButton(
+          minWidth: 44,
+          minHeight: 44,
           onPressed: () => context.pushRoute(DownloadTaskRoute()),
           child: const Icon(Icons.download_outlined),
         ),
         const SizedBox(height: 12),
-        FloatingActionButton(
-          heroTag: 'discover_search',
-          tooltip: t.discover.search,
+        MiuixFloatingActionButton(
           onPressed: () => _search(context),
           child: const Icon(Icons.search),
         ),

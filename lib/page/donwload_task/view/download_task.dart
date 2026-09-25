@@ -1,4 +1,5 @@
-import 'package:auto_route/annotations.dart';
+import 'package:auto_route/auto_route.dart';
+import 'package:flutter_miuix/miuix.dart';
 import 'package:material_ui/material_ui.dart' hide Page;
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:zephyr/object_box/model.dart';
@@ -26,109 +27,125 @@ class _DownloadTaskView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text(t.download.title)),
-      body: BlocBuilder<DowloadTaskBloc, DowloadTaskState>(
-        builder: (context, state) {
-          return state.when(
-            initial: () => const Center(child: CircularProgressIndicator()),
-            loaded: (tasks, pendingCount) {
-              if (tasks.isEmpty) {
-                return Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(
-                        Icons.download_outlined,
-                        size: 64,
-                        color: Colors.grey,
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        t.download.noTasks,
-                        style: const TextStyle(
-                          color: Colors.grey,
-                          fontSize: 16,
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              }
-
-              final downloadingTasks = tasks
-                  .where((t) => t.isDownloading)
-                  .toList();
-              final pendingTasks = tasks
-                  .where((t) => !t.isDownloading)
-                  .toList();
-
-              return CustomScrollView(
-                slivers: [
-                  if (downloadingTasks.isNotEmpty) ...[
-                    SliverToBoxAdapter(
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                        child: Text(
-                          t.download.downloading,
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.blue,
-                          ),
-                        ),
-                      ),
-                    ),
-                    SliverList(
-                      delegate: SliverChildBuilderDelegate((context, index) {
-                        final task = downloadingTasks[index];
-                        return _DownloadingTaskTile(
-                          key: ValueKey(task.id),
-                          task: task,
-                        );
-                      }, childCount: downloadingTasks.length),
-                    ),
-                  ],
-                  if (pendingTasks.isNotEmpty) ...[
-                    SliverToBoxAdapter(
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                        child: Text(
-                          t.download.pending(count: pendingTasks.length),
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
+    // Miuix 迁移：Scaffold + AppBar → MiuixScaffold + MiuixTopAppBar；
+    // 任务分组渲染、重试/删除/取消逻辑不变。
+    return MiuixScaffold(
+      topBar: MiuixTopAppBar(
+        title: t.download.title,
+        navigationIcon: MiuixIconButton(
+          onPressed: () => context.maybePop(),
+          child: const Icon(Icons.arrow_back),
+        ),
+      ),
+      content: (padding) => Material(
+        type: MaterialType.transparency,
+        child: Padding(
+          padding: padding,
+          child: BlocBuilder<DowloadTaskBloc, DowloadTaskState>(
+            builder: (context, state) {
+              return state.when(
+                initial: () =>
+                    const Center(child: CircularProgressIndicator()),
+                loaded: (tasks, pendingCount) {
+                  if (tasks.isEmpty) {
+                    return Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(
+                            Icons.download_outlined,
+                            size: 64,
                             color: Colors.grey,
                           ),
-                        ),
+                          const SizedBox(height: 16),
+                          Text(
+                            t.download.noTasks,
+                            style: const TextStyle(
+                              color: Colors.grey,
+                              fontSize: 16,
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
-                    SliverList(
-                      delegate: SliverChildBuilderDelegate((context, index) {
-                        final task = pendingTasks[index];
-                        return _PendingTaskTile(
-                          key: ValueKey(task.id),
-                          task: task,
-                          onRetry: task.taskInfo?.stateCode == 'failed'
-                              ? () => DownloadQueueManager.instance.retryTask(
-                                  task.id,
-                                )
-                              : null,
-                          onDelete: () {
-                            context.read<DowloadTaskBloc>().add(
-                              DowloadTaskEvent.taskDeleted(task.id),
+                    );
+                  }
+
+                  final downloadingTasks = tasks
+                      .where((t) => t.isDownloading)
+                      .toList();
+                  final pendingTasks = tasks
+                      .where((t) => !t.isDownloading)
+                      .toList();
+
+                  return CustomScrollView(
+                    slivers: [
+                      if (downloadingTasks.isNotEmpty) ...[
+                        SliverToBoxAdapter(
+                          child: Padding(
+                            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                            child: Text(
+                              t.download.downloading,
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.blue,
+                              ),
+                            ),
+                          ),
+                        ),
+                        SliverList(
+                          delegate: SliverChildBuilderDelegate((context, index) {
+                            final task = downloadingTasks[index];
+                            return _DownloadingTaskTile(
+                              key: ValueKey(task.id),
+                              task: task,
                             );
-                            showInfoToast(t.download.taskDeleted);
-                          },
-                        );
-                      }, childCount: pendingTasks.length),
-                    ),
-                  ],
-                ],
+                          }, childCount: downloadingTasks.length),
+                        ),
+                      ],
+                      if (pendingTasks.isNotEmpty) ...[
+                        SliverToBoxAdapter(
+                          child: Padding(
+                            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                            child: Text(
+                              t.download.pending(count: pendingTasks.length),
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.grey,
+                              ),
+                            ),
+                          ),
+                        ),
+                        SliverList(
+                          delegate: SliverChildBuilderDelegate((context, index) {
+                            final task = pendingTasks[index];
+                            return _PendingTaskTile(
+                              key: ValueKey(task.id),
+                              task: task,
+                              onRetry: task.taskInfo?.stateCode == 'failed'
+                                  ? () =>
+                                        DownloadQueueManager.instance.retryTask(
+                                        task.id,
+                                      )
+                                  : null,
+                              onDelete: () {
+                                context.read<DowloadTaskBloc>().add(
+                                  DowloadTaskEvent.taskDeleted(task.id),
+                                );
+                                showInfoToast(t.download.taskDeleted);
+                              },
+                            );
+                          }, childCount: pendingTasks.length),
+                        ),
+                      ],
+                    ],
+                  );
+                },
               );
             },
-          );
-        },
+          ),
+        ),
       ),
     );
   }
@@ -152,77 +169,81 @@ class _DownloadingTaskTile extends StatelessWidget {
     // 避免两次 ObjectBox 更新之间蓝色状态文字短暂出现造成闪烁。
     final statusMessage = progressMessage.isEmpty ? task.status : '';
 
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: Colors.blue,
-          child: SizedBox(
-            width: 20,
-            height: 20,
-            child: CircularProgressIndicator(
-              strokeWidth: 2,
-              value: progress,
-              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+    // Miuix 迁移：Card → Padding + MiuixCard（MiuixCard 无 margin）。
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      child: MiuixCard(
+        insideMargin: EdgeInsets.zero,
+        child: ListTile(
+          leading: CircleAvatar(
+            backgroundColor: Colors.blue,
+            child: SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                value: progress,
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+              ),
             ),
           ),
-        ),
-        title: Text(task.comicName),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (statusMessage.isNotEmpty)
-              Text(
-                statusMessage,
-                style: const TextStyle(color: Colors.blue),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            if (progressMessage.isNotEmpty)
-              Text(
-                progressMessage,
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-            if (progress != null) ...[
-              const SizedBox(height: 4),
-              LinearProgressIndicator(value: progress),
-            ],
-          ],
-        ),
-        trailing: IconButton(
-          icon: const Icon(Icons.cancel_outlined, color: Colors.blue),
-          onPressed: () {
-            final bloc = context.read<DowloadTaskBloc>();
-            showDialog(
-              context: context,
-              builder: (dialogContext) => AlertDialog(
-                title: Text(t.download.cancelTask),
-                content: Text(
-                  t.download.cancelTaskConfirm(comicName: task.comicName),
+          title: Text(task.comicName),
+          subtitle: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (statusMessage.isNotEmpty)
+                Text(
+                  statusMessage,
+                  style: const TextStyle(color: Colors.blue),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.of(dialogContext).pop(),
-                    child: Text(
-                      t.common.cancel,
-                      style: const TextStyle(color: Colors.grey),
-                    ),
+              if (progressMessage.isNotEmpty)
+                Text(
+                  progressMessage,
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              if (progress != null) ...[
+                const SizedBox(height: 4),
+                LinearProgressIndicator(value: progress),
+              ],
+            ],
+          ),
+          trailing: MiuixIconButton(
+            onPressed: () {
+              final bloc = context.read<DowloadTaskBloc>();
+              showDialog(
+                context: context,
+                builder: (dialogContext) => AlertDialog(
+                  title: Text(t.download.cancelTask),
+                  content: Text(
+                    t.download.cancelTaskConfirm(comicName: task.comicName),
                   ),
-                  TextButton(
-                    onPressed: () {
-                      bloc.add(const DowloadTaskEvent.cancelCurrentTask());
-                      Navigator.of(dialogContext).pop();
-                    },
-                    child: Text(
-                      t.common.ok,
-                      style: const TextStyle(color: Colors.red),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.of(dialogContext).pop(),
+                      child: Text(
+                        t.common.cancel,
+                        style: const TextStyle(color: Colors.grey),
+                      ),
                     ),
-                  ),
-                ],
-              ),
-            );
-          },
+                    TextButton(
+                      onPressed: () {
+                        bloc.add(const DowloadTaskEvent.cancelCurrentTask());
+                        Navigator.of(dialogContext).pop();
+                      },
+                      child: Text(
+                        t.common.ok,
+                        style: const TextStyle(color: Colors.red),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+            child: const Icon(Icons.cancel_outlined, color: Colors.blue),
+          ),
         ),
       ),
     );
@@ -252,60 +273,66 @@ class _PendingTaskTile extends StatelessWidget {
         ? payload?.lastErrorMessage.trim() ?? ''
         : '';
 
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: Colors.orange,
-          child: Icon(Icons.hourglass_empty, color: Colors.white),
-        ),
-        title: Text(task.comicName),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (statusMessage.isNotEmpty)
-              Text(
-                statusMessage,
-                style: const TextStyle(color: Colors.grey),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            if (progressMessage.isNotEmpty)
-              Text(
-                progressMessage,
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-            if (failureMessage.isNotEmpty)
-              InkWell(
-                onTap: () =>
-                    _showDownloadFailureDetails(context, failureMessage),
-                child: Text(
-                  failureMessage,
-                  style: TextStyle(
-                    color: Theme.of(context).colorScheme.error,
-                    fontSize: 12,
-                  ),
-                  maxLines: 3,
+    // Miuix 迁移：Card → Padding + MiuixCard（MiuixCard 无 margin）。
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      child: MiuixCard(
+        insideMargin: EdgeInsets.zero,
+        child: ListTile(
+          leading: CircleAvatar(
+            backgroundColor: Colors.orange,
+            child: Icon(Icons.hourglass_empty, color: Colors.white),
+          ),
+          title: Text(task.comicName),
+          subtitle: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (statusMessage.isNotEmpty)
+                Text(
+                  statusMessage,
+                  style: const TextStyle(color: Colors.grey),
+                  maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
+              if (progressMessage.isNotEmpty)
+                Text(
+                  progressMessage,
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              if (failureMessage.isNotEmpty)
+                InkWell(
+                  onTap: () =>
+                      _showDownloadFailureDetails(context, failureMessage),
+                  child: Text(
+                    failureMessage,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.error,
+                      fontSize: 12,
+                    ),
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+            ],
+          ),
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (onRetry != null)
+                Tooltip(
+                  message: t.common.retry,
+                  child: MiuixIconButton(
+                    onPressed: onRetry,
+                    child: const Icon(Icons.refresh),
+                  ),
+                ),
+              MiuixIconButton(
+                onPressed: onDelete,
+                child: const Icon(Icons.delete_outline),
               ),
-          ],
-        ),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (onRetry != null)
-              IconButton(
-                tooltip: t.common.retry,
-                icon: const Icon(Icons.refresh),
-                onPressed: onRetry,
-              ),
-            IconButton(
-              icon: const Icon(Icons.delete_outline),
-              onPressed: onDelete,
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

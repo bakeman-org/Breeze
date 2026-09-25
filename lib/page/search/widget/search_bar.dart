@@ -1,4 +1,6 @@
 import 'package:auto_route/auto_route.dart';
+import 'package:flutter/material.dart' as m;
+import 'package:flutter_miuix/miuix.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:zephyr/cubit/plugin_registry_cubit.dart';
@@ -76,8 +78,6 @@ class _SearchBarState extends State<SearchBar> {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
     return BlocListener<SearchCubit, SearchStates>(
       listenWhen: (previous, current) =>
           previous.searchKeyword != current.searchKeyword,
@@ -95,61 +95,43 @@ class _SearchBarState extends State<SearchBar> {
       },
       child: Padding(
         padding: const EdgeInsets.all(8.0),
+        // Miuix 迁移：返回/高级搜索 IconButton → MiuixIconButton；
+        // 自绘胶囊输入框 → MiuixTextField（防抖、清空、聚合搜索入口等
+        // 行为全部保留）；「搜索」TextButton → MiuixButton。
         child: Row(
           children: [
-            IconButton(
-              icon: const Icon(Icons.arrow_back),
+            MiuixIconButton(
               onPressed: () => context.maybePop(),
+              child: const Icon(Icons.arrow_back),
             ),
             Expanded(
-              child: Container(
-                height: 48,
-                decoration: BoxDecoration(
-                  color: colorScheme.surfaceContainerHighest,
-                  borderRadius: BorderRadius.circular(24),
-                ),
-                child: Row(
-                  children: [
-                    const SizedBox(width: 16),
-                    Icon(Icons.search, color: colorScheme.onSurfaceVariant),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: TextField(
-                        controller: _controller,
-                        focusNode: _focusNode,
-                        textInputAction: TextInputAction.search,
-                        onSubmitted: (keyword) => onSearch(
-                          context,
-                          keyword,
-                          aggregateMode: widget.aggregateMode,
-                        ),
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: colorScheme.onSurface,
-                        ),
-                        decoration: InputDecoration(
-                          hintText: t.search.searchHint,
-                          border: InputBorder.none,
-                          isDense: true,
-                          hintStyle: TextStyle(
-                            color: colorScheme.onSurfaceVariant.withValues(
-                              alpha: 0.7,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                    if (_controller.text.isNotEmpty)
-                      IconButton(
-                        icon: const Icon(Icons.cancel, size: 20),
-                        onPressed: () => _controller.clear(),
-                      ),
-                  ],
+              child: m.Material(
+                type: m.MaterialType.transparency,
+                child: MiuixTextField(
+                  controller: _controller,
+                  focusNode: _focusNode,
+                  singleLine: true,
+                  textInputAction: TextInputAction.search,
+                  label: t.search.searchHint,
+                  useLabelAsPlaceholder: true,
+                  leadingIcon: const Icon(Icons.search, size: 20),
+                  trailingIcon: _controller.text.isNotEmpty
+                      ? MiuixIconButton(
+                          minWidth: 28,
+                          minHeight: 28,
+                          onPressed: () => _controller.clear(),
+                          child: const Icon(Icons.cancel, size: 20),
+                        )
+                      : null,
+                  onSubmitted: (keyword) => onSearch(
+                    context,
+                    keyword,
+                    aggregateMode: widget.aggregateMode,
+                  ),
                 ),
               ),
             ),
-            IconButton(
-              icon: const Icon(Icons.tune),
+            MiuixIconButton(
               onPressed: () async {
                 final searchCubit = context.read<SearchCubit>();
                 if (widget.aggregateMode) {
@@ -178,8 +160,9 @@ class _SearchBarState extends State<SearchBar> {
                 }
                 await _showSingleSourceAdvancedSearch(context);
               },
+              child: const Icon(Icons.tune),
             ),
-            TextButton(
+            MiuixButton(
               onPressed: () => onSearch(
                 context,
                 _controller.text,

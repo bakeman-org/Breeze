@@ -1,4 +1,5 @@
 import 'package:auto_route/auto_route.dart';
+import 'package:flutter_miuix/miuix.dart';
 import 'package:material_ui/material_ui.dart' hide Thumb;
 import 'package:flutter/rendering.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -109,13 +110,22 @@ class _SearchResultPageState extends State<_SearchResultPage>
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    return Scaffold(
-      appBar: SearchResultBar(searchEvent: searchEvent),
-      body: _bloc(),
-      floatingActionButtonLocation:
-          context.watch<GlobalSettingCubit>().state.leftHandModeEnabled
-          ? FloatingActionButtonLocation.startFloat
-          : FloatingActionButtonLocation.endFloat,
+    // Miuix 迁移：Scaffold → MiuixScaffold。SearchResultBar 顶栏与
+    // SpeedDial 悬浮组为普通 widget，直接放进 topBar / floatingActionButton
+    // 槽位；滚动隐藏 FAB、跳页、重试等逻辑全部保持不变。
+    final leftHandMode = context
+        .watch<GlobalSettingCubit>()
+        .state
+        .leftHandModeEnabled;
+    return MiuixScaffold(
+      topBar: SearchResultBar(searchEvent: searchEvent),
+      content: (padding) => Material(
+        type: MaterialType.transparency,
+        child: Padding(padding: padding, child: _bloc()),
+      ),
+      floatingActionButtonPosition: leftHandMode
+          ? MiuixFabPosition.start
+          : MiuixFabPosition.end,
       floatingActionButton: SlideTransition(
         position: _slideAnimation,
         child: SpeedDial(
@@ -192,7 +202,7 @@ class _SearchResultPageState extends State<_SearchResultPage>
               children: [
                 Text(state.result, style: TextStyle(fontSize: 20)),
                 SizedBox(height: 10), // 添加间距
-                ElevatedButton(
+                MiuixButton(
                   onPressed: () {
                     _refresh(SearchStatus.initial);
                   },

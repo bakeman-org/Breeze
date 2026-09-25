@@ -1,4 +1,5 @@
 import 'package:auto_route/auto_route.dart';
+import 'package:flutter_miuix/miuix.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:zephyr/config/global/global_setting.dart';
@@ -79,33 +80,42 @@ class _OldHomePageState extends State<OldHomePage> {
         ? 0
         : _tabIndex.clamp(0, panels.length - 1);
 
-    return Scaffold(
-      appBar: hasAnyPanel
-          ? AppBar(
-              title: Text(t.oldHome.title),
+    // Miuix 迁移：Scaffold + AppBar → MiuixScaffold + MiuixTopAppBar。
+    return MiuixScaffold(
+      topBar: hasAnyPanel
+          ? MiuixTopAppBar(
+              title: t.oldHome.title,
               actions: [
-                IconButton(
-                  tooltip: t.oldHome.search,
-                  icon: const Icon(Icons.search),
-                  onPressed: () => context.pushRoute(
-                    SearchRoute(
-                      searchState: SearchStates.initial(),
-                      aggregateMode: true,
+                Tooltip(
+                  message: t.oldHome.search,
+                  child: MiuixIconButton(
+                    onPressed: () => context.pushRoute(
+                      SearchRoute(
+                        searchState: SearchStates.initial(),
+                        aggregateMode: true,
+                      ),
                     ),
+                    child: const Icon(Icons.search),
                   ),
                 ),
               ],
             )
           : null,
-      body: hasAnyPanel
-          ? IndexedStack(index: effectiveIndex, children: panels)
-          : const SizedBox.expand(),
-      floatingActionButtonLocation:
+      content: (padding) => Material(
+        type: MaterialType.transparency,
+        child: Padding(
+          padding: padding,
+          child: hasAnyPanel
+              ? IndexedStack(index: effectiveIndex, children: panels)
+              : const SizedBox.expand(),
+        ),
+      ),
+      floatingActionButtonPosition:
           context.watch<GlobalSettingCubit>().state.leftHandModeEnabled
-          ? FloatingActionButtonLocation.startFloat
-          : FloatingActionButtonLocation.endFloat,
+          ? MiuixFabPosition.start
+          : MiuixFabPosition.end,
       floatingActionButton: panels.length > 1
-          ? FloatingActionButton(
+          ? MiuixFloatingActionButton(
               onPressed: () {
                 setState(() {
                   _tabIndex = effectiveIndex == 0 ? 1 : 0;

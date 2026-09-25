@@ -1,5 +1,6 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:flutter_miuix/miuix.dart';
 import 'package:zephyr/page/more/more.dart';
 import 'package:zephyr/service/app_icon/app_icon_service.dart';
 import 'package:zephyr/widgets/hyper_toast.dart';
@@ -43,8 +44,11 @@ class _MorePageState extends State<MorePage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: SafeArea(
+    // Miuix 迁移：Scaffold → MiuixScaffold（无顶栏，content 自带系统栏内边距）。
+    // 下拉展开 header 的滚动监听、动画与图标彩蛋逻辑全部保持不变。
+    return MiuixScaffold(
+      content: (padding) => Material(
+        type: MaterialType.transparency,
         child: Align(
           alignment: Alignment.topCenter,
           child: ConstrainedBox(
@@ -61,6 +65,11 @@ class _MorePageState extends State<MorePage> {
                   physics: const BouncingScrollPhysics(
                     parent: AlwaysScrollableScrollPhysics(),
                   ),
+                  // 底部 240 预留原本由列表尾部的 SizedBox(height: 240) 承担，
+                  // 这里并入 padding，保证最后一项能完整滚出底栏。
+                  padding: padding.copyWith(
+                    bottom: padding.bottom + 240,
+                  ),
                   children: [
                     // ★ 用 _CollapsibleHeader 替代 AnimatedContainer。
                     //   一条 AnimationController 驱动高度/透明度/位移/缩放，
@@ -71,7 +80,6 @@ class _MorePageState extends State<MorePage> {
                       child: const _AppIconHeader(),
                     ),
                     const SettingsWidget(),
-                    const SizedBox(height: 240),
                   ],
                 ),
               ),

@@ -284,17 +284,20 @@ class _NavigationBarState extends State<NavigationBar> {
                     ),
                     Padding(
                       padding: const EdgeInsets.only(bottom: 12),
-                      child: IconButton(
-                        icon: const Icon(Icons.search),
-                        tooltip: t.common.search,
-                        onPressed: () {
-                          context.pushRoute(
-                            SearchRoute(
-                              searchState: SearchStates.initial(),
-                              aggregateMode: true,
-                            ),
-                          );
-                        },
+                      // Miuix 迁移：material IconButton → MiuixIconButton。
+                      child: Tooltip(
+                        message: t.common.search,
+                        child: MiuixIconButton(
+                          onPressed: () {
+                            context.pushRoute(
+                              SearchRoute(
+                                searchState: SearchStates.initial(),
+                                aggregateMode: true,
+                              ),
+                            );
+                          },
+                          child: const Icon(Icons.search),
+                        ),
                       ),
                     ),
                   ],

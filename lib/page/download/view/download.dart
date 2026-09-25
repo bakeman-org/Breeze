@@ -1,4 +1,5 @@
-import 'package:auto_route/annotations.dart';
+import 'package:auto_route/auto_route.dart';
+import 'package:flutter_miuix/miuix.dart';
 import 'package:material_ui/material_ui.dart' hide Page;
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:zephyr/config/global/global_setting.dart';
@@ -102,53 +103,98 @@ class _DownloadPageState extends State<DownloadPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: ScrollableTitle(text: downloadInfo.title),
-        actions: [
-          // 动态切换全选/取消全选按钮
-          IconButton(
-            icon: Icon(isAllSelected ? Icons.deselect : Icons.select_all),
-            onPressed: toggleSelectAll,
-          ),
-        ],
-      ),
-      body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 800),
-          child: ListView.builder(
-            padding: const EdgeInsets.fromLTRB(
-              16,
-              16,
-              16,
-              88,
-            ), // reserved bottom padding for FAB
-            itemCount: _chapters.length,
-            itemBuilder: (context, index) {
-              final chapter = _chapters[index];
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 8.0),
-                child: EpsWidget(
-                  chapter: chapter,
-                  downloaded: _downloadInfo[chapter.id] ?? false,
-                  onUpdateDownloadInfo: onUpdateDownloadInfo,
+    final leftHandMode = context
+        .watch<GlobalSettingCubit>()
+        .state
+        .leftHandModeEnabled;
+    final colorScheme = Theme.of(context).colorScheme;
+    // Miuix 迁移：Scaffold + AppBar → MiuixScaffold + 自绘顶栏
+    // （保留 ScrollableTitle 跑马灯）；全选切换、下载逻辑不变。
+    return MiuixScaffold(
+      topBar: Material(
+        color: colorScheme.surface,
+        child: SafeArea(
+          bottom: false,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SizedBox(
+                height: 52,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                  child: Row(
+                    children: [
+                      MiuixIconButton(
+                        onPressed: () => context.maybePop(),
+                        child: const Icon(Icons.arrow_back),
+                      ),
+                      Expanded(child: ScrollableTitle(text: downloadInfo.title)),
+                      MiuixIconButton(
+                        onPressed: toggleSelectAll,
+                        child: Icon(
+                          isAllSelected ? Icons.deselect : Icons.select_all,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              );
-            },
+              ),
+              Divider(
+                height: 1,
+                thickness: 1,
+                color: colorScheme.outlineVariant.withValues(alpha: 0.5),
+              ),
+            ],
           ),
         ),
       ),
-      floatingActionButtonLocation:
-          context.watch<GlobalSettingCubit>().state.leftHandModeEnabled
-          ? FloatingActionButtonLocation.startFloat
-          : FloatingActionButtonLocation.endFloat,
-      floatingActionButton: FloatingActionButton.extended(
-        icon: const Icon(Icons.download),
-        label: Text(t.download.startDownload),
+      content: (padding) => Material(
+        type: MaterialType.transparency,
+        child: Padding(
+          padding: padding,
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 800),
+              child: ListView.builder(
+                padding: const EdgeInsets.fromLTRB(
+                  16,
+                  16,
+                  16,
+                  88,
+                ), // reserved bottom padding for FAB
+                itemCount: _chapters.length,
+                itemBuilder: (context, index) {
+                  final chapter = _chapters[index];
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 8.0),
+                    child: EpsWidget(
+                      chapter: chapter,
+                      downloaded: _downloadInfo[chapter.id] ?? false,
+                      onUpdateDownloadInfo: onUpdateDownloadInfo,
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
+        ),
+      ),
+      floatingActionButtonPosition: leftHandMode
+          ? MiuixFabPosition.start
+          : MiuixFabPosition.end,
+      floatingActionButton: MiuixFloatingActionButton(
         onPressed: () {
           logger.d("开始下载");
           download();
         },
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.download),
+            const SizedBox(width: 8),
+            Text(t.download.startDownload),
+          ],
+        ),
       ),
     );
   }

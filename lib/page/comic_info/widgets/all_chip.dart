@@ -136,7 +136,6 @@ class _ClickableChipState extends State<_ClickableChip> {
   @override
   Widget build(BuildContext context) {
     final primary = context.theme.colorScheme.primary;
-    final background = context.backgroundColor;
 
     return MouseRegion(
       cursor: SystemMouseCursors.click,
@@ -149,21 +148,8 @@ class _ClickableChipState extends State<_ClickableChip> {
           duration: const Duration(milliseconds: 140),
           curve: Curves.easeOut,
           decoration: BoxDecoration(
-            color: _hovering ? primary.withValues(alpha: 0.08) : background,
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(
-              color: primary.withValues(alpha: _hovering ? 0.9 : 0.55),
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: context.textColor.withValues(
-                  alpha: _hovering ? 0.28 : 0.18,
-                ),
-                blurRadius: _hovering ? 10 : 6,
-                offset: Offset(0, _hovering ? 3 : 2),
-                spreadRadius: _hovering ? 0.5 : 0,
-              ),
-            ],
+            color: primary.withValues(alpha: _hovering ? 0.20 : 0.10),
+            borderRadius: BorderRadius.circular(999),
           ),
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           child: Text(

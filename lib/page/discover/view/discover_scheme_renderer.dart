@@ -1,3 +1,4 @@
+import 'package:flutter_miuix/miuix.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:zephyr/type/pipe.dart';
 import 'package:zephyr/util/context/context_extensions.dart';
@@ -54,7 +55,7 @@ class DiscoverSchemeRenderer {
         Padding(
           padding: const EdgeInsets.all(16),
           child: Center(
-            child: ElevatedButton(
+            child: MiuixButton(
               onPressed: onRetryLoadMore,
               child: Text(t.searchResult.retry),
             ),

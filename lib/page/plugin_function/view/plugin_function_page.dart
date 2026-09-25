@@ -1,4 +1,5 @@
 import 'package:auto_route/auto_route.dart';
+import 'package:flutter_miuix/miuix.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:zephyr/page/discover/view/discover_scheme_renderer.dart';
@@ -51,39 +52,53 @@ class _PluginFunctionView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final renderer = const DiscoverSchemeRenderer();
-    return Scaffold(
-      appBar: AppBar(title: Text(title)),
-      body: BlocBuilder<PluginFunctionCubit, PluginFunctionState>(
-        builder: (context, state) => state.loading
-            ? const Center(child: CircularProgressIndicator())
-            : state.error.isNotEmpty
-            ? Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(state.error),
-                    const SizedBox(height: 12),
-                    ElevatedButton(
-                      onPressed: () => context.read<PluginFunctionCubit>().load(
-                        from: from,
-                        functionId: functionId,
-                      ),
-                      child: Text(t.common.retry),
+    // Miuix 迁移：Scaffold + AppBar → MiuixScaffold + MiuixTopAppBar。
+    return MiuixScaffold(
+      topBar: MiuixTopAppBar(
+        title: title,
+        navigationIcon: MiuixIconButton(
+          onPressed: () => context.maybePop(),
+          child: const Icon(Icons.arrow_back),
+        ),
+      ),
+      content: (padding) => Material(
+        type: MaterialType.transparency,
+        child: Padding(
+          padding: padding,
+          child: BlocBuilder<PluginFunctionCubit, PluginFunctionState>(
+            builder: (context, state) => state.loading
+                ? const Center(child: CircularProgressIndicator())
+                : state.error.isNotEmpty
+                ? Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(state.error),
+                        const SizedBox(height: 12),
+                        MiuixButton(
+                          onPressed: () =>
+                              context.read<PluginFunctionCubit>().load(
+                                from: from,
+                                functionId: functionId,
+                              ),
+                          child: Text(t.common.retry),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
-              )
-            : renderer.buildPage(
-                context,
-                from: from,
-                scheme: state.scheme,
-                data: state.data,
-                onReachBottom: () async {},
-                onAction: onAction,
-                isLoadingMore: false,
-                showLoadMoreRetry: false,
-                onRetryLoadMore: () {},
-              ),
+                  )
+                : renderer.buildPage(
+                    context,
+                    from: from,
+                    scheme: state.scheme,
+                    data: state.data,
+                    onReachBottom: () async {},
+                    onAction: onAction,
+                    isLoadingMore: false,
+                    showLoadMoreRetry: false,
+                    onRetryLoadMore: () {},
+                  ),
+          ),
+        ),
       ),
     );
   }

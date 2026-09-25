@@ -1,4 +1,5 @@
 import 'package:auto_route/auto_route.dart';
+import 'package:flutter_miuix/miuix.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:zephyr/main.dart';
 import 'package:zephyr/network/http/plugin/unified_plugin_envelope.dart';
@@ -190,85 +191,106 @@ class _LoginPageState extends State<LoginPage> {
     }
 
     if (_schemeError != null) {
-      return Scaffold(
-        appBar: AppBar(title: Text(t.login.title)),
-        body: Center(
+      // Miuix 迁移：Scaffold + AppBar → MiuixScaffold + MiuixTopAppBar。
+      return MiuixScaffold(
+        topBar: MiuixTopAppBar(
+          title: t.login.title,
+          navigationIcon: MiuixIconButton(
+            onPressed: () => context.maybePop(),
+            child: const Icon(Icons.arrow_back),
+          ),
+        ),
+        content: (padding) => Material(
+          type: MaterialType.transparency,
           child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(_schemeError!, textAlign: TextAlign.center),
-                const SizedBox(height: 12),
-                TextButton(
-                  onPressed: _loadLoginScheme,
-                  child: Text(t.login.retry),
+            padding: padding,
+            child: Center(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(_schemeError!, textAlign: TextAlign.center),
+                    const SizedBox(height: 12),
+                    TextButton(
+                      onPressed: _loadLoginScheme,
+                      child: Text(t.login.retry),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
         ),
       );
     }
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(title),
-        elevation: 0,
-        backgroundColor: Colors.transparent,
+    // Miuix 迁移：Scaffold + AppBar → MiuixScaffold + MiuixTopAppBar。
+    return MiuixScaffold(
+      topBar: MiuixTopAppBar(
+        title: title,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.settings),
+          MiuixIconButton(
             onPressed: () => context.pushRoute(GlobalSettingRoute()),
+            child: const Icon(Icons.settings),
           ),
         ],
       ),
-      body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 480),
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // 账号输入框：miuix 风格，前置 person 图标。
-                _MiuixLoginField(
-                  controller: _account,
-                  label: accountLabel,
-                  icon: Icons.person_outline,
-                  textInputAction: TextInputAction.next,
+      content: (padding) => Material(
+        type: MaterialType.transparency,
+        child: Padding(
+          padding: padding,
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 480),
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 24,
                 ),
-                const SizedBox(height: 16),
-                // 密码输入框：miuix 风格，前置 lock 图标，圆点混淆。
-                _MiuixLoginField(
-                  controller: _password,
-                  label: passwordLabel,
-                  icon: Icons.lock_outline,
-                  obscure: true,
-                  textInputAction: TextInputAction.done,
-                  onSubmitted: (_) => _submitForm(),
-                ),
-                const SizedBox(height: 24),
-                // 按钮组：清除（次要）+ 登录（主要），右对齐。
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    _MiuixPillButton(
-                      label: t.common.clear,
-                      icon: Icons.backspace_outlined,
-                      variant: _MiuixPillVariant.secondary,
-                      onPressed: _clearFields,
+                    // 账号输入框：miuix 风格，前置 person 图标。
+                    _MiuixLoginField(
+                      controller: _account,
+                      label: accountLabel,
+                      icon: Icons.person_outline,
+                      textInputAction: TextInputAction.next,
                     ),
-                    const SizedBox(width: 12),
-                    _MiuixPillButton(
-                      label: t.login.loginButton,
-                      icon: Icons.login,
-                      variant: _MiuixPillVariant.primary,
-                      onPressed: _submitForm,
+                    const SizedBox(height: 16),
+                    // 密码输入框：miuix 风格，前置 lock 图标，圆点混淆。
+                    _MiuixLoginField(
+                      controller: _password,
+                      label: passwordLabel,
+                      icon: Icons.lock_outline,
+                      obscure: true,
+                      textInputAction: TextInputAction.done,
+                      onSubmitted: (_) => _submitForm(),
+                    ),
+                    const SizedBox(height: 24),
+                    // 按钮组：清除（次要）+ 登录（主要），右对齐。
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        _MiuixPillButton(
+                          label: t.common.clear,
+                          icon: Icons.backspace_outlined,
+                          variant: _MiuixPillVariant.secondary,
+                          onPressed: _clearFields,
+                        ),
+                        const SizedBox(width: 12),
+                        _MiuixPillButton(
+                          label: t.login.loginButton,
+                          icon: Icons.login,
+                          variant: _MiuixPillVariant.primary,
+                          onPressed: _submitForm,
+                        ),
+                      ],
                     ),
                   ],
                 ),
-              ],
+              ),
             ),
           ),
         ),

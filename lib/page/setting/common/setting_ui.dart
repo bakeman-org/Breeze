@@ -1,3 +1,5 @@
+import 'package:auto_route/auto_route.dart';
+import 'package:flutter_miuix/miuix.dart';
 import 'package:material_ui/material_ui.dart';
 
 const EdgeInsets kSettingPagePadding = EdgeInsets.fromLTRB(16, 12, 16, 24);
@@ -8,7 +10,9 @@ const WidgetStateProperty<Icon> kSettingSwitchThumbIcon =
       WidgetState.any: Icon(Icons.close),
     });
 
-/// 设置页统一外壳：AppBar + 居中限宽内容区。
+/// 设置页统一外壳：小标题栏 + 居中限宽内容区。
+///
+/// Miuix 迁移：Scaffold + AppBar → MiuixScaffold + MiuixSmallTopAppBar。
 class SettingPageShell extends StatelessWidget {
   const SettingPageShell({super.key, required this.title, required this.child});
 
@@ -17,20 +21,25 @@ class SettingPageShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          title,
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+    return MiuixScaffold(
+      topBar: MiuixSmallTopAppBar(
+        title: title,
+        navigationIcon: MiuixIconButton(
+          onPressed: () => context.maybePop(),
+          child: const Icon(Icons.arrow_back),
         ),
-        centerTitle: false,
-        scrolledUnderElevation: 0,
       ),
-      body: Align(
-        alignment: Alignment.topCenter,
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 768),
-          child: child,
+      content: (padding) => Material(
+        type: MaterialType.transparency,
+        child: Padding(
+          padding: padding,
+          child: Align(
+            alignment: Alignment.topCenter,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 768),
+              child: child,
+            ),
+          ),
         ),
       ),
     );
@@ -93,9 +102,11 @@ class SettingSectionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      elevation: 0,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+    // Miuix 迁移：Card → MiuixCard（insideMargin 归零以保留内部
+    // ListTile + Divider 结构）。
+    return MiuixCard(
+      cornerRadius: 18,
+      insideMargin: EdgeInsets.zero,
       child: Column(
         children: [
           ListTile(
@@ -122,13 +133,4 @@ class SettingSectionCard extends StatelessWidget {
     }
     return widgets;
   }
-}
-
-ButtonStyle settingDangerButtonStyle(BuildContext context) {
-  final scheme = Theme.of(context).colorScheme;
-  return FilledButton.styleFrom(
-    minimumSize: const Size.fromHeight(44),
-    backgroundColor: scheme.errorContainer,
-    foregroundColor: scheme.onErrorContainer,
-  );
 }

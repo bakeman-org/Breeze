@@ -1,6 +1,5 @@
 // lib/main_entry_deps/error_widget.dart
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 
 /// 安装资源错误兜底 ErrorWidget。
 ///
@@ -17,11 +16,10 @@ void installResourceErrorWidgetBuilder() {
         msg.contains('memory') ||
         msg.contains('gpu') ||
         msg.contains('texture') ||
-        msg.contains('alloc') ||
         msg.contains('adreno') ||
         msg.contains('kgsl') ||
-        msg.contains('out of') ||
-        msg.contains('surface');
+        msg.contains('out of memory') ||
+        msg.contains('failed to allocate');
 
     if (isResourceError) {
       PaintingBinding.instance.imageCache.clear();

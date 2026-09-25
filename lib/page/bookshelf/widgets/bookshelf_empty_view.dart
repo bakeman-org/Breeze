@@ -1,3 +1,4 @@
+import 'package:flutter_miuix/miuix.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:zephyr/i18n/strings.g.dart';
 
@@ -38,10 +39,16 @@ class BookshelfEmptyView extends StatelessWidget {
                     ),
                     if (onRefresh != null) ...[
                       const SizedBox(height: 24),
-                      FilledButton.icon(
+                      MiuixButton(
                         onPressed: onRefresh,
-                        icon: const Icon(Icons.refresh),
-                        label: Text(t.common.refresh),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.refresh, size: 18),
+                            const SizedBox(width: 6),
+                            Text(t.common.refresh),
+                          ],
+                        ),
                       ),
                     ],
                   ],

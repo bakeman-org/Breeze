@@ -1,4 +1,5 @@
 import 'package:auto_route/auto_route.dart';
+import 'package:flutter_miuix/miuix.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:markdown_widget/widget/markdown_block.dart';
@@ -79,44 +80,55 @@ class _WebDavSyncPageState extends State<WebDavSyncPage> {
         ? t.webdavSync.title
         : t.webdavSync.serviceTitle(service: syncServiceType.label);
 
-    return Scaffold(
-      appBar: AppBar(title: Text(title)),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: ListView(
-          children: <Widget>[
-            if (syncServiceType == SyncServiceType.none) ...[
-              _buildNoneTip(),
-            ] else if (syncServiceType == SyncServiceType.webdav) ...[
-              _buildWebDavForm(),
-            ] else ...[
-              _buildS3Form(),
+    // Miuix 迁移：Scaffold + AppBar → MiuixScaffold + MiuixTopAppBar。
+    return MiuixScaffold(
+      topBar: MiuixTopAppBar(
+        title: title,
+        navigationIcon: MiuixIconButton(
+          onPressed: () => context.maybePop(),
+          child: const Icon(Icons.arrow_back),
+        ),
+      ),
+      content: (padding) => Material(
+        type: MaterialType.transparency,
+        child: Padding(
+          // Miuix 迁移：保留原 body 的 16px 内边距。
+          padding: padding + const EdgeInsets.all(16.0),
+          child: ListView(
+            children: <Widget>[
+              if (syncServiceType == SyncServiceType.none) ...[
+                _buildNoneTip(),
+              ] else if (syncServiceType == SyncServiceType.webdav) ...[
+                _buildWebDavForm(),
+              ] else ...[
+                _buildS3Form(),
+              ],
+              const SizedBox(height: 12),
+              if (syncServiceType != SyncServiceType.none)
+                Row(
+                  children: [
+                    const Spacer(),
+                    MiuixButton(
+                      onPressed: () => _clearConfig(syncServiceType),
+                      child: Text(t.webdavSync.deleteConfig),
+                    ),
+                    const Spacer(),
+                    MiuixButton(
+                      onPressed: () => _testAndSave(syncServiceType),
+                      child: Text(t.webdavSync.testAndSave),
+                    ),
+                    const Spacer(),
+                  ],
+                ),
+              const SizedBox(height: 8),
+              Center(
+                child: TextButton(
+                  onPressed: () => _showQA(context),
+                  child: Text(t.webdavSync.faq),
+                ),
+              ),
             ],
-            const SizedBox(height: 12),
-            if (syncServiceType != SyncServiceType.none)
-              Row(
-                children: [
-                  const Spacer(),
-                  ElevatedButton(
-                    onPressed: () => _clearConfig(syncServiceType),
-                    child: Text(t.webdavSync.deleteConfig),
-                  ),
-                  const Spacer(),
-                  ElevatedButton(
-                    onPressed: () => _testAndSave(syncServiceType),
-                    child: Text(t.webdavSync.testAndSave),
-                  ),
-                  const Spacer(),
-                ],
-              ),
-            const SizedBox(height: 8),
-            Center(
-              child: TextButton(
-                onPressed: () => _showQA(context),
-                child: Text(t.webdavSync.faq),
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );

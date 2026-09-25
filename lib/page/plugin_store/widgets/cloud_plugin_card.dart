@@ -1,3 +1,4 @@
+import 'package:flutter_miuix/miuix.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:zephyr/i18n/strings.g.dart';
 import 'package:zephyr/page/plugin_store/models/cloud_plugin_item.dart';
@@ -109,20 +110,32 @@ class CloudPluginCard extends StatelessWidget {
           Row(
             children: [
               if (manifest.home.trim().isNotEmpty) ...[
-                OutlinedButton.icon(
+                MiuixButton(
                   onPressed: installing
                       ? null
                       : () => onOpenHome(manifest.home.trim()),
-                  icon: const Icon(Icons.open_in_new, size: 16),
-                  label: Text(t.plugin.homepage),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.open_in_new, size: 16),
+                      const SizedBox(width: 6),
+                      Text(t.plugin.homepage),
+                    ],
+                  ),
                 ),
                 const SizedBox(width: 8),
               ],
-              OutlinedButton.icon(
+              MiuixButton(
                 onPressed: installing ? null : onInstall,
-                icon: const Icon(Icons.download_outlined, size: 16),
-                label: Text(
-                  isInstalled ? t.plugin.downloadUpdate : t.plugin.download,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.download_outlined, size: 16),
+                    const SizedBox(width: 6),
+                    Text(
+                      isInstalled ? t.plugin.downloadUpdate : t.plugin.download,
+                    ),
+                  ],
                 ),
               ),
             ],

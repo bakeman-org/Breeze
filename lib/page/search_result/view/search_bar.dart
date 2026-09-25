@@ -1,4 +1,5 @@
 import 'package:auto_route/auto_route.dart';
+import 'package:flutter_miuix/miuix.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:uuid/uuid.dart';
@@ -19,93 +20,105 @@ class SearchResultBar extends StatelessWidget implements PreferredSizeWidget {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    return AppBar(
-      elevation: 0,
-      scrolledUnderElevation: 0,
-      backgroundColor: colorScheme.surface,
-      titleSpacing: 0, // 清除默认边距，完全自定义
-      automaticallyImplyLeading: false, // 禁用默认返回键，我们自己画
-      // 2. 核心内容区域
-      title: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 8.0),
-        child: Row(
+    // Miuix 迁移：material AppBar → 自绘 Miuix 风格顶栏（MiuixScaffold 的
+    // topBar 槽位接受任意 widget，按实际高度回传 content padding）。
+    // 返回/高级搜索按钮 → MiuixIconButton；伪装搜索框、路由回退/替换
+    // 逻辑、底部分割线全部保持不变。
+    return Material(
+      color: colorScheme.surface,
+      child: SafeArea(
+        bottom: false,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            // 左侧返回按钮
-            IconButton(
-              icon: const Icon(Icons.arrow_back),
-              onPressed: () => context.maybePop(),
-            ),
+            SizedBox(
+              height: 52,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                child: Row(
+                  children: [
+                    // 左侧返回按钮
+                    MiuixIconButton(
+                      onPressed: () => context.maybePop(),
+                      child: const Icon(Icons.arrow_back),
+                    ),
 
-            // 中间伪装的搜索框 (点击返回上一页)
-            Expanded(
-              child: GestureDetector(
-                onTap: () {
-                  final stack = context.router.stack;
+                    // 中间伪装的搜索框 (点击返回上一页)
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () {
+                          final stack = context.router.stack;
 
-                  if (stack.length > 1) {
-                    final previousRoute = stack[stack.length - 2];
-                    if (previousRoute.name == SearchRoute.name) {
-                      context.maybePop();
-                    } else {
-                      context.replaceRoute(
-                        SearchRoute(
-                          key: ValueKey(const Uuid().v4()),
-                          searchState: searchEvent.searchStates,
-                          aggregateMode: false,
-                        ),
-                      );
-                    }
-                  }
-                },
-                child: Container(
-                  height: 48,
-                  decoration: BoxDecoration(
-                    color: colorScheme.surfaceContainerHighest,
-                    borderRadius: BorderRadius.circular(24),
-                  ),
-                  child: Row(
-                    children: [
-                      const SizedBox(width: 16),
-                      Icon(Icons.search, color: colorScheme.onSurfaceVariant),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          searchEvent.searchStates.searchKeyword,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: colorScheme.onSurface,
-                            fontWeight: FontWeight.normal,
+                          if (stack.length > 1) {
+                            final previousRoute = stack[stack.length - 2];
+                            if (previousRoute.name == SearchRoute.name) {
+                              context.maybePop();
+                            } else {
+                              context.replaceRoute(
+                                SearchRoute(
+                                  key: ValueKey(const Uuid().v4()),
+                                  searchState: searchEvent.searchStates,
+                                  aggregateMode: false,
+                                ),
+                              );
+                            }
+                          }
+                        },
+                        child: Container(
+                          height: 44,
+                          decoration: BoxDecoration(
+                            color: colorScheme.surfaceContainerHighest,
+                            borderRadius: BorderRadius.circular(22),
+                          ),
+                          child: Row(
+                            children: [
+                              const SizedBox(width: 16),
+                              Icon(
+                                Icons.search,
+                                color: colorScheme.onSurfaceVariant,
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  searchEvent.searchStates.searchKeyword,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    color: colorScheme.onSurface,
+                                    fontWeight: FontWeight.normal,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 16),
+                            ],
                           ),
                         ),
                       ),
-                      const SizedBox(width: 16),
-                    ],
-                  ),
+                    ),
+
+                    // 右侧高级搜索按钮
+                    MiuixIconButton(
+                      onPressed: () {
+                        _search(context);
+                      },
+                      child: const Icon(Icons.tune),
+                    ),
+                    const SizedBox(width: 8),
+                  ],
                 ),
               ),
             ),
 
-            // 右侧高级搜索按钮
-            IconButton(
-              icon: const Icon(Icons.tune),
-              onPressed: () {
-                _search(context);
-              },
+            // 底部分割线
+            Divider(
+              height: 1,
+              thickness: 1,
+              color: colorScheme.outlineVariant.withValues(
+                alpha: 0.5,
+              ), // 淡淡的分割线
             ),
-            const SizedBox(width: 8),
           ],
-        ),
-      ),
-
-      // 3. 底部分割线
-      bottom: PreferredSize(
-        preferredSize: const Size.fromHeight(1),
-        child: Divider(
-          height: 1,
-          thickness: 1,
-          color: colorScheme.outlineVariant.withValues(alpha: 0.5), // 淡淡的分割线
         ),
       ),
     );
