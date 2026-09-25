@@ -162,6 +162,10 @@ class _BikaHomePageState extends State<BikaHomePage> {
     return MiuixScaffold(
       topBar: MiuixTopAppBar(
         title: t.bika.appName,
+        navigationIcon: MiuixIconButton(
+          onPressed: () => context.maybePop(),
+          child: const Icon(Icons.arrow_back),
+        ),
         actions: [
           MiuixIconButton(
             onPressed: () => context.pushRoute(const BikaSearchRoute()),

@@ -142,6 +142,10 @@ class _EhHomePageState extends State<EhHomePage> {
     return MiuixScaffold(
       topBar: MiuixTopAppBar(
         title: t.eh.appName,
+        navigationIcon: MiuixIconButton(
+          onPressed: () => context.maybePop(),
+          child: const Icon(Icons.arrow_back),
+        ),
         actions: [
           MiuixIconButton(
             onPressed: () => context.pushRoute(const EhSearchRoute()),
