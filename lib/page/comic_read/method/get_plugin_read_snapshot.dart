@@ -8,6 +8,7 @@ import 'package:zephyr/page/download/adapters/download_chapter_matcher.dart';
 import 'package:zephyr/page/download/models/download_chapter.dart';
 import 'package:zephyr/source/bika/bika_read_snapshot.dart';
 import 'package:zephyr/source/core/source_registry.dart';
+import 'package:zephyr/source/eh/eh_read_snapshot.dart';
 
 Future<NormalComicEpInfo> getPluginReadSnapshot(
   String comicId,
@@ -29,6 +30,7 @@ Future<NormalComicEpInfo> getPluginReadSnapshot(
       selectedChapterId: selectedChapterId,
       logicalKey: logicalKey,
       storageChapterId: storageChapterId,
+      chapterExtern: chapterExtern,
     );
   }
 
@@ -161,6 +163,7 @@ Future<NormalComicEpInfo> _getNativeReadSnapshot({
   String? selectedChapterId,
   required String logicalKey,
   required String storageChapterId,
+  ChapterExtern chapterExtern = const {},
 }) async {
   switch (from.trim()) {
     case bikaSourceId:
@@ -183,9 +186,44 @@ Future<NormalComicEpInfo> _getNativeReadSnapshot({
         logicalChapterId: logicalChapterId,
         storageChapterId: storageChapterId.trim(),
       );
+    case ehSourceId:
+      final token = _resolveEhToken(chapterExtern, comicInfo);
+      final snapshot = await fetchEhReadSnapshot(
+        comicId: comicId,
+        order: order,
+        token: token,
+        comicInfo: comicInfo,
+      );
+      final logicalChapterId = _resolveLogicalChapterId(
+        null,
+        selectedChapterId,
+        logicalKey,
+        order,
+        order.toString(),
+      );
+      return snapshot.toNormalEpInfo(
+        logicalChapterId: logicalChapterId,
+        storageChapterId: storageChapterId.trim(),
+      );
     default:
       throw StateError('未支持的原生图源: $from');
   }
+}
+
+String _resolveEhToken(ChapterExtern chapterExtern, dynamic comicInfo) {
+  final fromExtern = chapterExtern['token']?.toString().trim() ?? '';
+  if (fromExtern.isNotEmpty) return fromExtern;
+
+  if (comicInfo is PluginComicDetailSource) {
+    final extern = comicInfo.normalInfo.extern['token']?.toString().trim() ?? '';
+    if (extern.isNotEmpty) return extern;
+    final eps = comicInfo.normalInfo.eps;
+    if (eps.isNotEmpty) {
+      final epToken = eps.first.extern['token']?.toString().trim() ?? '';
+      if (epToken.isNotEmpty) return epToken;
+    }
+  }
+  return '';
 }
 
 Future<ComicReadSnapshot> _fetchSnapshot({

@@ -80,6 +80,7 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	late final Translations$update$zh_CN update = Translations$update$zh_CN.internal(_root);
 	late final Translations$dialog$zh_CN dialog = Translations$dialog$zh_CN.internal(_root);
 	late final Translations$bika$zh_CN bika = Translations$bika$zh_CN.internal(_root);
+	late final Translations$eh$zh_CN eh = Translations$eh$zh_CN.internal(_root);
 }
 
 // Path: common
@@ -4057,6 +4058,108 @@ class Translations$bika$zh_CN {
 	String get done => '完成';
 }
 
+// Path: eh
+class Translations$eh$zh_CN {
+	Translations$eh$zh_CN.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// zh-CN: 'E-Hentai'
+	String get appName => 'E-Hentai';
+
+	/// zh-CN: '首页'
+	String get home => '首页';
+
+	/// zh-CN: '搜索'
+	String get search => '搜索';
+
+	/// zh-CN: '热门'
+	String get popular => '热门';
+
+	/// zh-CN: '收藏'
+	String get favorites => '收藏';
+
+	/// zh-CN: '保存登录信息'
+	String get login => '保存登录信息';
+
+	/// zh-CN: 'E-Hentai 登录'
+	String get loginTitle => 'E-Hentai 登录';
+
+	/// zh-CN: '请先登录'
+	String get loginRequired => '请先登录';
+
+	/// zh-CN: '保存'
+	String get save => '保存';
+
+	/// zh-CN: 'ipb_member_id'
+	String get memberId => 'ipb_member_id';
+
+	/// zh-CN: 'ipb_pass_hash'
+	String get passHash => 'ipb_pass_hash';
+
+	/// zh-CN: 'igneous'
+	String get igneous => 'igneous';
+
+	/// zh-CN: '站点'
+	String get site => '站点';
+
+	/// zh-CN: 'E-Hentai'
+	String get siteE => 'E-Hentai';
+
+	/// zh-CN: 'ExHentai'
+	String get siteEx => 'ExHentai';
+
+	/// zh-CN: '分类'
+	String get category => '分类';
+
+	/// zh-CN: '评分'
+	String get rating => '评分';
+
+	/// zh-CN: '页数'
+	String get pages => '页数';
+
+	/// zh-CN: '上传者'
+	String get uploader => '上传者';
+
+	/// zh-CN: '发布时间'
+	String get uploaded => '发布时间';
+
+	/// zh-CN: '评论'
+	String get comments => '评论';
+
+	/// zh-CN: '开始阅读'
+	String get readNow => '开始阅读';
+
+	/// zh-CN: '设置'
+	String get settings => '设置';
+
+	/// zh-CN: '请从浏览器复制 Cookie 三件套：ipb_member_id、ipb_pass_hash、igneous（访问 ExHentai 必填）'
+	String get cookieHint => '请从浏览器复制 Cookie 三件套：ipb_member_id、ipb_pass_hash、igneous（访问 ExHentai 必填）';
+
+	/// zh-CN: '网络错误'
+	String get networkError => '网络错误';
+
+	/// zh-CN: '重试'
+	String get retry => '重试';
+
+	/// zh-CN: '暂无数据'
+	String get empty => '暂无数据';
+
+	/// zh-CN: '完成'
+	String get done => '完成';
+
+	/// zh-CN: '已保存'
+	String get saved => '已保存';
+
+	/// zh-CN: '退出登录'
+	String get logout => '退出登录';
+
+	/// zh-CN: '未设置'
+	String get notSet => '未设置';
+}
+
 /// The flat map containing all translations for locale <zh-CN>.
 /// Only for edge cases! For simple maps, use the map function of this library.
 ///
@@ -5290,6 +5393,37 @@ extension on Translations {
 			'bika.empty' => '暂无数据',
 			'bika.allCategories' => '全部',
 			'bika.done' => '完成',
+			'eh.appName' => 'E-Hentai',
+			'eh.home' => '首页',
+			'eh.search' => '搜索',
+			'eh.popular' => '热门',
+			'eh.favorites' => '收藏',
+			'eh.login' => '保存登录信息',
+			'eh.loginTitle' => 'E-Hentai 登录',
+			'eh.loginRequired' => '请先登录',
+			'eh.save' => '保存',
+			'eh.memberId' => 'ipb_member_id',
+			'eh.passHash' => 'ipb_pass_hash',
+			'eh.igneous' => 'igneous',
+			'eh.site' => '站点',
+			'eh.siteE' => 'E-Hentai',
+			'eh.siteEx' => 'ExHentai',
+			'eh.category' => '分类',
+			'eh.rating' => '评分',
+			'eh.pages' => '页数',
+			'eh.uploader' => '上传者',
+			'eh.uploaded' => '发布时间',
+			'eh.comments' => '评论',
+			'eh.readNow' => '开始阅读',
+			'eh.settings' => '设置',
+			'eh.cookieHint' => '请从浏览器复制 Cookie 三件套：ipb_member_id、ipb_pass_hash、igneous（访问 ExHentai 必填）',
+			'eh.networkError' => '网络错误',
+			'eh.retry' => '重试',
+			'eh.empty' => '暂无数据',
+			'eh.done' => '完成',
+			'eh.saved' => '已保存',
+			'eh.logout' => '退出登录',
+			'eh.notSet' => '未设置',
 			_ => null,
 		};
 	}

@@ -3,6 +3,8 @@ import 'dart:typed_data';
 import 'package:zephyr/config/global/global_setting.dart';
 import 'package:zephyr/network/http/wind_http.dart';
 import 'package:zephyr/source/core/source_registry.dart';
+import 'package:zephyr/source/eh/api/eh_client.dart';
+import 'package:zephyr/source/eh/api/gallery_page_parser.dart';
 import 'package:zephyr/source/eh/auth/eh_setting.dart';
 
 class NativeImageHttpException implements Exception {
@@ -51,7 +53,33 @@ Future<Uint8List> _fetchBikaImage(String url, Duration timeout) async {
   return _ensureImageBytes(url, response);
 }
 
+final RegExp _ehViewerPagePattern = RegExp(r'/s/[0-9a-f]{10}-\d+-\d+');
+
 Future<Uint8List> _fetchEhImage(String url, Duration timeout) async {
+  if (_ehViewerPagePattern.hasMatch(url)) {
+    return _fetchEhImageViaViewerPage(url, timeout);
+  }
+  return _downloadEhImage(url, url, timeout);
+}
+
+Future<Uint8List> _fetchEhImageViaViewerPage(
+  String viewerUrl,
+  Duration timeout,
+) async {
+  final html = await fetchEhHtml(viewerUrl);
+  final image = parseGalleryPage(html);
+  final imageUrl = image.imageUrl.trim();
+  if (imageUrl.isEmpty) {
+    throw NativeImageHttpException(viewerUrl, '查看页未解析出图片地址');
+  }
+  return _downloadEhImage(imageUrl, viewerUrl, timeout);
+}
+
+Future<Uint8List> _downloadEhImage(
+  String imageUrl,
+  String requestUrl,
+  Duration timeout,
+) async {
   final setting = ehSettingState;
   final headers = <String, String>{
     'User-Agent': _ehImageUserAgent,
@@ -59,8 +87,10 @@ Future<Uint8List> _fetchEhImage(String url, Duration timeout) async {
   };
   final cookie = setting.cookieHeader;
   if (cookie.isNotEmpty) headers['Cookie'] = cookie;
-  final response = await WindHttp(headers: headers).fetch(url, timeout: timeout);
-  return _ensureImageBytes(url, response);
+  final response = await WindHttp(
+    headers: headers,
+  ).fetch(imageUrl, timeout: timeout);
+  return _ensureImageBytes(requestUrl, response);
 }
 
 Uint8List _ensureImageBytes(String url, FetchResponse response) {

@@ -75,6 +75,7 @@ class TranslationsEnUs extends Translations with BaseTranslations<AppLocale, Tra
 	@override late final _Translations$update$en_US update = _Translations$update$en_US._(_root);
 	@override late final _Translations$dialog$en_US dialog = _Translations$dialog$en_US._(_root);
 	@override late final _Translations$bika$en_US bika = _Translations$bika$en_US._(_root);
+	@override late final _Translations$eh$en_US eh = _Translations$eh$en_US._(_root);
 }
 
 // Path: common
@@ -1611,6 +1612,46 @@ class _Translations$bika$en_US extends Translations$bika$zh_CN {
 	@override String get done => 'Done';
 }
 
+// Path: eh
+class _Translations$eh$en_US extends Translations$eh$zh_CN {
+	_Translations$eh$en_US._(TranslationsEnUs root) : this._root = root, super.internal(root);
+
+	final TranslationsEnUs _root; // ignore: unused_field
+
+	// Translations
+	@override String get appName => 'E-Hentai';
+	@override String get home => 'Home';
+	@override String get search => 'Search';
+	@override String get popular => 'Popular';
+	@override String get favorites => 'Favorites';
+	@override String get login => 'Save Login';
+	@override String get loginTitle => 'E-Hentai Login';
+	@override String get loginRequired => 'Please log in first';
+	@override String get save => 'Save';
+	@override String get memberId => 'ipb_member_id';
+	@override String get passHash => 'ipb_pass_hash';
+	@override String get igneous => 'igneous';
+	@override String get site => 'Site';
+	@override String get siteE => 'E-Hentai';
+	@override String get siteEx => 'ExHentai';
+	@override String get category => 'Category';
+	@override String get rating => 'Rating';
+	@override String get pages => 'Pages';
+	@override String get uploader => 'Uploader';
+	@override String get uploaded => 'Posted';
+	@override String get comments => 'Comments';
+	@override String get readNow => 'Read Now';
+	@override String get settings => 'Settings';
+	@override String get cookieHint => 'Copy the cookie trio from your browser: ipb_member_id, ipb_pass_hash and igneous (required for ExHentai)';
+	@override String get networkError => 'Network error';
+	@override String get retry => 'Retry';
+	@override String get empty => 'No data';
+	@override String get done => 'Done';
+	@override String get saved => 'Saved';
+	@override String get logout => 'Log out';
+	@override String get notSet => 'Not set';
+}
+
 /// The flat map containing all translations for locale <en-US>.
 /// Only for edge cases! For simple maps, use the map function of this library.
 ///
@@ -2843,6 +2884,37 @@ extension on TranslationsEnUs {
 			'bika.empty' => 'Nothing here',
 			'bika.allCategories' => 'All',
 			'bika.done' => 'Done',
+			'eh.appName' => 'E-Hentai',
+			'eh.home' => 'Home',
+			'eh.search' => 'Search',
+			'eh.popular' => 'Popular',
+			'eh.favorites' => 'Favorites',
+			'eh.login' => 'Save Login',
+			'eh.loginTitle' => 'E-Hentai Login',
+			'eh.loginRequired' => 'Please log in first',
+			'eh.save' => 'Save',
+			'eh.memberId' => 'ipb_member_id',
+			'eh.passHash' => 'ipb_pass_hash',
+			'eh.igneous' => 'igneous',
+			'eh.site' => 'Site',
+			'eh.siteE' => 'E-Hentai',
+			'eh.siteEx' => 'ExHentai',
+			'eh.category' => 'Category',
+			'eh.rating' => 'Rating',
+			'eh.pages' => 'Pages',
+			'eh.uploader' => 'Uploader',
+			'eh.uploaded' => 'Posted',
+			'eh.comments' => 'Comments',
+			'eh.readNow' => 'Read Now',
+			'eh.settings' => 'Settings',
+			'eh.cookieHint' => 'Copy the cookie trio from your browser: ipb_member_id, ipb_pass_hash and igneous (required for ExHentai)',
+			'eh.networkError' => 'Network error',
+			'eh.retry' => 'Retry',
+			'eh.empty' => 'No data',
+			'eh.done' => 'Done',
+			'eh.saved' => 'Saved',
+			'eh.logout' => 'Log out',
+			'eh.notSet' => 'Not set',
 			_ => null,
 		};
 	}
