@@ -9,7 +9,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:flutter_miuix/miuix.dart';
-import 'package:flutter_socks_proxy/socks_proxy.dart';
 import 'package:logger/logger.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:worker_manager/worker_manager.dart';
@@ -20,6 +19,7 @@ import 'package:zephyr/i18n/strings.g.dart';
 import 'package:zephyr/i18n/system_locale_service.dart';
 import 'package:zephyr/main.dart';
 import 'package:zephyr/main_entry_deps/app_widgets.dart';
+import 'package:zephyr/network/proxy_apply.dart';
 import 'package:zephyr/network/sync/sync_device_id.dart';
 import 'package:zephyr/object_box/model.dart';
 import 'package:zephyr/object_box/object_box.dart';
@@ -290,22 +290,7 @@ Future<(GlobalSettingCubit, PluginRegistryCubit)> initServices() async {
   }
 
   final proxySetting = globalSettingCubit.state.proxySetting;
-  if (proxySetting.enabled && proxySetting.address.trim().isNotEmpty) {
-    final proxyAddress = proxySetting.address.trim();
-    switch (proxySetting.type) {
-      case ProxyType.http:
-        final proxyUrl =
-            proxyAddress.startsWith('http://') ||
-                proxyAddress.startsWith('https://')
-            ? proxyAddress
-            : 'http://$proxyAddress';
-        setHttpProxy(proxy: proxyUrl);
-        SocksProxy.initProxy(proxy: 'PROXY ${_stripProxyScheme(proxyUrl)}');
-      case ProxyType.socks5:
-        SocksProxy.initProxy(proxy: 'SOCKS5 $proxyAddress');
-        setSocks5Proxy(proxy: proxyAddress);
-    }
-  }
+  applyProxySetting(proxySetting);
 
   final logAddress = globalSettingCubit.state.logAddress;
 
@@ -349,17 +334,6 @@ Future<void> _tryApplyHttpProxyFromEnv() async {
   if (!reachable) return;
 
   setHttpProxy(proxy: proxyUrl);
-}
-
-String _stripProxyScheme(String url) {
-  var value = url.trim();
-  for (final prefix in const ['https://', 'http://']) {
-    if (value.startsWith(prefix)) {
-      value = value.substring(prefix.length);
-      break;
-    }
-  }
-  return value;
 }
 
 Future<String?> _readProxyFromEnvAsset() async {

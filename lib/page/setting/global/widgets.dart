@@ -1,14 +1,11 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_socks_proxy/socks_proxy.dart';
 import 'package:zephyr/config/global/global_setting.dart';
 import 'package:zephyr/config/router/router.gr.dart';
 import 'package:zephyr/i18n/strings.g.dart';
-import 'package:zephyr/page/setting/common/setting_ui.dart';
-import 'package:zephyr/src/rust/api/qjs.dart';
+import 'package:zephyr/network/proxy_apply.dart';
 import 'package:zephyr/widgets/fluent_dropdown.dart';
-import 'package:zephyr/widgets/toast.dart';
 
 /// 把 Material 的 ListTile / SwitchListTile 包一层透明 Material。
 ///
@@ -36,77 +33,47 @@ Widget changeThemeColor(BuildContext context) {
   );
 }
 
-Widget proxyToggle(
-  BuildContext context, {
-  required bool enabled,
-  required ProxyType type,
-  required String currentProxy,
-}) {
+Widget proxyToggle(BuildContext context, ProxySettingState proxySetting) {
+  final items = {for (final mode in ProxyMode.values) mode: mode.label};
+  final needsAddress =
+      proxySetting.mode == ProxyMode.http ||
+      proxySetting.mode == ProxyMode.socks5;
   return Column(
     mainAxisSize: MainAxisSize.min,
     children: [
       _inkSafe(
-        SwitchListTile(
-          secondary: const Icon(Icons.router_outlined),
-          title: Text(t.settings.proxy),
-          subtitle: Text(t.settings.proxyEnabledSubtitle),
-          thumbIcon: kSettingSwitchThumbIcon,
-          value: enabled,
-          onChanged: (value) async {
-            final globalSettingCubit = context.read<GlobalSettingCubit>();
-            globalSettingCubit.updateState(
-              (current) => current.copyWith(
-                proxySetting: current.proxySetting.copyWith(enabled: value),
-              ),
-            );
-
-            if (!value) {
-              try {
-                setSocks5Proxy(proxy: '');
-              } catch (_) {}
-              SocksProxy.setProxy('DIRECT');
-            }
-
-            showSuccessToast(t.common.restartToTakeEffect);
-          },
+        ListTile(
+          leading: const Icon(Icons.router_outlined),
+          title: Text(t.settings.proxyMode),
+          subtitle: Text(t.settings.proxyModeSubtitle),
+          trailing: FluentDropdown<ProxyMode>(
+            value: proxySetting.mode,
+            displayValue: items[proxySetting.mode]!,
+            items: items,
+            onChanged: (ProxyMode value) {
+              if (value == proxySetting.mode) return;
+              _updateProxySetting(
+                context,
+                proxySetting.copyWith(mode: value),
+              );
+            },
+          ),
         ),
       ),
-      if (enabled) proxyTypeEdit(context, type),
-      if (enabled) proxyAddressEdit(context, currentProxy),
+      if (needsAddress) proxyAddressEdit(context, proxySetting),
     ],
   );
 }
 
-Widget proxyTypeEdit(BuildContext context, ProxyType type) {
-  final items = <ProxyType, String>{
-    ProxyType.http: t.settings.proxyTypeHttp,
-    ProxyType.socks5: t.settings.proxyTypeSocks5,
-  };
-  return _inkSafe(
-    ListTile(
-      leading: const Icon(Icons.lan_outlined),
-      title: Text(t.settings.proxyType),
-      subtitle: Text(t.settings.proxyTypeSubtitle),
-      trailing: FluentDropdown<ProxyType>(
-        value: type,
-        displayValue: items[type]!,
-        items: items,
-        onChanged: (ProxyType value) {
-          if (value == type) return;
-          final globalSettingCubit = context.read<GlobalSettingCubit>();
-          globalSettingCubit.updateState(
-            (current) => current.copyWith(
-              proxySetting: current.proxySetting.copyWith(type: value),
-            ),
-          );
-          showSuccessToast(t.common.restartToTakeEffect);
-        },
-      ),
-    ),
+void _updateProxySetting(BuildContext context, ProxySettingState next) {
+  context.read<GlobalSettingCubit>().updateState(
+    (current) => current.copyWith(proxySetting: next),
   );
+  applyProxySetting(next);
 }
 
-Widget proxyAddressEdit(BuildContext context, String currentProxy) {
+Widget proxyAddressEdit(BuildContext context, ProxySettingState proxySetting) {
+  final currentProxy = proxySetting.address;
   return _inkSafe(
     ListTile(
       leading: const Icon(Icons.link_outlined),
@@ -120,8 +87,8 @@ Widget proxyAddressEdit(BuildContext context, String currentProxy) {
       ),
       trailing: const Icon(Icons.chevron_right),
       onTap: () async {
-        final globalSettingCubit = context.read<GlobalSettingCubit>();
         var inputValue = currentProxy;
+        final globalSettingCubit = context.read<GlobalSettingCubit>();
 
         final result = await showDialog<String>(
           context: context,
@@ -150,12 +117,11 @@ Widget proxyAddressEdit(BuildContext context, String currentProxy) {
         );
 
         if (result != null && result != currentProxy) {
+          final next = proxySetting.copyWith(address: result);
           globalSettingCubit.updateState(
-            (current) => current.copyWith(
-              proxySetting: current.proxySetting.copyWith(address: result),
-            ),
+            (current) => current.copyWith(proxySetting: next),
           );
-          showSuccessToast(t.common.restartToTakeEffect);
+          applyProxySetting(next);
         }
       },
     ),

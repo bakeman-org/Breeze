@@ -23,8 +23,23 @@ enum ReaderTapPageTurnMode { fullScreen, leftHand, rightHand }
 
 enum SyncServiceType { none, webdav, s3 }
 
-/// 代理协议类型。
-enum ProxyType { http, socks5 }
+/// 代理模式：直连 / 跟随系统 / HTTP / SOCKS5。
+enum ProxyMode { direct, system, http, socks5 }
+
+extension ProxyModeExtension on ProxyMode {
+  String get label {
+    switch (this) {
+      case ProxyMode.direct:
+        return t.settings.proxyModeDirect;
+      case ProxyMode.system:
+        return t.settings.proxyModeSystem;
+      case ProxyMode.http:
+        return t.settings.proxyModeHttp;
+      case ProxyMode.socks5:
+        return t.settings.proxyModeSocks5;
+    }
+  }
+}
 
 extension SyncServiceTypeExtension on SyncServiceType {
   String get label {
@@ -117,13 +132,13 @@ abstract class GlobalSettingState with _$GlobalSettingState {
     @Default(false) bool needCleanCache,
     @Default(1) int comicChoice,
     @Default(false) bool disableBika,
+    @Default(false) bool bikaImageAcceleration,
     @Default(false) bool enableMemoryDebug,
     @Default(false) bool blockRustHttpRequests,
     @Default('') String logAddress,
     @Default(false) bool forceEnableImpeller,
     @Default(false) bool androidKeepAliveEnabled,
     @Default(false) bool backPressExitEnabled,
-    @Default(true) bool updateAccelerate,
     @Default(true) bool retryDownloadUntilSuccess,
     @Default(false) bool cloudFavoritePreferred,
     @Default(false) bool autoFollowOnCollect,
@@ -182,8 +197,7 @@ abstract class AppLockSettingState with _$AppLockSettingState {
 @freezed
 abstract class ProxySettingState with _$ProxySettingState {
   const factory ProxySettingState({
-    @Default(false) bool enabled,
-    @Default(ProxyType.http) ProxyType type,
+    @Default(ProxyMode.direct) ProxyMode mode,
     @Default('') String address,
   }) = _ProxySettingState;
 

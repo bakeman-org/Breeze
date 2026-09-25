@@ -35,12 +35,8 @@ class ContentNetworkSettingPage extends StatelessWidget {
             t.settings.network,
             icon: Icons.wifi_outlined,
           ),
-          proxyToggle(
-            context,
-            enabled: state.proxySetting.enabled,
-            type: state.proxySetting.type,
-            currentProxy: state.proxySetting.address,
-          ),
+          proxyToggle(context, state.proxySetting),
+          _bikaImageAcceleration(state, cubit),
           SwitchListTile(
             secondary: const Icon(Icons.download_outlined),
             title: Text(t.settings.retryDownloadUntilSuccess),
@@ -53,7 +49,6 @@ class ContentNetworkSettingPage extends StatelessWidget {
               );
             },
           ),
-          // _updateAccelerate(state, cubit),
           const SizedBox(height: 32),
         ],
       ),
@@ -88,18 +83,21 @@ class ContentNetworkSettingPage extends StatelessWidget {
     );
   }
 
-  // Widget _updateAccelerate(GlobalSettingState state, GlobalSettingCubit cubit) {
-  //   return SwitchListTile(
-  //     secondary: const Icon(Icons.rocket_launch_outlined),
-  //     title: Text(t.settings.updateAccelerate),
-  //     subtitle: Text(t.settings.updateAccelerateSubtitle),
-  //     thumbIcon: kSettingSwitchThumbIcon,
-  //     value: state.updateAccelerate,
-  //     onChanged: (bool value) {
-  //       cubit.updateState(
-  //         (current) => current.copyWith(updateAccelerate: value),
-  //       );
-  //     },
-  //   );
-  // }
+  Widget _bikaImageAcceleration(
+    GlobalSettingState state,
+    GlobalSettingCubit cubit,
+  ) {
+    return SwitchListTile(
+      secondary: const Icon(Icons.bolt_outlined),
+      title: Text(t.settings.bikaImageAcceleration),
+      subtitle: Text(t.settings.bikaImageAccelerationSubtitle),
+      thumbIcon: kSettingSwitchThumbIcon,
+      value: state.bikaImageAcceleration,
+      onChanged: (value) {
+        cubit.updateState(
+          (current) => current.copyWith(bikaImageAcceleration: value),
+        );
+      },
+    );
+  }
 }

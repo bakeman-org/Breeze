@@ -36,13 +36,13 @@ _GlobalSettingState _$GlobalSettingStateFromJson(
   needCleanCache: json['needCleanCache'] as bool? ?? false,
   comicChoice: (json['comicChoice'] as num?)?.toInt() ?? 1,
   disableBika: json['disableBika'] as bool? ?? false,
+  bikaImageAcceleration: json['bikaImageAcceleration'] as bool? ?? false,
   enableMemoryDebug: json['enableMemoryDebug'] as bool? ?? false,
   blockRustHttpRequests: json['blockRustHttpRequests'] as bool? ?? false,
   logAddress: json['logAddress'] as String? ?? '',
   forceEnableImpeller: json['forceEnableImpeller'] as bool? ?? false,
   androidKeepAliveEnabled: json['androidKeepAliveEnabled'] as bool? ?? false,
   backPressExitEnabled: json['backPressExitEnabled'] as bool? ?? false,
-  updateAccelerate: json['updateAccelerate'] as bool? ?? true,
   retryDownloadUntilSuccess: json['retryDownloadUntilSuccess'] as bool? ?? true,
   cloudFavoritePreferred: json['cloudFavoritePreferred'] as bool? ?? false,
   autoFollowOnCollect: json['autoFollowOnCollect'] as bool? ?? false,
@@ -107,13 +107,13 @@ Map<String, dynamic> _$GlobalSettingStateToJson(_GlobalSettingState instance) =>
       'needCleanCache': instance.needCleanCache,
       'comicChoice': instance.comicChoice,
       'disableBika': instance.disableBika,
+      'bikaImageAcceleration': instance.bikaImageAcceleration,
       'enableMemoryDebug': instance.enableMemoryDebug,
       'blockRustHttpRequests': instance.blockRustHttpRequests,
       'logAddress': instance.logAddress,
       'forceEnableImpeller': instance.forceEnableImpeller,
       'androidKeepAliveEnabled': instance.androidKeepAliveEnabled,
       'backPressExitEnabled': instance.backPressExitEnabled,
-      'updateAccelerate': instance.updateAccelerate,
       'retryDownloadUntilSuccess': instance.retryDownloadUntilSuccess,
       'cloudFavoritePreferred': instance.cloudFavoritePreferred,
       'autoFollowOnCollect': instance.autoFollowOnCollect,
@@ -174,22 +174,26 @@ Map<String, dynamic> _$AppLockSettingStateToJson(
   'resetPinHash': instance.resetPinHash,
 };
 
-_ProxySettingState _$ProxySettingStateFromJson(
-  Map<String, dynamic> json,
-) => _ProxySettingState(
-  enabled: json['enabled'] as bool? ?? false,
-  type: $enumDecodeNullable(_$ProxyTypeEnumMap, json['type']) ?? ProxyType.http,
-  address: json['address'] as String? ?? '',
-);
+_ProxySettingState _$ProxySettingStateFromJson(Map<String, dynamic> json) =>
+    _ProxySettingState(
+      mode:
+          $enumDecodeNullable(_$ProxyModeEnumMap, json['mode']) ??
+          ProxyMode.direct,
+      address: json['address'] as String? ?? '',
+    );
 
 Map<String, dynamic> _$ProxySettingStateToJson(_ProxySettingState instance) =>
     <String, dynamic>{
-      'enabled': instance.enabled,
-      'type': _$ProxyTypeEnumMap[instance.type]!,
+      'mode': _$ProxyModeEnumMap[instance.mode]!,
       'address': instance.address,
     };
 
-const _$ProxyTypeEnumMap = {ProxyType.http: 'http', ProxyType.socks5: 'socks5'};
+const _$ProxyModeEnumMap = {
+  ProxyMode.direct: 'direct',
+  ProxyMode.system: 'system',
+  ProxyMode.http: 'http',
+  ProxyMode.socks5: 'socks5',
+};
 
 _WebDavSettingState _$WebDavSettingStateFromJson(Map<String, dynamic> json) =>
     _WebDavSettingState(

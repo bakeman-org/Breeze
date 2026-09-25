@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as file_path;
+import 'package:zephyr/config/global/global_setting.dart';
 import 'package:zephyr/main.dart';
 import 'package:zephyr/network/http/plugin/qjs_download_runtime.dart';
 import 'package:zephyr/service/download/download_asset_store.dart';
@@ -22,6 +23,13 @@ export 'package:zephyr/service/download/download_asset_store.dart'
 const _kQjsRuntimeCancelled = '__QJS_RUNTIME_CANCELLED__';
 const _kDownloadTaskCancelled = '__DOWNLOAD_TASK_CANCELLED__';
 const _kJmPluginUuid = 'bf99008d-010b-4f17-ac7c-61a9b57dc3d9';
+const _kBikaPluginUuid = '0a0e5858-a467-4702-994a-79e608a4589d';
+
+String rewriteBikaImageUrl(String url) {
+  if (!globalSetting.bikaImageAcceleration) return url;
+  if (!url.contains('picacomic')) return url;
+  return url.replaceFirst('picacomic', 'go2778');
+}
 
 void _throwIfDownloadCancelled(String taskGroupKey) {
   if (taskGroupKey.isNotEmpty && isDownloadCancelSignaled(taskGroupKey)) {
@@ -535,6 +543,9 @@ Future<Uint8List> downloadImageWithRetry(
   String qjsTaskGroupKey = '',
   Map<String, dynamic> extern = const <String, dynamic>{},
 }) async {
+  if (normalizePluginId(source) == _kBikaPluginUuid) {
+    url = rewriteBikaImageUrl(url);
+  }
   var attempts = 0;
   while (true) {
     try {

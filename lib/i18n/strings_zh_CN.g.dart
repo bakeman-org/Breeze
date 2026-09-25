@@ -488,14 +488,26 @@ class Translations$settings$zh_CN {
 	/// zh-CN: '繁体中文'
 	String get chineseConvertTraditional => '繁体中文';
 
-	/// zh-CN: '代理'
-	String get proxy => '代理';
-
 	/// zh-CN: '配置代理地址'
 	String get proxySubtitle => '配置代理地址';
 
-	/// zh-CN: '开启后网络请求将经过代理'
-	String get proxyEnabledSubtitle => '开启后网络请求将经过代理';
+	/// zh-CN: '代理模式'
+	String get proxyMode => '代理模式';
+
+	/// zh-CN: '直连 / 跟随系统 / HTTP / SOCKS5'
+	String get proxyModeSubtitle => '直连 / 跟随系统 / HTTP / SOCKS5';
+
+	/// zh-CN: '直连'
+	String get proxyModeDirect => '直连';
+
+	/// zh-CN: '系统代理'
+	String get proxyModeSystem => '系统代理';
+
+	/// zh-CN: 'HTTP'
+	String get proxyModeHttp => 'HTTP';
+
+	/// zh-CN: 'SOCKS5'
+	String get proxyModeSocks5 => 'SOCKS5';
 
 	/// zh-CN: '代理地址'
 	String get proxyAddress => '代理地址';
@@ -506,23 +518,11 @@ class Translations$settings$zh_CN {
 	/// zh-CN: '当前代理：$currentProxy'
 	String proxyCurrent({required Object currentProxy}) => '当前代理：${currentProxy}';
 
-	/// zh-CN: '代理类型'
-	String get proxyType => '代理类型';
+	/// zh-CN: '哔咔图片 CDN 加速'
+	String get bikaImageAcceleration => '哔咔图片 CDN 加速';
 
-	/// zh-CN: '选择代理协议'
-	String get proxyTypeSubtitle => '选择代理协议';
-
-	/// zh-CN: 'HTTP'
-	String get proxyTypeHttp => 'HTTP';
-
-	/// zh-CN: 'SOCKS5'
-	String get proxyTypeSocks5 => 'SOCKS5';
-
-	/// zh-CN: '更新下载加速'
-	String get updateAccelerate => '更新下载加速';
-
-	/// zh-CN: '开启后优先使用代理加速 GitHub 更新链接'
-	String get updateAccelerateSubtitle => '开启后优先使用代理加速 GitHub 更新链接';
+	/// zh-CN: '哔咔图片改用 go2778 CDN 中转下载，国内网络更稳定'
+	String get bikaImageAccelerationSubtitle => '哔咔图片改用 go2778 CDN 中转下载，国内网络更稳定';
 
 	/// zh-CN: '下载失败后持续重试'
 	String get retryDownloadUntilSuccess => '下载失败后持续重试';
@@ -3979,18 +3979,18 @@ extension on Translations {
 			'settings.chineseConvertOff' => '关闭',
 			'settings.chineseConvertSimplified' => '简体中文',
 			'settings.chineseConvertTraditional' => '繁体中文',
-			'settings.proxy' => '代理',
 			'settings.proxySubtitle' => '配置代理地址',
-			'settings.proxyEnabledSubtitle' => '开启后网络请求将经过代理',
+			'settings.proxyMode' => '代理模式',
+			'settings.proxyModeSubtitle' => '直连 / 跟随系统 / HTTP / SOCKS5',
+			'settings.proxyModeDirect' => '直连',
+			'settings.proxyModeSystem' => '系统代理',
+			'settings.proxyModeHttp' => 'HTTP',
+			'settings.proxyModeSocks5' => 'SOCKS5',
 			'settings.proxyAddress' => '代理地址',
 			'settings.proxyHint' => '请输入代理地址（HTTP / SOCKS5）',
 			'settings.proxyCurrent' => ({required Object currentProxy}) => '当前代理：${currentProxy}',
-			'settings.proxyType' => '代理类型',
-			'settings.proxyTypeSubtitle' => '选择代理协议',
-			'settings.proxyTypeHttp' => 'HTTP',
-			'settings.proxyTypeSocks5' => 'SOCKS5',
-			'settings.updateAccelerate' => '更新下载加速',
-			'settings.updateAccelerateSubtitle' => '开启后优先使用代理加速 GitHub 更新链接',
+			'settings.bikaImageAcceleration' => '哔咔图片 CDN 加速',
+			'settings.bikaImageAccelerationSubtitle' => '哔咔图片改用 go2778 CDN 中转下载，国内网络更稳定',
 			'settings.retryDownloadUntilSuccess' => '下载失败后持续重试',
 			'settings.retryDownloadUntilSuccessSubtitle' => '下载失败时持续重试直到成功；返回 404 或空数据时停止重试',
 			'settings.sync' => '同步',
