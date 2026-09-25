@@ -644,12 +644,6 @@ class Translations$settings$zh_CN {
 	/// zh-CN: '开启后进入应用需要验证'
 	String get appLockSubtitle => '开启后进入应用需要验证';
 
-	/// zh-CN: '旧版首页'
-	String get oldPageRollback => '旧版首页';
-
-	/// zh-CN: '开启后使用旧版首页布局'
-	String get oldPageRollbackSubtitle => '开启后使用旧版首页布局';
-
 	/// zh-CN: '优先云端收藏'
 	String get cloudFavoritePreferred => '优先云端收藏';
 
@@ -4037,8 +4031,6 @@ extension on Translations {
 			'settings.exitApp' => '退出',
 			'settings.appLock' => '应用锁',
 			'settings.appLockSubtitle' => '开启后进入应用需要验证',
-			'settings.oldPageRollback' => '旧版首页',
-			'settings.oldPageRollbackSubtitle' => '开启后使用旧版首页布局',
 			'settings.cloudFavoritePreferred' => '优先云端收藏',
 			'settings.cloudFavoritePreferredSubtitle' => '开启后漫画信息页的收藏按钮将执行云端收藏，原云端收藏菜单项切换为本地收藏',
 			'settings.autoFollowOnCollect' => '收藏自动追更',
@@ -4372,10 +4364,10 @@ extension on Translations {
 			'reader.doublePageSeamless' => '双页无缝',
 			'reader.doublePageSeamlessSubtitle' => '左右各占一半宽度，按图片比例独立显示并消除中间留白',
 			'reader.doublePageLeadingBlank' => '首页留白',
-			_ => null,
-		} ?? switch (path) {
 			'reader.doublePageLeadingBlankSubtitle' => '在每章最前插入一页空白，使配对整体错一位',
 			'reader.landscapeReader' => '横屏阅读',
+			_ => null,
+		} ?? switch (path) {
 			'reader.landscapeReaderSubtitle' => '阅读时切换为横屏，离开后恢复原来的方向',
 			'reader.themeMode' => '系统模式',
 			'reader.autoRead' => '自动阅读',
@@ -4886,10 +4878,10 @@ extension on Translations {
 			'comicEntry.deleteHistoryConfirm' => ({required Object title}) => '确定要删除（${title}）的历史记录吗？',
 			'comicEntry.deleteDownload' => '删除下载记录',
 			'comicEntry.deleteDownloadConfirm' => ({required Object title}) => '确定要删除（${title}）的下载记录及文件吗？',
-			_ => null,
-		} ?? switch (path) {
 			'comicEntry.deleteFailed' => '删除失败',
 			'comicFollow.title' => '追更',
+			_ => null,
+		} ?? switch (path) {
 			'comicFollow.loadFailed' => ({required Object result}) => '加载失败：${result}',
 			'comicFollow.empty' => '暂无追更漫画',
 			'comicFollow.emptyHint' => '在漫画详情页点击追更按钮即可加入',

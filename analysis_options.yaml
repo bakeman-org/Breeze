@@ -6,8 +6,6 @@ linter:
     always_use_package_imports: true
 
 analyzer:
-  enable-experiment:
-    - private-named-parameters
   exclude:
     - "DART_T~1/**"
     # FRB / ObjectBox / freezed / json_serializable 生成代码，请勿手改

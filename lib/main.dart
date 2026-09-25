@@ -54,8 +54,6 @@ EventBus eventBus = EventBus();
 
 var logger = Logger(printer: TersePrettyPrinter());
 
-List<String> cfIpList = [];
-
 final flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
 
 final navigatorKey = GlobalKey<NavigatorState>();

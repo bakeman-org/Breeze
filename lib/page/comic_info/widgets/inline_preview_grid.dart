@@ -222,7 +222,7 @@ class _InlinePreviewGridState extends State<InlinePreviewGrid> {
     };
     // 仍在自动加载时附加提示。
     if (_visibleCount < sliced.length) {
-      return '$base　·　自动加载中 ${_visibleCount}/${sliced.length}';
+      return '$base　·　自动加载中 $_visibleCount/${sliced.length}';
     }
     return base;
   }
@@ -441,8 +441,7 @@ class PreviewTile extends StatelessWidget {
                     fit: BoxFit.fitWidth,
                     cacheWidth: cacheWidth,
                     gaplessPlayback: true,
-                    errorBuilder: (_, __, ___) =>
-                        const PreviewPlaceholderTile(),
+                    errorBuilder: (_, _, _) => const PreviewPlaceholderTile(),
                   ),
                 );
               }

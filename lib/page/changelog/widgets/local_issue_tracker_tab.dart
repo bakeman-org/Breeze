@@ -613,12 +613,12 @@ class _LocalIssueTrackerTabState extends State<LocalIssueTrackerTab> {
       PageRouteBuilder(
         transitionDuration: const Duration(milliseconds: 180),
         reverseTransitionDuration: const Duration(milliseconds: 180),
-        pageBuilder: (_, __, ___) => _LocalIssueDetailScreen(
+        pageBuilder: (_, _, _) => _LocalIssueDetailScreen(
           issue: issue,
           store: _store,
           allTags: _allTags.toList(),
         ),
-        transitionsBuilder: (_, anim, __, child) =>
+        transitionsBuilder: (_, anim, _, child) =>
             FadeTransition(opacity: anim, child: child),
       ),
     );
@@ -1718,7 +1718,7 @@ class _LocalIssueDetailScreenState extends State<_LocalIssueDetailScreen> {
                           child: ListView.separated(
                             scrollDirection: Axis.horizontal,
                             itemCount: _attachments.length,
-                            separatorBuilder: (_, __) =>
+                            separatorBuilder: (_, _) =>
                                 const SizedBox(width: 12),
                             itemBuilder: (_, i) {
                               final f = _attachments[i];

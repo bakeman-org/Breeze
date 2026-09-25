@@ -30,8 +30,6 @@ import 'package:zephyr/widgets/dialog.dart';
 import 'package:zephyr/page/bookshelf/bookshelf.dart';
 import 'package:zephyr/page/discover/view/discover_page.dart';
 import 'package:zephyr/page/more/view/more.dart';
-import 'package:zephyr/page/old_page/old_home/old_home_page.dart';
-import 'package:zephyr/page/old_page/old_ranking/old_ranking_page.dart';
 
 /// 导航目的地：图标名 + 标签。
 class _NavDestination {
@@ -115,7 +113,7 @@ class _NavigationBarState extends State<NavigationBar> {
     final configuredIndex = globalSetting.welcomePageNum;
     final initialIndex = _normalizeWelcomePageIndex(
       configuredIndex,
-      _buildPageList(globalSetting.oldPageRollbackEnabled).length,
+      _buildPageList().length,
     );
     _selectedIndex = initialIndex;
 
@@ -158,10 +156,8 @@ class _NavigationBarState extends State<NavigationBar> {
     final backPressExitEnabled =
         Platform.isAndroid && globalSettingState.backPressExitEnabled;
 
-    final pageList = _buildPageList(globalSettingState.oldPageRollbackEnabled);
-    final destinations = _destinations(
-      globalSettingState.oldPageRollbackEnabled,
-    );
+    final pageList = _buildPageList();
+    final destinations = _destinations();
 
     final normalizedIndex = _normalizeWelcomePageIndex(
       _selectedIndex,
@@ -316,7 +312,7 @@ class _NavigationBarState extends State<NavigationBar> {
 
   // ---------- 导航目的地 ----------
 
-  List<_NavDestination> _destinations(bool oldPageRollbackEnabled) {
+  List<_NavDestination> _destinations() {
     // ⚠️ 这里的 icon 名称只能使用 MiuixIcons.extended 中真实存在的名称。
     //
     // 目前使用的 5 个名字（home / search / messages / contacts / explore）
@@ -332,18 +328,8 @@ class _NavigationBarState extends State<NavigationBar> {
       const _NavDestination(icon: 'contacts', label: '更多'),
     ];
 
-    if (!oldPageRollbackEnabled) {
-      // 用本地化标签覆盖默认字符串
-      return [
-        _NavDestination(icon: base[0].icon, label: t.navigation.bookshelf),
-        _NavDestination(icon: base[1].icon, label: t.navigation.discover),
-        _NavDestination(icon: base[2].icon, label: t.navigation.more),
-      ];
-    }
-
+    // 用本地化标签覆盖默认字符串
     return [
-      _NavDestination(icon: 'home', label: t.navigation.home),
-      _NavDestination(icon: 'messages', label: t.navigation.rank),
       _NavDestination(icon: base[0].icon, label: t.navigation.bookshelf),
       _NavDestination(icon: base[1].icon, label: t.navigation.discover),
       _NavDestination(icon: base[2].icon, label: t.navigation.more),
@@ -357,16 +343,8 @@ class _NavigationBarState extends State<NavigationBar> {
     return rawIndex.clamp(0, pageCount - 1);
   }
 
-  List<Widget> _buildPageList(bool oldPageRollbackEnabled) {
-    final pages = <Widget>[
-      const BookshelfPage(),
-      const DiscoverPage(),
-      const MorePage(),
-    ];
-    if (!oldPageRollbackEnabled) {
-      return pages;
-    }
-    return [const OldHomePage(), const OldRankingPage(), ...pages];
+  List<Widget> _buildPageList() {
+    return [const BookshelfPage(), const DiscoverPage(), const MorePage()];
   }
 
   // ---------- 以下逻辑保持原样 ----------

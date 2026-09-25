@@ -245,7 +245,7 @@ class _ZoomableImageState extends State<_ZoomableImage> {
             File(widget.imagePath),
             fit: BoxFit.contain,
             gaplessPlayback: true,
-            errorBuilder: (_, __, ___) => const Center(
+            errorBuilder: (_, _, _) => const Center(
               child: Icon(Icons.broken_image_outlined, color: Colors.white54),
             ),
           ),

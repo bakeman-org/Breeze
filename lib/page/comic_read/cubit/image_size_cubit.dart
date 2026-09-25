@@ -72,7 +72,7 @@ class ImageSizeCubit extends Cubit<ImageSizeState> {
   final double defaultHeight;
   final String sourceTag;
   final List<String> pageKeys;
-  final int _chapterOrder;
+  final int chapterOrder;
   final ImageSizeCacheStore _cacheStore;
 
   /// 已测页高度的滑动窗口。中位数在这里算，不在 `getSizeValue` 里重算——
@@ -90,7 +90,7 @@ class ImageSizeCubit extends Cubit<ImageSizeState> {
     required this.defaultHeight,
     required this.sourceTag,
     required this.pageKeys,
-    required int chapterOrder,
+    required this.chapterOrder,
     required bool hydrateOnInit,
     required Map<int, Size> initialCache,
     required Set<int> initialResolved,
@@ -98,7 +98,6 @@ class ImageSizeCubit extends Cubit<ImageSizeState> {
          sourceTag: sourceTag,
          pageKeys: pageKeys,
        ),
-       _chapterOrder = chapterOrder,
        super(
          ImageSizeState(
            sizeCache: initialCache,
@@ -225,7 +224,7 @@ class ImageSizeCubit extends Cubit<ImageSizeState> {
       for (final entry in persisted.entries) {
         // 与 create 一致：本地页索引 → 运行时章节哈希索引。
         final cacheIndex = resolveStableSizeCacheIndex(
-          chapterOrder: _chapterOrder,
+          chapterOrder: chapterOrder,
           localPageIndex: entry.key,
         );
         newCache[cacheIndex] = entry.value;
@@ -300,7 +299,7 @@ class ImageSizeCubit extends Cubit<ImageSizeState> {
       final max = count < pageKeys.length ? count : pageKeys.length;
       for (var i = 0; i < max; i++) {
         final runtimeIndex = resolveStableSizeCacheIndex(
-          chapterOrder: _chapterOrder,
+          chapterOrder: chapterOrder,
           localPageIndex: i,
         );
         if (!state.resolvedIndices.contains(runtimeIndex)) continue;

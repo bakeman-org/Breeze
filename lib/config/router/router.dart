@@ -42,8 +42,6 @@ class AppRouter extends RootStackRouter {
     AutoRoute(page: PluginStoreRoute.page),
     AutoRoute(page: PluginSettingsRoute.page),
     AutoRoute(page: PluginFunctionRoute.page),
-    AutoRoute(page: OldHomeRoute.page),
-    AutoRoute(page: OldRankingRoute.page),
     AutoRoute(page: MoreRoute.page),
     AutoRoute(page: QjsRuntimeDebugRoute.page),
     AutoRoute(page: CacheSettingRoute.page),

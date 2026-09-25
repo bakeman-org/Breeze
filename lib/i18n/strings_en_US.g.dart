@@ -286,8 +286,6 @@ class _Translations$settings$en_US extends Translations$settings$zh_CN {
 	@override String get exitApp => 'Exit';
 	@override String get appLock => 'App lock';
 	@override String get appLockSubtitle => 'Require verification when entering the app';
-	@override String get oldPageRollback => 'Old home page';
-	@override String get oldPageRollbackSubtitle => 'Use old home page layout';
 	@override String get cloudFavoritePreferred => 'Prefer cloud favorites';
 	@override String get cloudFavoritePreferredSubtitle => 'When enabled, the favorite button on the comic info page performs cloud collection, and the original cloud collection menu item switches to local collection';
 	@override String get autoFollowOnCollect => 'Auto-follow on collect';
@@ -1721,8 +1719,6 @@ extension on TranslationsEnUs {
 			'settings.exitApp' => 'Exit',
 			'settings.appLock' => 'App lock',
 			'settings.appLockSubtitle' => 'Require verification when entering the app',
-			'settings.oldPageRollback' => 'Old home page',
-			'settings.oldPageRollbackSubtitle' => 'Use old home page layout',
 			'settings.cloudFavoritePreferred' => 'Prefer cloud favorites',
 			'settings.cloudFavoritePreferredSubtitle' => 'When enabled, the favorite button on the comic info page performs cloud collection, and the original cloud collection menu item switches to local collection',
 			'settings.autoFollowOnCollect' => 'Auto-follow on collect',
@@ -2056,10 +2052,10 @@ extension on TranslationsEnUs {
 			'reader.doublePageSeamlessSubtitle' => 'Give each page half the width, preserve its aspect ratio, and remove the gap between them',
 			'reader.doublePageLeadingBlank' => 'Leading blank',
 			'reader.doublePageLeadingBlankSubtitle' => 'Insert a blank page at the start of each chapter to shift page pairing',
-			_ => null,
-		} ?? switch (path) {
 			'reader.landscapeReader' => 'Landscape reading',
 			'reader.landscapeReaderSubtitle' => 'Switch to landscape while reading and restore the previous direction when you leave',
+			_ => null,
+		} ?? switch (path) {
 			'reader.themeMode' => 'Theme mode',
 			'reader.autoRead' => 'Auto read',
 			'reader.autoReadSubtitle' => 'Automatically scroll the reader',
@@ -2570,10 +2566,10 @@ extension on TranslationsEnUs {
 			'comicEntry.deleteDownload' => 'Delete Download',
 			'comicEntry.deleteDownloadConfirm' => ({required Object title}) => 'Delete download record and files for "${title}"?',
 			'comicEntry.deleteFailed' => 'Delete failed',
-			_ => null,
-		} ?? switch (path) {
 			'comicFollow.title' => 'Updates',
 			'comicFollow.loadFailed' => ({required Object result}) => 'Load failed: ${result}',
+			_ => null,
+		} ?? switch (path) {
 			'comicFollow.empty' => 'No followed comics',
 			'comicFollow.emptyHint' => 'Tap the follow button on a comic detail page to add it here',
 			'comicFollow.unfollow' => 'Unfollow',
