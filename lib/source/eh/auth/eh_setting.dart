@@ -57,6 +57,5 @@ void saveEhSettingState(EhSettingState setting) {
 }
 
 Map<String, List<String>>? activeEhResolveHosts() {
-  return null;
   return ehResolveHosts(ehSettingState.builtInHosts);
 }

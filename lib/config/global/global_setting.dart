@@ -321,7 +321,7 @@ class GlobalSettingCubit extends Cubit<GlobalSettingState> {
   GlobalSettingCubit() : super(const GlobalSettingState());
 
   static const _defaults = GlobalSettingState();
-  late final Color _defaultSeedColor = colorThemeList[6].color;
+  late final Color _defaultSeedColor = colorThemeList[5].color;
 
   Future<void> initBox() async {
     emit(objectbox.userSettingBox.get(1)!.globalSetting);

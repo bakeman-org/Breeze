@@ -6,6 +6,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_miuix/miuix.dart';
+import 'package:zephyr/config/global/accent.dart';
 import 'package:zephyr/config/global/global_setting.dart';
 import 'package:zephyr/config/router/router.gr.dart';
 import 'package:zephyr/i18n/strings.g.dart';
@@ -220,7 +221,7 @@ class _NavigationBarState extends State<NavigationBar> {
                 icon: _miuixIcon(
                   dest.icon,
                   tint: _selectedIndex == i
-                      ? Colors.blue
+                      ? accentBlue
                       : MiuixTheme.of(context).colors.onSurfaceVariantSummary,
                 ),
                 label: dest.label,
@@ -268,7 +269,7 @@ class _NavigationBarState extends State<NavigationBar> {
                               icon: _miuixIcon(
                                 dest.icon,
                                 tint: _selectedIndex == i
-                                    ? Colors.blue
+                                    ? accentBlue
                                     : MiuixTheme.of(
                                         context,
                                       ).colors.onSurfaceVariantSummary,

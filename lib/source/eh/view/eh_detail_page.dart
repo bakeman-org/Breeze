@@ -2,10 +2,12 @@ import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_miuix/miuix.dart';
+import 'package:zephyr/config/global/accent.dart';
 import 'package:zephyr/config/router/router.gr.dart'
-    show ComicReadRoute, EhCommentsRoute, EhLoginRoute;
+    show ComicReadRoute, DownloadRoute, EhCommentsRoute, EhLoginRoute;
 import 'package:zephyr/cubit/string_select.dart';
 import 'package:zephyr/i18n/strings.g.dart';
+import 'package:zephyr/page/download/models/unified_comic_download.dart';
 import 'package:zephyr/source/eh/api/eh_client.dart';
 import 'package:zephyr/source/eh/models/eh_models.dart';
 import 'package:zephyr/source/eh/utils/eh_detail_convert.dart';
@@ -98,6 +100,19 @@ class _EhDetailViewState extends State<_EhDetailView> {
         comicInfo: buildEhDetailSource(info),
         stringSelectCubit: context.read<StringSelectCubit>(),
         chapterExtern: {'token': detail.token},
+      ),
+    );
+  }
+
+  void _openDownload() {
+    final detail = _detail;
+    if (detail == null || detail.pages <= 0) return;
+    final info = buildEhNormalComicInfo(detail);
+    context.pushRoute(
+      DownloadRoute(
+        downloadInfo: UnifiedComicDownloadInfo.fromString(
+          buildEhDetailSource(info),
+        ),
       ),
     );
   }
@@ -295,7 +310,7 @@ class _EhDetailViewState extends State<_EhDetailView> {
                               child: Text(
                                 tag,
                                 style: theme.textTheme.labelSmall?.copyWith(
-                                  color: theme.colorScheme.onSurfaceVariant,
+                                  color: accentBlue,
                                 ),
                               ),
                             ),
@@ -307,23 +322,42 @@ class _EhDetailViewState extends State<_EhDetailView> {
               ),
           ],
           const SizedBox(height: 16),
-          SizedBox(
-            width: double.infinity,
-            child: MiuixButton(
-              onPressed: detail.pages > 0 ? () => _openReader(context) : null,
-              child: Text(t.eh.readNow),
-            ),
+          Row(
+            children: [
+              Expanded(
+                flex: 2,
+                child: MiuixButton(
+                  onPressed: detail.pages > 0
+                      ? () => _openReader(context)
+                      : null,
+                  child: Text(t.eh.readNow),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: MiuixButton(
+                  onPressed: detail.pages > 0 ? _openDownload : null,
+                  child: Text(t.eh.download),
+                ),
+              ),
+            ],
           ),
           if (detail.commentsCount > 0) ...[
             const SizedBox(height: 10),
             SizedBox(
               width: double.infinity,
-              child: TextButton.icon(
+              child: MiuixButton(
                 onPressed: () => context.pushRoute(
                   EhCommentsRoute(gid: detail.gid, token: detail.token),
                 ),
-                icon: const Icon(Icons.comment_outlined, size: 18),
-                label: Text('${t.eh.comments} (${detail.commentsCount})'),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.comment_outlined, size: 18),
+                    const SizedBox(width: 6),
+                    Text('${t.eh.comments} (${detail.commentsCount})'),
+                  ],
+                ),
               ),
             ),
           ],

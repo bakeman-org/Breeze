@@ -14,7 +14,7 @@ import 'package:zephyr/page/setting/real_sr/service/real_sr_settings.dart';
 import 'package:zephyr/page/setting/real_sr/service/real_sr_super_resolution.dart';
 import 'package:zephyr/type/enum.dart';
 import 'package:zephyr/util/coreml_model_config.dart';
-import 'package:zephyr/widgets/fluent_dropdown.dart';
+import 'package:zephyr/page/setting/widgets/miuix_setting_helpers.dart';
 import 'package:zephyr/widgets/toast.dart';
 
 final Map<int, String> _concurrencyLabels = {
@@ -283,93 +283,110 @@ class _RealSrSettingPageState extends State<RealSrSettingPage> {
 
   List<Widget> _buildModelItems() {
     if (_usesCoreML) {
+      final families = CoreMLModelConfig.families;
+      final variants = _coreMLFamily.variants;
       return [
-        ListTile(
-          leading: const Icon(Icons.speed_outlined),
-          title: Text(t.realSr.model),
-          subtitle: Text(t.realSr.modelSubtitle),
-          trailing: FluentDropdown<CoreMLModelFamily>(
-            value: _coreMLFamily,
-            displayValue: _coreMLFamily.localizedLabel,
-            items: {
-              for (final family in CoreMLModelConfig.families)
-                family: family.localizedLabel,
-            },
-            onChanged: _setCoreMLFamily,
+        MiuixOverlayDropdownPreference(
+          title: t.realSr.model,
+          summary: t.realSr.modelSubtitle,
+          items: [for (final family in families) family.localizedLabel],
+          selectedIndex: families.indexOf(_coreMLFamily),
+          onSelectedIndexChange: (index) =>
+              _setCoreMLFamily(families[index]),
+          startAction: MiuixSettingHelpers.icon(
+            fallback: Icons.speed_outlined,
+            name: 'speed',
           ),
+          insideMargin: MiuixSettingHelpers.itemMargin,
         ),
-        ListTile(
-          leading: const Icon(Icons.healing_outlined),
-          title: Text(t.realSr.noiseLevel),
-          subtitle: Text(t.realSr.noiseLevelSubtitle),
-          trailing: FluentDropdown<CoreMLModelVariant>(
-            value: _coreMLVariant,
-            displayValue: _coreMLVariant.localizedDisplayName,
-            items: {
-              for (final variant in _coreMLFamily.variants)
-                variant: variant.localizedDisplayName,
-            },
-            onChanged: _setCoreMLVariant,
+        MiuixOverlayDropdownPreference(
+          title: t.realSr.noiseLevel,
+          summary: t.realSr.noiseLevelSubtitle,
+          items: [
+            for (final variant in variants) variant.localizedDisplayName,
+          ],
+          selectedIndex: variants.indexOf(_coreMLVariant),
+          onSelectedIndexChange: (index) =>
+              _setCoreMLVariant(variants[index]),
+          startAction: MiuixSettingHelpers.icon(
+            fallback: Icons.healing_outlined,
+            name: 'healing',
           ),
+          insideMargin: MiuixSettingHelpers.itemMargin,
         ),
-        ListTile(
-          leading: const Icon(Icons.grid_view_outlined),
-          title: Text(t.realSr.blockInfo),
-          subtitle: Text(_coreMLBlockInfo),
-          trailing: Tooltip(
-            triggerMode: TooltipTriggerMode.tap,
-            showDuration: const Duration(seconds: 5),
-            message: t.realSr.blockInfoTooltip,
-            child: const Icon(Icons.help_outline),
+        MiuixBasicComponent(
+          title: t.realSr.blockInfo,
+          summary: _coreMLBlockInfo,
+          startAction: MiuixSettingHelpers.icon(
+            fallback: Icons.grid_view_outlined,
+            name: 'grid_view',
           ),
+          endActions: [
+            Tooltip(
+              triggerMode: TooltipTriggerMode.tap,
+              showDuration: const Duration(seconds: 5),
+              message: t.realSr.blockInfoTooltip,
+              child: const Icon(Icons.help_outline),
+            ),
+          ],
+          insideMargin: MiuixSettingHelpers.itemMargin,
         ),
       ];
     }
 
     if (Platform.isAndroid) {
       return [
-        ListTile(
-          leading: const Icon(Icons.info_outline),
-          title: Text(t.realSr.androidSuperResolution),
-          subtitle: Text(t.realSr.androidSuperResolutionSubtitle),
+        MiuixBasicComponent(
+          title: t.realSr.androidSuperResolution,
+          summary: t.realSr.androidSuperResolutionSubtitle,
+          startAction: MiuixSettingHelpers.icon(
+            fallback: Icons.info_outline,
+            name: 'info',
+          ),
+          insideMargin: MiuixSettingHelpers.itemMargin,
         ),
       ];
     }
 
+    final modes = AndroidNcnnMode.values;
+    final noises = AndroidNcnnNoise.values;
     return [
-      ListTile(
-        leading: const Icon(Icons.speed_outlined),
-        title: Text(t.realSr.desktopStrategy),
-        subtitle: Text(t.realSr.desktopStrategySubtitle),
-        trailing: FluentDropdown<AndroidNcnnMode>(
-          value: _desktopNcnnMode,
-          displayValue: _desktopNcnnMode.label,
-          items: {for (final mode in AndroidNcnnMode.values) mode: mode.label},
-          onChanged: _setDesktopNcnnMode,
+      MiuixOverlayDropdownPreference(
+        title: t.realSr.desktopStrategy,
+        summary: t.realSr.desktopStrategySubtitle,
+        items: [for (final mode in modes) mode.label],
+        selectedIndex: modes.indexOf(_desktopNcnnMode),
+        onSelectedIndexChange: (index) => _setDesktopNcnnMode(modes[index]),
+        startAction: MiuixSettingHelpers.icon(
+          fallback: Icons.speed_outlined,
+          name: 'speed',
         ),
+        insideMargin: MiuixSettingHelpers.itemMargin,
       ),
-      ListTile(
-        leading: const Icon(Icons.healing_outlined),
-        title: Text(t.realSr.desktopNoiseLevel),
-        subtitle: Text(t.realSr.desktopNoiseLevelSubtitle),
-        trailing: FluentDropdown<AndroidNcnnNoise>(
-          value: _desktopNcnnNoise,
-          displayValue: _desktopNcnnNoise.label,
-          items: {
-            for (final noise in AndroidNcnnNoise.values) noise: noise.label,
-          },
-          onChanged: _setDesktopNcnnNoise,
+      MiuixOverlayDropdownPreference(
+        title: t.realSr.desktopNoiseLevel,
+        summary: t.realSr.desktopNoiseLevelSubtitle,
+        items: [for (final noise in noises) noise.label],
+        selectedIndex: noises.indexOf(_desktopNcnnNoise),
+        onSelectedIndexChange: (index) => _setDesktopNcnnNoise(noises[index]),
+        startAction: MiuixSettingHelpers.icon(
+          fallback: Icons.healing_outlined,
+          name: 'healing',
         ),
+        insideMargin: MiuixSettingHelpers.itemMargin,
       ),
     ];
   }
 
   Widget _buildModelManagementTile() {
     if (_downloading) {
-      return ListTile(
-        leading: const Icon(Icons.downloading_outlined),
-        title: Text(t.realSr.downloadingModel),
-        subtitle: Column(
+      return MiuixBasicComponent(
+        title: t.realSr.downloadingModel,
+        startAction: MiuixSettingHelpers.icon(
+          fallback: Icons.downloading_outlined,
+          name: 'download',
+        ),
+        bottomAction: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const SizedBox(height: 8),
@@ -378,79 +395,106 @@ class _RealSrSettingPageState extends State<RealSrSettingPage> {
             Text('${(_downloadProgress * 100).toStringAsFixed(1)}%'),
           ],
         ),
+        insideMargin: MiuixSettingHelpers.itemMargin,
       );
     }
 
     if (_isAvailable) {
-      return ListTile(
-        leading: Icon(
+      return MiuixBasicComponent(
+        title: t.realSr.modelReady,
+        startAction: Icon(
           Icons.check_circle,
           color: Theme.of(context).colorScheme.primary,
         ),
-        title: Text(t.realSr.modelReady),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextButton(
-              onPressed: _deleteModel,
-              child: Text(t.realSr.deleteModel),
-            ),
-            TextButton(
+        endActions: [
+          Tooltip(
+            message: t.realSr.redownload,
+            child: MiuixIconButton(
               onPressed: _downloadModel,
-              child: Text(t.realSr.redownload),
+              child: const Icon(Icons.refresh),
             ),
-          ],
-        ),
+          ),
+          Tooltip(
+            message: t.realSr.deleteModel,
+            child: MiuixIconButton(
+              onPressed: _deleteModel,
+              child: const Icon(Icons.delete_outline),
+            ),
+          ),
+        ],
+        insideMargin: MiuixSettingHelpers.itemMargin,
       );
     }
 
-    return ListTile(
-      leading: const Icon(Icons.warning_amber_rounded),
-      title: Text(t.realSr.modelNotDownloaded),
-      subtitle: Text(t.realSr.modelNotDownloadedSubtitle),
-      // Miuix 迁移：ElevatedButton → MiuixButton。
-      trailing: MiuixButton(
-        onPressed: _downloadModel,
-        child: Text(t.realSr.downloadModel),
+    return MiuixBasicComponent(
+      title: t.realSr.modelNotDownloaded,
+      summary: t.realSr.modelNotDownloadedSubtitle,
+      startAction: MiuixSettingHelpers.icon(
+        fallback: Icons.warning_amber_rounded,
+        name: 'warning',
       ),
+      endActions: [
+        MiuixButton(
+          onPressed: _downloadModel,
+          child: Text(t.realSr.downloadModel),
+        ),
+      ],
+      insideMargin: MiuixSettingHelpers.itemMargin,
     );
   }
 
   Widget _buildManualDownloadTile() {
     final url = RealSrSuperResolution.manualDownloadUrl;
     if (url == null) {
-      return ListTile(
-        leading: const Icon(Icons.open_in_browser_outlined),
-        title: Text(t.realSr.manualDownload),
-        subtitle: Text(t.realSr.manualDownloadUnsupported),
+      return MiuixBasicComponent(
+        title: t.realSr.manualDownload,
+        summary: t.realSr.manualDownloadUnsupported,
+        startAction: MiuixSettingHelpers.icon(
+          fallback: Icons.open_in_browser_outlined,
+          name: 'open_in_browser',
+        ),
+        insideMargin: MiuixSettingHelpers.itemMargin,
       );
     }
-    return ListTile(
-      leading: const Icon(Icons.open_in_browser_outlined),
-      title: Text(t.realSr.manualDownload),
-      subtitle: Text(url, maxLines: 2, overflow: TextOverflow.ellipsis),
-      trailing: TextButton(
-        onPressed: _openManualDownloadUrl,
-        child: Text(t.realSr.openDownloadUrl),
+    return MiuixBasicComponent(
+      title: t.realSr.manualDownload,
+      summary: url,
+      startAction: MiuixSettingHelpers.icon(
+        fallback: Icons.open_in_browser_outlined,
+        name: 'open_in_browser',
       ),
+      endActions: [
+        MiuixButton(
+          onPressed: _openManualDownloadUrl,
+          child: Text(t.realSr.openDownloadUrl),
+        ),
+      ],
+      insideMargin: MiuixSettingHelpers.itemMargin,
     );
   }
 
   Widget _buildImportModelTile() {
-    return ListTile(
-      leading: const Icon(Icons.file_open_outlined),
-      title: Text(t.realSr.importModel),
-      subtitle: Text(t.realSr.importModelSubtitle),
-      trailing: _importing
-          ? const SizedBox(
-              width: 22,
-              height: 22,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            )
-          : TextButton(
-              onPressed: _importModel,
-              child: Text(t.realSr.importModelAction),
-            ),
+    return MiuixBasicComponent(
+      title: t.realSr.importModel,
+      summary: t.realSr.importModelSubtitle,
+      startAction: MiuixSettingHelpers.icon(
+        fallback: Icons.file_open_outlined,
+        name: 'file_open',
+      ),
+      endActions: [
+        if (_importing)
+          const SizedBox(
+            width: 22,
+            height: 22,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          )
+        else
+          MiuixButton(
+            onPressed: _importModel,
+            child: Text(t.realSr.importModelAction),
+          ),
+      ],
+      insideMargin: MiuixSettingHelpers.itemMargin,
     );
   }
 
@@ -469,95 +513,116 @@ class _RealSrSettingPageState extends State<RealSrSettingPage> {
           : ListView(
               children: [
                 settingSectionTitle(context, t.realSr.autoUpscaleSection),
-                SwitchListTile(
-                  secondary: const Icon(Icons.auto_fix_high_outlined),
-                  title: Text(t.realSr.autoUpscale),
-                  subtitle: Text(
-                    !_isAvailable
-                        ? t.realSr.autoUpscaleSubtitleUnavailable
-                        : t.realSr.autoUpscaleSubtitleAvailable,
-                  ),
-                  thumbIcon: kSettingSwitchThumbIcon,
-                  value: _autoUpscale,
-                  onChanged: _setAutoUpscale,
-                ),
-
-                const SizedBox(height: 8),
-                const Divider(height: 1, thickness: 0.3),
-                settingSectionTitle(context, t.realSr.conditionSection),
-                ListTile(
-                  leading: const Icon(Icons.hd_outlined),
-                  title: Text(t.realSr.resolutionThreshold),
-                  subtitle: Text(t.realSr.resolutionThresholdSubtitle),
-                  trailing: FluentDropdown<RealSrResolutionThreshold>(
-                    value: _effectiveThreshold,
-                    displayValue: _effectiveThreshold.label,
-                    items: {
-                      for (final threshold in _availableThresholds)
-                        threshold: threshold.label,
-                    },
-                    onChanged: _setResolutionThreshold,
-                  ),
-                ),
-
-                const SizedBox(height: 8),
-                const Divider(height: 1, thickness: 0.3),
-                settingSectionTitle(context, t.realSr.performanceSection),
-                Builder(
-                  builder: (context) {
-                    final effective = _concurrencyOptions.contains(_concurrency)
-                        ? _concurrency
-                        : RealSrSettings.defaultConcurrency;
-                    return ListTile(
-                      leading: const Icon(Icons.speed_outlined),
-                      title: Text(t.realSr.concurrency),
-                      subtitle: Text(t.realSr.concurrencySubtitle),
-                      trailing: FluentDropdown<int>(
-                        value: effective,
-                        displayValue: _concurrencyLabels[effective]!,
-                        items: {
-                          for (final option in _concurrencyOptions)
-                            option: _concurrencyLabels[option]!,
-                        },
-                        onChanged: _setConcurrency,
+                GroupCard(
+                  children: [
+                    MiuixSwitchPreference(
+                      title: t.realSr.autoUpscale,
+                      summary: !_isAvailable
+                          ? t.realSr.autoUpscaleSubtitleUnavailable
+                          : t.realSr.autoUpscaleSubtitleAvailable,
+                      value: _autoUpscale,
+                      onChanged: _setAutoUpscale,
+                      startAction: MiuixSettingHelpers.icon(
+                        fallback: Icons.auto_fix_high_outlined,
+                        name: 'auto_fix_high',
                       ),
-                    );
-                  },
+                      insideMargin: MiuixSettingHelpers.itemMargin,
+                    ),
+                  ],
                 ),
-                if (!_usesCoreML)
-                  Builder(
-                    builder: (context) {
-                      final effective = _tileSizeOptions.contains(_tileSize)
-                          ? _tileSize
-                          : 0;
-                      return ListTile(
-                        leading: const Icon(Icons.grid_on_outlined),
-                        title: Text(t.realSr.tileSize),
-                        subtitle: Text(t.realSr.tileSizeSubtitle),
-                        trailing: FluentDropdown<int>(
-                          value: effective,
-                          displayValue: _tileSizeLabels[effective]!,
-                          items: {
-                            for (final option in _tileSizeOptions)
-                              option: _tileSizeLabels[option]!,
-                          },
-                          onChanged: _setTileSize,
-                        ),
-                      );
-                    },
-                  ),
 
-                const SizedBox(height: 8),
-                const Divider(height: 1, thickness: 0.3),
+                settingSectionTitle(context, t.realSr.conditionSection),
+                GroupCard(
+                  children: [
+                    MiuixOverlayDropdownPreference(
+                      title: t.realSr.resolutionThreshold,
+                      summary: t.realSr.resolutionThresholdSubtitle,
+                      items: [
+                        for (final threshold in _availableThresholds)
+                          threshold.label,
+                      ],
+                      selectedIndex:
+                          _availableThresholds.indexOf(_effectiveThreshold),
+                      onSelectedIndexChange: (index) =>
+                          _setResolutionThreshold(_availableThresholds[index]),
+                      startAction: MiuixSettingHelpers.icon(
+                        fallback: Icons.hd_outlined,
+                        name: 'hd',
+                      ),
+                      insideMargin: MiuixSettingHelpers.itemMargin,
+                    ),
+                  ],
+                ),
+
+                settingSectionTitle(context, t.realSr.performanceSection),
+                GroupCard(
+                  children: [
+                    Builder(
+                      builder: (context) {
+                        final effective = _concurrencyOptions.contains(
+                          _concurrency,
+                        )
+                            ? _concurrency
+                            : RealSrSettings.defaultConcurrency;
+                        return MiuixOverlayDropdownPreference(
+                          title: t.realSr.concurrency,
+                          summary: t.realSr.concurrencySubtitle,
+                          items: [
+                            for (final option in _concurrencyOptions)
+                              _concurrencyLabels[option]!,
+                          ],
+                          selectedIndex:
+                              _concurrencyOptions.indexOf(effective),
+                          onSelectedIndexChange: (index) =>
+                              _setConcurrency(_concurrencyOptions[index]),
+                          startAction: MiuixSettingHelpers.icon(
+                            fallback: Icons.speed_outlined,
+                            name: 'speed',
+                          ),
+                          insideMargin: MiuixSettingHelpers.itemMargin,
+                        );
+                      },
+                    ),
+                    if (!_usesCoreML)
+                      Builder(
+                        builder: (context) {
+                          final effective = _tileSizeOptions.contains(
+                            _tileSize,
+                          )
+                              ? _tileSize
+                              : 0;
+                          return MiuixOverlayDropdownPreference(
+                            title: t.realSr.tileSize,
+                            summary: t.realSr.tileSizeSubtitle,
+                            items: [
+                              for (final option in _tileSizeOptions)
+                                _tileSizeLabels[option]!,
+                            ],
+                            selectedIndex: _tileSizeOptions.indexOf(effective),
+                            onSelectedIndexChange: (index) =>
+                                _setTileSize(_tileSizeOptions[index]),
+                            startAction: MiuixSettingHelpers.icon(
+                              fallback: Icons.grid_on_outlined,
+                              name: 'grid_on',
+                            ),
+                            insideMargin: MiuixSettingHelpers.itemMargin,
+                          );
+                        },
+                      ),
+                  ],
+                ),
+
                 settingSectionTitle(context, t.realSr.modelSection),
-                ..._buildModelItems(),
+                GroupCard(children: _buildModelItems()),
 
-                const SizedBox(height: 8),
-                const Divider(height: 1, thickness: 0.3),
                 settingSectionTitle(context, t.realSr.modelManagementSection),
-                _buildModelManagementTile(),
-                _buildManualDownloadTile(),
-                _buildImportModelTile(),
+                GroupCard(
+                  children: [
+                    _buildModelManagementTile(),
+                    _buildManualDownloadTile(),
+                    _buildImportModelTile(),
+                  ],
+                ),
                 const SizedBox(height: 32),
               ],
             ),

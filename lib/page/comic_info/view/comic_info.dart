@@ -739,6 +739,10 @@ class _ComicInfoState extends State<_ComicInfo>
       showErrorToast(t.comicInfo.detailsNotLoaded);
       return;
     }
+    if (!info.allowDownload) {
+      showErrorToast(t.comicInfo.downloadNotAllowed);
+      return;
+    }
     try {
       // 把 List<Ep> 转成 List<UnifiedComicDownloadChapter>。
       // 字段映射与 UnifiedComicDownloadInfo.fromString 内部保持一致。

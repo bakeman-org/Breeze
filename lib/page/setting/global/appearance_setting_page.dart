@@ -3,166 +3,114 @@ import 'package:material_ui/material_ui.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_miuix/miuix.dart';
 import 'package:zephyr/config/global/global_setting.dart';
+import 'package:zephyr/config/router/router.gr.dart';
 import 'package:zephyr/i18n/i18n_helper.dart';
 import 'package:zephyr/i18n/strings.g.dart';
 import 'package:zephyr/i18n/system_locale_service.dart';
-import 'package:zephyr/page/font_setting/view/font_setting_page.dart';
+import 'package:zephyr/page/setting/common/setting_ui.dart';
 import 'package:zephyr/page/setting/global/widgets.dart';
+import 'package:zephyr/page/setting/widgets/miuix_setting_helpers.dart';
 import 'package:zephyr/widgets/toast.dart';
 
 @RoutePage()
 class AppearanceSettingPage extends StatelessWidget {
   const AppearanceSettingPage({super.key});
 
-  /// 分组卡片内 preference 项的紧凑内边距。
-  static const _itemMargin = EdgeInsets.symmetric(horizontal: 16, vertical: 14);
-
-  /// 构造起始图标：优先使用 Miuix 扩展图标，找不到回退到 Material Icon。
-  Widget _settingIcon(IconData fallback, String miuixName) {
-    final vector = MiuixIcons.extended.byName(miuixName);
-    if (vector != null) {
-      return MiuixIcon(vector: vector, size: 22);
-    }
-    return Icon(fallback, size: 22);
-  }
-
   @override
   Widget build(BuildContext context) {
     final cubit = context.watch<GlobalSettingCubit>();
     final state = cubit.state;
 
-    return MiuixScaffold(
-      topBar: MiuixTopAppBar(
-        title: t.settings.appearance,
-        navigationIcon: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Center(
-            child: MiuixIconButton(
-              onPressed: () => context.router.maybePop(),
-              child: const Icon(Icons.arrow_back),
-            ),
-          ),
-        ),
-      ),
-      content: (padding) => Material(
-        type: MaterialType.transparency,
-        child: ListView(
-          padding: padding.copyWith(bottom: 32),
-          children: [
-            MiuixSmallTitle(t.settings.appearance),
-            MiuixCard(
-              child: Column(
-                children: [
-                  // ───────── 语言 ─────────
-                  MiuixArrowPreference(
-                    title: t.settings.language,
-                    summary: _languageLabel(state),
-                    startAction: _settingIcon(
-                      Icons.language_outlined,
-                      'language',
-                    ),
-                    insideMargin: _itemMargin,
-                    onClick: () => _pickLanguage(context, state, cubit),
-                  ),
-                  const MiuixHorizontalDivider(),
-
-                  // ───────── 主题模式 ─────────
-                  MiuixArrowPreference(
-                    title: t.settings.theme,
-                    summary: _themeModeLabel(state.themeMode),
-                    startAction: _settingIcon(
-                      Icons.dark_mode_outlined,
-                      'dark_mode',
-                    ),
-                    insideMargin: _itemMargin,
-                    onClick: () => _pickThemeMode(context, state, cubit),
-                  ),
-                  const MiuixHorizontalDivider(),
-
-                  // ───────── 动态取色开关 ─────────
-                  MiuixSwitchPreference(
-                    title: t.settings.dynamicColor,
-                    summary: t.settings.dynamicColorSubtitle,
-                    startAction: _settingIcon(
-                      Icons.color_lens_outlined,
-                      'color_lens',
-                    ),
-                    value: state.dynamicColor,
-                    onChanged: (bool value) {
-                      cubit.updateState(
-                        (current) => current.copyWith(dynamicColor: value),
-                      );
-                    },
-                    insideMargin: _itemMargin,
-                  ),
-
-                  // 动态取色开启时隐藏种子色入口（与原逻辑一致）。
-                  if (!state.dynamicColor) ...[
-                    const MiuixHorizontalDivider(),
-                    changeThemeColor(context),
-                  ],
-
-                  const MiuixHorizontalDivider(),
-
-                  // ───────── AMOLED ─────────
-                  MiuixSwitchPreference(
-                    title: t.settings.amoled,
-                    summary: t.settings.amoledSubtitle,
-                    startAction: _settingIcon(
-                      Icons.contrast_outlined,
-                      'contrast',
-                    ),
-                    value: state.isAMOLED,
-                    onChanged: (bool value) {
-                      cubit.updateState(
-                        (current) => current.copyWith(isAMOLED: value),
-                      );
-                    },
-                    insideMargin: _itemMargin,
-                  ),
-                  const MiuixHorizontalDivider(),
-
-                  // ───────── 刘海屏适配 ─────────
-                  MiuixSwitchPreference(
-                    title: t.settings.notchAdaptation,
-                    summary: t.settings.notchAdaptationSubtitle,
-                    startAction: _settingIcon(
-                      Icons.smartphone_outlined,
-                      'smartphone',
-                    ),
-                    value: state.readSetting.comicReadTopContainer,
-                    onChanged: (bool value) {
-                      cubit.updateReadSetting(
-                        (current) =>
-                            current.copyWith(comicReadTopContainer: value),
-                      );
-                    },
-                    insideMargin: _itemMargin,
-                  ),
-                  const MiuixHorizontalDivider(),
-
-                  // ───────── 字体设置 ─────────
-                  MiuixArrowPreference(
-                    title: t.settings.fontSettings,
-                    summary: t.settings.fontSettingsSubtitle,
-                    startAction: _settingIcon(
-                      Icons.font_download_outlined,
-                      'font',
-                    ),
-                    insideMargin: _itemMargin,
-                    onClick: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => const FontSettingPage(),
-                        ),
-                      );
-                    },
-                  ),
-                ],
+    return SettingPageShell(
+      title: t.settings.appearance,
+      child: ListView(
+        children: [
+          settingSectionTitle(context, t.settings.appearance),
+          GroupCard(
+            children: [
+              MiuixArrowPreference(
+                title: t.settings.language,
+                summary: _languageLabel(state),
+                startAction: MiuixSettingHelpers.icon(
+                  fallback: Icons.language_outlined,
+                  name: 'language',
+                ),
+                insideMargin: MiuixSettingHelpers.itemMargin,
+                onClick: () => _pickLanguage(context, state, cubit),
               ),
-            ),
-          ],
-        ),
+              MiuixArrowPreference(
+                title: t.settings.theme,
+                summary: _themeModeLabel(state.themeMode),
+                startAction: MiuixSettingHelpers.icon(
+                  fallback: Icons.dark_mode_outlined,
+                  name: 'dark_mode',
+                ),
+                insideMargin: MiuixSettingHelpers.itemMargin,
+                onClick: () => _pickThemeMode(context, state, cubit),
+              ),
+              MiuixSwitchPreference(
+                title: t.settings.dynamicColor,
+                summary: t.settings.dynamicColorSubtitle,
+                startAction: MiuixSettingHelpers.icon(
+                  fallback: Icons.color_lens_outlined,
+                  name: 'color_lens',
+                ),
+                value: state.dynamicColor,
+                onChanged: (bool value) {
+                  cubit.updateState(
+                    (current) => current.copyWith(dynamicColor: value),
+                  );
+                },
+                insideMargin: MiuixSettingHelpers.itemMargin,
+              ),
+
+              // 动态取色开启时隐藏种子色入口（与原逻辑一致）。
+              if (!state.dynamicColor) changeThemeColor(context),
+
+              MiuixSwitchPreference(
+                title: t.settings.amoled,
+                summary: t.settings.amoledSubtitle,
+                startAction: MiuixSettingHelpers.icon(
+                  fallback: Icons.contrast_outlined,
+                  name: 'contrast',
+                ),
+                value: state.isAMOLED,
+                onChanged: (bool value) {
+                  cubit.updateState(
+                    (current) => current.copyWith(isAMOLED: value),
+                  );
+                },
+                insideMargin: MiuixSettingHelpers.itemMargin,
+              ),
+              MiuixSwitchPreference(
+                title: t.settings.notchAdaptation,
+                summary: t.settings.notchAdaptationSubtitle,
+                startAction: MiuixSettingHelpers.icon(
+                  fallback: Icons.smartphone_outlined,
+                  name: 'smartphone',
+                ),
+                value: state.readSetting.comicReadTopContainer,
+                onChanged: (bool value) {
+                  cubit.updateReadSetting(
+                    (current) => current.copyWith(comicReadTopContainer: value),
+                  );
+                },
+                insideMargin: MiuixSettingHelpers.itemMargin,
+              ),
+              MiuixArrowPreference(
+                title: t.settings.fontSettings,
+                summary: t.settings.fontSettingsSubtitle,
+                startAction: MiuixSettingHelpers.icon(
+                  fallback: Icons.font_download_outlined,
+                  name: 'font',
+                ),
+                insideMargin: MiuixSettingHelpers.itemMargin,
+                onClick: () => context.pushRoute(const FontSettingRoute()),
+              ),
+            ],
+          ),
+          const SizedBox(height: 32),
+        ],
       ),
     );
   }

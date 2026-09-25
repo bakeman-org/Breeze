@@ -1,66 +1,59 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_miuix/miuix.dart';
 import 'package:zephyr/config/global/global_setting.dart';
 import 'package:zephyr/config/router/router.gr.dart';
 import 'package:zephyr/i18n/strings.g.dart';
 import 'package:zephyr/network/proxy_apply.dart';
-import 'package:zephyr/widgets/fluent_dropdown.dart';
-
-/// 把 Material 的 ListTile / SwitchListTile 包一层透明 Material。
-///
-/// 背景：MiuixCard 等容器内部是带背景色的 DecoratedBox，会遮住 ListTile
-/// 在最近 Material 上绘制的背景与 ink 水波纹。这里给 ListTile 单独垫一层
-/// 透明 Material，让 ink 画在 DecoratedBox 之上、ListTile 之下。
-///
-/// 参考 Flutter 断言：
-///   "ListTile background color or ink splashes may be invisible."
-Widget _inkSafe(Widget child) {
-  return Material(type: MaterialType.transparency, child: child);
-}
+import 'package:zephyr/page/setting/widgets/miuix_setting_helpers.dart';
 
 Widget changeThemeColor(BuildContext context) {
-  return _inkSafe(
-    ListTile(
-      leading: const Icon(Icons.palette_outlined),
-      title: Text(t.settings.themeColor),
-      subtitle: Text(t.settings.themeColorSubtitle),
-      trailing: const Icon(Icons.chevron_right),
-      onTap: () {
-        AutoRouter.of(context).push(const ThemeColorRoute());
-      },
+  return MiuixArrowPreference(
+    title: t.settings.themeColor,
+    summary: t.settings.themeColorSubtitle,
+    startAction: MiuixSettingHelpers.icon(
+      fallback: Icons.palette_outlined,
+      name: 'palette',
     ),
+    insideMargin: MiuixSettingHelpers.itemMargin,
+    onClick: () {
+      AutoRouter.of(context).push(const ThemeColorRoute());
+    },
   );
 }
 
 Widget proxyToggle(BuildContext context, ProxySettingState proxySetting) {
-  final items = {for (final mode in ProxyMode.values) mode: mode.label};
+  final modes = ProxyMode.values;
   final needsAddress =
       proxySetting.mode == ProxyMode.http ||
       proxySetting.mode == ProxyMode.socks5;
   return Column(
     mainAxisSize: MainAxisSize.min,
     children: [
-      _inkSafe(
-        ListTile(
-          leading: const Icon(Icons.router_outlined),
-          title: Text(t.settings.proxyMode),
-          subtitle: Text(t.settings.proxyModeSubtitle),
-          trailing: FluentDropdown<ProxyMode>(
-            value: proxySetting.mode,
-            displayValue: items[proxySetting.mode]!,
-            items: items,
-            onChanged: (ProxyMode value) {
-              if (value == proxySetting.mode) return;
-              _updateProxySetting(
-                context,
-                proxySetting.copyWith(mode: value),
-              );
-            },
-          ),
+      MiuixOverlayDropdownPreference(
+        title: t.settings.proxyMode,
+        summary: t.settings.proxyModeSubtitle,
+        items: [for (final mode in modes) mode.label],
+        selectedIndex: modes.indexOf(proxySetting.mode),
+        onSelectedIndexChange: (index) {
+          final value = modes[index];
+          if (value == proxySetting.mode) return;
+          _updateProxySetting(
+            context,
+            proxySetting.copyWith(mode: value),
+          );
+        },
+        startAction: MiuixSettingHelpers.icon(
+          fallback: Icons.router_outlined,
+          name: 'router',
         ),
+        insideMargin: MiuixSettingHelpers.itemMargin,
       ),
-      if (needsAddress) proxyAddressEdit(context, proxySetting),
+      if (needsAddress) ...[
+        const MiuixHorizontalDivider(),
+        proxyAddressEdit(context, proxySetting),
+      ],
     ],
   );
 }
@@ -74,57 +67,54 @@ void _updateProxySetting(BuildContext context, ProxySettingState next) {
 
 Widget proxyAddressEdit(BuildContext context, ProxySettingState proxySetting) {
   final currentProxy = proxySetting.address;
-  return _inkSafe(
-    ListTile(
-      leading: const Icon(Icons.link_outlined),
-      title: Text(t.settings.proxyAddress),
-      subtitle: Text(
-        currentProxy.isEmpty
-            ? t.settings.proxySubtitle
-            : t.settings.proxyCurrent(currentProxy: currentProxy),
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-      ),
-      trailing: const Icon(Icons.chevron_right),
-      onTap: () async {
-        var inputValue = currentProxy;
-        final globalSettingCubit = context.read<GlobalSettingCubit>();
-
-        final result = await showDialog<String>(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: Text(t.settings.proxyAddress),
-            content: TextFormField(
-              initialValue: currentProxy,
-              autofocus: true,
-              onChanged: (value) => inputValue = value.trim(),
-              decoration: InputDecoration(
-                hintText: t.settings.proxyHint,
-                border: const OutlineInputBorder(),
-              ),
-            ),
-            actions: [
-              TextButton(
-                child: Text(t.common.cancel),
-                onPressed: () => Navigator.pop(context),
-              ),
-              TextButton(
-                child: Text(t.common.ok),
-                onPressed: () => Navigator.pop(context, inputValue),
-              ),
-            ],
-          ),
-        );
-
-        if (result != null && result != currentProxy) {
-          final next = proxySetting.copyWith(address: result);
-          globalSettingCubit.updateState(
-            (current) => current.copyWith(proxySetting: next),
-          );
-          applyProxySetting(next);
-        }
-      },
+  return MiuixArrowPreference(
+    title: t.settings.proxyAddress,
+    summary: currentProxy.isEmpty
+        ? t.settings.proxySubtitle
+        : t.settings.proxyCurrent(currentProxy: currentProxy),
+    startAction: MiuixSettingHelpers.icon(
+      fallback: Icons.link_outlined,
+      name: 'link',
     ),
+    insideMargin: MiuixSettingHelpers.itemMargin,
+    onClick: () async {
+      var inputValue = currentProxy;
+      final globalSettingCubit = context.read<GlobalSettingCubit>();
+
+      final result = await showDialog<String>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Text(t.settings.proxyAddress),
+          content: TextFormField(
+            initialValue: currentProxy,
+            autofocus: true,
+            onChanged: (value) => inputValue = value.trim(),
+            decoration: InputDecoration(
+              hintText: t.settings.proxyHint,
+              border: const OutlineInputBorder(),
+            ),
+          ),
+          actions: [
+            TextButton(
+              child: Text(t.common.cancel),
+              onPressed: () => Navigator.pop(context),
+            ),
+            TextButton(
+              child: Text(t.common.ok),
+              onPressed: () => Navigator.pop(context, inputValue),
+            ),
+          ],
+        ),
+      );
+
+      if (result != null && result != currentProxy) {
+        final next = proxySetting.copyWith(address: result);
+        globalSettingCubit.updateState(
+          (current) => current.copyWith(proxySetting: next),
+        );
+        applyProxySetting(next);
+      }
+    },
   );
 }
 
@@ -140,33 +130,35 @@ Widget webdavSync(BuildContext context, SyncServiceType syncServiceType) {
     ),
   };
 
-  return _inkSafe(
-    ListTile(
-      leading: const Icon(Icons.cloud_outlined),
-      title: Text(title),
-      subtitle: Text(t.settings.syncConfigSubtitle),
-      trailing: const Icon(Icons.chevron_right),
-      onTap: () {
-        AutoRouter.of(context).push(const WebDavSyncRoute());
-      },
+  return MiuixArrowPreference(
+    title: title,
+    summary: t.settings.syncConfigSubtitle,
+    startAction: MiuixSettingHelpers.icon(
+      fallback: Icons.cloud_outlined,
+      name: 'cloud',
     ),
+    insideMargin: MiuixSettingHelpers.itemMargin,
+    onClick: () {
+      AutoRouter.of(context).push(const WebDavSyncRoute());
+    },
   );
 }
 
 Widget editMaskedKeywords(BuildContext context) {
-  return _inkSafe(
-    ListTile(
-      leading: const Icon(Icons.shield_outlined),
-      title: Text(t.settings.maskedKeywords),
-      subtitle: Text(t.settings.maskedKeywordsSubtitle),
-      trailing: const Icon(Icons.chevron_right),
-      onTap: () {
-        showDialog(
-          context: context,
-          builder: (context) => const _KeywordManagementDialog(),
-        );
-      },
+  return MiuixArrowPreference(
+    title: t.settings.maskedKeywords,
+    summary: t.settings.maskedKeywordsSubtitle,
+    startAction: MiuixSettingHelpers.icon(
+      fallback: Icons.shield_outlined,
+      name: 'shield',
     ),
+    insideMargin: MiuixSettingHelpers.itemMargin,
+    onClick: () {
+      showDialog(
+        context: context,
+        builder: (context) => const _KeywordManagementDialog(),
+      );
+    },
   );
 }
 

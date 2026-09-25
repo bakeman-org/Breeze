@@ -5,6 +5,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:path/path.dart' as path;
 import 'package:zephyr/util/font/font_profile.dart';
 import 'package:zephyr/i18n/strings.g.dart';
+import 'package:zephyr/page/setting/widgets/miuix_setting_helpers.dart';
 import 'package:zephyr/widgets/toast.dart';
 
 @RoutePage()
@@ -48,19 +49,22 @@ class FontSettingPage extends StatelessWidget {
                     padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
                     child: Text(t.fontSetting.hint),
                   ),
-                  ..._weights.map((weight) {
-                    final filePath = controller.pathForWeight(weight) ?? '';
-                    return _FontWeightTile(
-                      weight: weight,
-                      label: fontWeightLabels[weight]!,
-                      filePath: filePath,
-                      sampleText: _sampleText,
-                      onPick: () => _pickWeight(weight),
-                      onClear: filePath.isEmpty
-                          ? null
-                          : () => _saveWeight(weight, ''),
-                    );
-                  }),
+                  GroupCard(
+                    children: [
+                      for (final weight in _weights)
+                        _FontWeightTile(
+                          weight: weight,
+                          label: fontWeightLabels[weight]!,
+                          filePath: controller.pathForWeight(weight) ?? '',
+                          sampleText: _sampleText,
+                          onPick: () => _pickWeight(weight),
+                          onClear:
+                              (controller.pathForWeight(weight) ?? '').isEmpty
+                              ? null
+                              : () => _saveWeight(weight, ''),
+                        ),
+                    ],
+                  ),
                   const SizedBox(height: 24),
                 ],
               );
@@ -125,8 +129,8 @@ class _FontWeightTile extends StatelessWidget {
       weight,
     );
 
-    return ListTile(
-      leading: SizedBox(
+    return MiuixBasicComponent(
+      startAction: SizedBox(
         width: 86,
         child: Text(
           'w$weight\n$label',
@@ -135,49 +139,52 @@ class _FontWeightTile extends StatelessWidget {
           ),
         ),
       ),
-      title: Text(
-        filePath.isEmpty
-            ? t.fontSetting.noFileSelected
-            : path.basename(filePath),
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-      ),
-      subtitle: Padding(
-        padding: const EdgeInsets.only(top: 6),
-        child: Column(
+      content: [
+        Column(
+          mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (filePath.isNotEmpty)
+            Text(
+              filePath.isEmpty
+                  ? t.fontSetting.noFileSelected
+                  : path.basename(filePath),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.bodyLarge,
+            ),
+            if (filePath.isNotEmpty) ...[
+              const SizedBox(height: 2),
               Text(
                 filePath,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: theme.textTheme.bodySmall,
               ),
+            ],
+            const SizedBox(height: 6),
             Text(sampleText, style: previewStyle),
           ],
         ),
-      ),
-      trailing: Wrap(
-        spacing: 4,
-        children: [
-          if (onClear != null)
-            Tooltip(
-              message: t.fontSetting.clearFile,
-              child: MiuixIconButton(
-                onPressed: onClear,
-                child: const Icon(Icons.close_outlined),
-              ),
-            ),
+      ],
+      endActions: [
+        if (onClear != null)
           Tooltip(
-            message: t.fontSetting.selectFile,
+            message: t.fontSetting.clearFile,
             child: MiuixIconButton(
-              onPressed: onPick,
-              child: const Icon(Icons.folder_open_outlined),
+              onPressed: onClear,
+              child: const Icon(Icons.close_outlined),
             ),
           ),
-        ],
-      ),
+        Tooltip(
+          message: t.fontSetting.selectFile,
+          child: MiuixIconButton(
+            onPressed: onPick,
+            child: const Icon(Icons.folder_open_outlined),
+          ),
+        ),
+      ],
+      insideMargin: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      onClick: onPick,
     );
   }
 

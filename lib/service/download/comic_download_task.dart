@@ -25,8 +25,20 @@ import 'package:zephyr/i18n/strings.g.dart';
 import 'package:zephyr/service/download/image_download.dart';
 import 'package:zephyr/network/sync/sync_device_id.dart';
 import 'package:zephyr/page/bookshelf/service/comic_link_service.dart';
+import 'package:zephyr/source/core/native_detail_provider.dart';
+import 'package:zephyr/source/core/source_registry.dart';
 import 'package:zephyr/src/rust/api/simple.dart';
 import 'package:zephyr/util/get_path.dart';
+
+Map<String, dynamic> _taskExtern(DownloadTaskJson task) {
+  for (final ref in task.chapterRefs) {
+    final token = ref.extern['token']?.toString().trim() ?? '';
+    if (token.isNotEmpty) {
+      return {'token': token};
+    }
+  }
+  return const <String, dynamic>{};
+}
 
 Future<void> unifiedDownloadTask(
   DownloadProgressReporter reporter,
@@ -93,18 +105,23 @@ Future<void> unifiedDownloadTask(
   }
 
   try {
-    await ensureQjsRuntimeReady(pluginId: pluginId);
+    final isNative = isNativeSourceId(pluginId);
+    if (!isNative) {
+      await ensureQjsRuntimeReady(pluginId: pluginId);
+    }
     await ensureTaskRunning();
     updateCheckpoint(
       (payload) =>
           payload.copyWith(stateCode: 'running', phaseCode: 'preparingRuntime'),
     );
-    await preparePluginDownloadRuntime(
-      from: from,
-      pluginId: pluginId,
-      runtimeName: runtimeName,
-      taskGroupKey: taskKey,
-    );
+    if (!isNative) {
+      await preparePluginDownloadRuntime(
+        from: from,
+        pluginId: pluginId,
+        runtimeName: runtimeName,
+        taskGroupKey: taskKey,
+      );
+    }
 
     updateCheckpoint(
       (payload) => payload.copyWith(
@@ -116,11 +133,13 @@ Future<void> unifiedDownloadTask(
     );
     updateTaskStatus(t.download.statusFetchingComicInfo);
     reporter.updateMessage(t.download.statusFetchingComicInfo);
-    final detail = await getComicDetailByPlugin(
-      comicId,
-      from,
-      pluginId: pluginId,
-    );
+    final detail = isNative
+        ? await getNativeComicDetail(pluginId, comicId, extern: _taskExtern(task))
+        : await getComicDetailByPlugin(
+            comicId,
+            from,
+            pluginId: pluginId,
+          );
     comicId = detail.comicId;
 
     final downloadInfo = UnifiedComicDownloadInfo.fromString(detail.source);
@@ -274,14 +293,21 @@ Future<void> unifiedDownloadTask(
             operation: '获取章节 ${chapter.displayName}',
             ensureTaskRunning: ensureTaskRunning,
             shouldRetryUntilSuccess: shouldRetryUntilSuccess,
-            action: () => _getChapterByPlugin(
-              from: from,
-              pluginId: pluginId,
-              comicId: comicId,
-              chapterId: requestChapterId,
-              runtimeName: runtimeName,
-              extern: {...chapterExtern, 'chapterId': requestChapterId},
-            ),
+            action: () => isNative
+                ? getNativeChapter(
+                    source: pluginId,
+                    comicId: comicId,
+                    chapterId: requestChapterId,
+                    extern: chapterExtern,
+                  )
+                : _getChapterByPlugin(
+                    from: from,
+                    pluginId: pluginId,
+                    comicId: comicId,
+                    chapterId: requestChapterId,
+                    runtimeName: runtimeName,
+                    extern: {...chapterExtern, 'chapterId': requestChapterId},
+                  ),
           );
       final jobs = <DownloadImageJob>[];
       for (final doc in response.chapter.docs) {

@@ -17,8 +17,6 @@ import 'package:zephyr/service/download/download_queue_manager.dart';
 import 'package:zephyr/i18n/strings.g.dart';
 import 'package:zephyr/widgets/toast.dart';
 
-import 'package:zephyr/page/comments/widgets/title.dart';
-
 @RoutePage()
 class DownloadPage extends StatefulWidget {
   final UnifiedComicDownloadInfo downloadInfo;
@@ -36,6 +34,7 @@ class _DownloadPageState extends State<DownloadPage> {
 
   late List<DownloadChapter> _chapters;
   late Map<String, bool> _downloadInfo;
+  final Set<String> _downloadedChapterIds = <String>{};
   late UnifiedComicDownload? comicDownloadInfo;
 
   void onUpdateDownloadInfo(String selectionKey) {
@@ -75,6 +74,9 @@ class _DownloadPageState extends State<DownloadPage> {
               stored.order == chapter.order,
         );
         _downloadInfo[chapter.id] = isDownloaded;
+        if (isDownloaded) {
+          _downloadedChapterIds.add(chapter.id);
+        }
       }
     }
     // ✅ Default select 第1话 (only if it hasn't already been downloaded)
@@ -89,6 +91,10 @@ class _DownloadPageState extends State<DownloadPage> {
   // 判断是否所有章节都被选中
   bool get isAllSelected {
     return _chapters.every((chapter) => _downloadInfo[chapter.id] == true);
+  }
+
+  int get selectedCount {
+    return _chapters.where((chapter) => _downloadInfo[chapter.id] == true).length;
   }
 
   // 切换全选或取消全选
@@ -107,93 +113,113 @@ class _DownloadPageState extends State<DownloadPage> {
         .watch<GlobalSettingCubit>()
         .state
         .leftHandModeEnabled;
-    final colorScheme = Theme.of(context).colorScheme;
-    // Miuix 迁移：Scaffold + AppBar → MiuixScaffold + 自绘顶栏
-    // （保留 ScrollableTitle 跑马灯）；全选切换、下载逻辑不变。
     return MiuixScaffold(
-      topBar: Material(
-        color: colorScheme.surface,
-        child: SafeArea(
-          bottom: false,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              SizedBox(
-                height: 52,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                  child: Row(
-                    children: [
-                      MiuixIconButton(
-                        onPressed: () => context.maybePop(),
-                        child: const Icon(Icons.arrow_back),
-                      ),
-                      Expanded(child: ScrollableTitle(text: downloadInfo.title)),
-                      MiuixIconButton(
-                        onPressed: toggleSelectAll,
-                        child: Icon(
-                          isAllSelected ? Icons.deselect : Icons.select_all,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              Divider(
-                height: 1,
-                thickness: 1,
-                color: colorScheme.outlineVariant.withValues(alpha: 0.5),
-              ),
-            ],
-          ),
+      topBar: MiuixSmallTopAppBar(
+        title: downloadInfo.title,
+        navigationIcon: MiuixIconButton(
+          onPressed: () => context.maybePop(),
+          child: const Icon(Icons.arrow_back),
         ),
+        actions: [
+          MiuixIconButton(
+            onPressed: toggleSelectAll,
+            child: Icon(isAllSelected ? Icons.deselect : Icons.select_all),
+          ),
+        ],
       ),
       content: (padding) => Material(
         type: MaterialType.transparency,
-        child: Padding(
-          padding: padding,
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 800),
-              child: ListView.builder(
-                padding: const EdgeInsets.fromLTRB(
-                  16,
-                  16,
-                  16,
-                  88,
-                ), // reserved bottom padding for FAB
-                itemCount: _chapters.length,
-                itemBuilder: (context, index) {
-                  final chapter = _chapters[index];
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 8.0),
-                    child: EpsWidget(
-                      chapter: chapter,
-                      downloaded: _downloadInfo[chapter.id] ?? false,
-                      onUpdateDownloadInfo: onUpdateDownloadInfo,
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 800),
+            child: ListView(
+              padding: padding.copyWith(bottom: 24),
+              children: [
+                MiuixSmallTitle(
+                  t.download.selectedChapters(
+                    selected: selectedCount,
+                    total: _chapters.length,
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  child: MiuixCard(
+                    child: Column(
+                      children: [
+                        for (var index = 0; index < _chapters.length; index++) ...[
+                          if (index > 0) const MiuixHorizontalDivider(),
+                          EpsWidget(
+                            chapter: _chapters[index],
+                            selected:
+                                _downloadInfo[_chapters[index].id] ?? false,
+                            downloaded: _downloadedChapterIds.contains(
+                              _chapters[index].id,
+                            ),
+                            onUpdateDownloadInfo: onUpdateDownloadInfo,
+                          ),
+                        ],
+                      ],
                     ),
-                  );
-                },
-              ),
+                  ),
+                ),
+              ],
             ),
           ),
         ),
       ),
-      floatingActionButtonPosition: leftHandMode
-          ? MiuixFabPosition.start
-          : MiuixFabPosition.end,
-      floatingActionButton: MiuixFloatingActionButton(
-        onPressed: () {
-          logger.d("开始下载");
-          download();
-        },
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.download),
-            const SizedBox(width: 8),
-            Text(t.download.startDownload),
-          ],
+      bottomBar: _buildBottomBar(context, leftHandMode),
+    );
+  }
+
+  Widget _buildBottomBar(BuildContext context, bool leftHandMode) {
+    final theme = Theme.of(context);
+    final miuixColors = MiuixTheme.of(context).colors;
+    final button = MiuixButton(
+      onPressed: download,
+      colors: MiuixButtonDefaults.buttonColorsPrimary(context),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.download, size: 18, color: miuixColors.onPrimary),
+          const SizedBox(width: 8),
+          Text(t.download.startDownload),
+        ],
+      ),
+    );
+    final summary = Text(
+      t.download.selectedChapters(
+        selected: selectedCount,
+        total: _chapters.length,
+      ),
+      style: theme.textTheme.bodySmall?.copyWith(
+        color: theme.colorScheme.onSurfaceVariant,
+      ),
+    );
+
+    return Material(
+      color: theme.colorScheme.surface,
+      child: SafeArea(
+        top: false,
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 800),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
+              child: Row(
+                children: leftHandMode
+                    ? [
+                        button,
+                        const SizedBox(width: 12),
+                        Expanded(child: summary),
+                      ]
+                    : [
+                        Expanded(child: summary),
+                        const SizedBox(width: 12),
+                        button,
+                      ],
+              ),
+            ),
+          ),
         ),
       ),
     );
@@ -227,8 +253,10 @@ class _DownloadPageState extends State<DownloadPage> {
     );
     logger.d('download task payload=${task.toJson()}');
     try {
-      await startDownloadTask(task);
-      showInfoToast(t.download.taskStarted);
+      final started = await startDownloadTask(task);
+      if (started) {
+        showInfoToast(t.download.taskStarted);
+      }
     } catch (e, s) {
       logger.e(e, stackTrace: s);
       showErrorToast(

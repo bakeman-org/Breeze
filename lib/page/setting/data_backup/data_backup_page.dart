@@ -7,7 +7,6 @@ import 'package:material_ui/material_ui.dart';
 import 'package:open_file/open_file.dart';
 import 'package:path/path.dart' as p;
 import 'package:zephyr/main.dart';
-import 'package:zephyr/page/setting/common/setting_ui.dart';
 import 'package:zephyr/service/update/check_update.dart';
 import 'package:zephyr/i18n/strings.g.dart';
 import 'package:zephyr/util/get_path.dart';
@@ -15,6 +14,7 @@ import 'package:zephyr/util/permission.dart';
 import 'package:zephyr/widgets/toast.dart';
 
 import 'package:zephyr/page/setting/data_backup/method.dart';
+import 'package:zephyr/page/setting/widgets/miuix_setting_helpers.dart';
 
 @RoutePage()
 class DataBackupPage extends StatefulWidget {
@@ -50,42 +50,50 @@ class _DataBackupPageState extends State<DataBackupPage> {
               constraints: const BoxConstraints(maxWidth: 768),
               child: ListView(
                 children: [
-                  _buildSectionTitle(
-                    context,
-                    t.dataBackup.exportSection,
-                    Icons.file_upload_outlined,
+                  MiuixSmallTitle(t.dataBackup.exportSection),
+                  GroupCard(
+                    children: [
+                      MiuixSwitchPreference(
+                        title: t.dataBackup.includeDownloads,
+                        summary: t.dataBackup.includeDownloadsSubtitle,
+                        value: _includeDownloads,
+                        enabled: !_busy,
+                        onChanged: (value) =>
+                            setState(() => _includeDownloads = value),
+                        startAction: MiuixSettingHelpers.icon(
+                          fallback: Icons.folder_outlined,
+                          name: 'folder',
+                        ),
+                        insideMargin: MiuixSettingHelpers.itemMargin,
+                      ),
+                      MiuixArrowPreference(
+                        title: t.dataBackup.exportData,
+                        summary: t.dataBackup.exportDataSubtitle,
+                        enabled: !_busy,
+                        startAction: MiuixSettingHelpers.icon(
+                          fallback: Icons.archive_outlined,
+                          name: 'archive',
+                        ),
+                        insideMargin: MiuixSettingHelpers.itemMargin,
+                        onClick: _busy ? null : _exportData,
+                      ),
+                    ],
                   ),
-                  SwitchListTile(
-                    secondary: const Icon(Icons.folder_outlined),
-                    title: Text(t.dataBackup.includeDownloads),
-                    subtitle: Text(t.dataBackup.includeDownloadsSubtitle),
-                    thumbIcon: kSettingSwitchThumbIcon,
-                    value: _includeDownloads,
-                    onChanged: _busy
-                        ? null
-                        : (value) => setState(() => _includeDownloads = value),
-                  ),
-                  const Divider(height: 1, thickness: 0.3),
-                  ListTile(
-                    leading: const Icon(Icons.archive_outlined),
-                    title: Text(t.dataBackup.exportData),
-                    subtitle: Text(t.dataBackup.exportDataSubtitle),
-                    trailing: const Icon(Icons.chevron_right),
-                    onTap: _busy ? null : _exportData,
-                  ),
-                  const SizedBox(height: 8),
-                  const Divider(height: 1, thickness: 0.3),
-                  _buildSectionTitle(
-                    context,
-                    t.dataBackup.importSection,
-                    Icons.file_download_outlined,
-                  ),
-                  ListTile(
-                    leading: const Icon(Icons.unarchive_outlined),
-                    title: Text(t.dataBackup.importData),
-                    subtitle: Text(t.dataBackup.importDataSubtitle),
-                    trailing: const Icon(Icons.chevron_right),
-                    onTap: _busy ? null : _importData,
+                  MiuixSmallTitle(t.dataBackup.importSection),
+                  GroupCard(
+                    children: [
+                      MiuixArrowPreference(
+                        title: t.dataBackup.importData,
+                        summary: t.dataBackup.importDataSubtitle,
+                        enabled: !_busy,
+                        startAction: MiuixSettingHelpers.icon(
+                          fallback: Icons.unarchive_outlined,
+                          name: 'unarchive',
+                        ),
+                        insideMargin: MiuixSettingHelpers.itemMargin,
+                        onClick: _busy ? null : _importData,
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 32),
                 ],
@@ -238,27 +246,6 @@ class _DataBackupPageState extends State<DataBackupPage> {
 
   void _setBusy(bool value) {
     if (mounted) setState(() => _busy = value);
-  }
-
-  Widget _buildSectionTitle(BuildContext context, String title, IconData icon) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 24, 20, 8),
-      child: Row(
-        children: [
-          Icon(icon, size: 18, color: Theme.of(context).colorScheme.primary),
-          const SizedBox(width: 8),
-          Text(
-            title,
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: Theme.of(context).colorScheme.primary,
-              letterSpacing: 0.5,
-            ),
-          ),
-        ],
-      ),
-    );
   }
 
   /// 选择要导入的 zip 备份文件。

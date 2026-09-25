@@ -4,10 +4,12 @@ import 'package:auto_route/auto_route.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_miuix/miuix.dart';
 import 'package:zephyr/config/global/global_setting.dart';
 import 'package:zephyr/config/router/router.gr.dart';
 import 'package:zephyr/i18n/strings.g.dart';
 import 'package:zephyr/page/setting/common/setting_ui.dart';
+import 'package:zephyr/page/setting/widgets/miuix_setting_helpers.dart';
 import 'package:zephyr/util/get_path.dart';
 import 'package:zephyr/widgets/toast.dart';
 
@@ -95,32 +97,27 @@ class _StorageSettingPageState extends State<StorageSettingPage> {
 
   Widget _customExportPath(GlobalSettingState state, GlobalSettingCubit cubit) {
     final exportPath = state.customExportPath.trim();
-    return ListTile(
-      leading: const Icon(Icons.folder_outlined),
-      title: Text(t.settings.customExportPath),
-      subtitle: Text(
-        exportPath.isEmpty ? t.settings.notSet : exportPath,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
+    return MiuixArrowPreference(
+      title: t.settings.customExportPath,
+      summary: exportPath.isEmpty ? t.settings.notSet : exportPath,
+      startAction: MiuixSettingHelpers.icon(
+        fallback: Icons.folder_outlined,
+        name: 'folder',
       ),
-      trailing: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (exportPath.isNotEmpty)
-            IconButton(
-              icon: const Icon(Icons.clear, size: 20),
-              tooltip: t.common.clear,
-              onPressed: () {
-                cubit.updateState(
-                  (current) => current.copyWith(customExportPath: ''),
-                );
-                showSuccessToast(t.common.settingSaved);
-              },
-            ),
-          const Icon(Icons.chevron_right),
-        ],
-      ),
-      onTap: () async {
+      endActions: [
+        if (exportPath.isNotEmpty)
+          MiuixIconButton(
+            onPressed: () {
+              cubit.updateState(
+                (current) => current.copyWith(customExportPath: ''),
+              );
+              showSuccessToast(t.common.settingSaved);
+            },
+            child: const Icon(Icons.clear, size: 20),
+          ),
+      ],
+      insideMargin: MiuixSettingHelpers.itemMargin,
+      onClick: () async {
         final selected = await getDirectoryPath();
         if (selected != null && selected.trim().isNotEmpty) {
           cubit.updateState(
@@ -144,29 +141,35 @@ class _StorageSettingPageState extends State<StorageSettingPage> {
       title: t.settings.storage,
       child: ListView(
         children: [
-          settingSectionTitle(
-            context,
-            t.settings.storage,
-            icon: Icons.storage_outlined,
+          settingSectionTitle(context, t.settings.storage),
+          GroupCard(
+            children: [
+              MiuixArrowPreference(
+                title: t.settings.cache,
+                summary: sizeText.isEmpty ? t.settings.cache : sizeText,
+                startAction: MiuixSettingHelpers.icon(
+                  fallback: Icons.cleaning_services_outlined,
+                  name: 'cleaning_services',
+                ),
+                insideMargin: MiuixSettingHelpers.itemMargin,
+                onClick: () async {
+                  await context.pushRoute(const CacheSettingRoute());
+                  if (mounted) await _loadCacheSize();
+                },
+              ),
+              MiuixArrowPreference(
+                title: t.settings.dataBackup,
+                summary: t.settings.dataBackupSubtitle,
+                startAction: MiuixSettingHelpers.icon(
+                  fallback: Icons.import_export_outlined,
+                  name: 'import_export',
+                ),
+                insideMargin: MiuixSettingHelpers.itemMargin,
+                onClick: () => context.pushRoute(const DataBackupRoute()),
+              ),
+              if (!Platform.isIOS) _customExportPath(state, cubit),
+            ],
           ),
-          ListTile(
-            leading: const Icon(Icons.cleaning_services_outlined),
-            title: Text(t.settings.cache),
-            subtitle: Text(sizeText.isEmpty ? t.settings.cache : sizeText),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () async {
-              await context.pushRoute(const CacheSettingRoute());
-              if (mounted) await _loadCacheSize();
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.import_export_outlined),
-            title: Text(t.settings.dataBackup),
-            subtitle: Text(t.settings.dataBackupSubtitle),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () => context.pushRoute(const DataBackupRoute()),
-          ),
-          if (!Platform.isIOS) _customExportPath(state, cubit),
           const SizedBox(height: 32),
         ],
       ),

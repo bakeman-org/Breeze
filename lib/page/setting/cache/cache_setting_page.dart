@@ -8,10 +8,9 @@ import 'package:zephyr/config/global/global_setting.dart';
 import 'package:zephyr/util/get_path.dart';
 import 'package:zephyr/util/manage_cache.dart';
 import 'package:zephyr/i18n/strings.g.dart';
-import 'package:zephyr/widgets/fluent_dropdown.dart';
 import 'package:zephyr/widgets/toast.dart';
 
-import 'package:zephyr/page/setting/common/setting_ui.dart';
+import 'package:zephyr/page/setting/widgets/miuix_setting_helpers.dart';
 
 const Map<int, String> _cacheLimitLabels = {
   536870912: '512 MB',
@@ -142,8 +141,6 @@ class _CacheSettingPageState extends State<CacheSettingPage> {
     final cubit = context.watch<GlobalSettingCubit>();
     final state = cubit.state;
 
-    // Miuix 迁移：Scaffold + AppBar → MiuixScaffold + MiuixSmallTopAppBar
-    // （与 SettingPageShell 同款模式）；缓存统计/清理逻辑不变。
     return MiuixScaffold(
       topBar: MiuixSmallTopAppBar(
         title: t.cache.title,
@@ -162,116 +159,119 @@ class _CacheSettingPageState extends State<CacheSettingPage> {
               constraints: const BoxConstraints(maxWidth: 768),
               child: ListView(
                 children: [
-                  _buildSectionTitle(context, t.cache.currentCache),
-                  ListTile(
-                    leading: const Icon(Icons.storage_outlined),
-                    title: Text(t.cache.cacheSize),
-                    subtitle: Text(
-                      _calculating
-                          ? t.cache.calculating
-                          : _formatSize(_cacheSizeBytes),
-                    ),
-                    trailing: _calculating
-                        ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : Tooltip(
-                            message: t.cache.recalculate,
-                            child: MiuixIconButton(
-                              minWidth: 32,
-                              minHeight: 32,
-                              onPressed: _calculateCacheSize,
-                              child: const Icon(Icons.refresh, size: 20),
+                  MiuixSmallTitle(t.cache.currentCache),
+                  GroupCard(
+                    children: [
+                      MiuixBasicComponent(
+                        title: t.cache.cacheSize,
+                        summary: _calculating
+                            ? t.cache.calculating
+                            : _formatSize(_cacheSizeBytes),
+                        startAction: MiuixSettingHelpers.icon(
+                          fallback: Icons.storage_outlined,
+                          name: 'storage',
+                        ),
+                        endActions: [
+                          if (_calculating)
+                            const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          else
+                            Tooltip(
+                              message: t.cache.recalculate,
+                              child: MiuixIconButton(
+                                minWidth: 32,
+                                minHeight: 32,
+                                onPressed: _calculateCacheSize,
+                                child: const Icon(Icons.refresh, size: 20),
+                              ),
+                            ),
+                        ],
+                        insideMargin: MiuixSettingHelpers.itemMargin,
+                      ),
+                      MiuixBasicComponent(
+                        title: t.cache.manualClear,
+                        summary: t.cache.manualClearSubtitle,
+                        startAction: MiuixSettingHelpers.icon(
+                          fallback: Icons.cleaning_services_outlined,
+                          name: 'cleaning_services',
+                        ),
+                        endActions: [
+                          MiuixButton(
+                            onPressed: _handleClearCache,
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(Icons.delete_outline, size: 18),
+                                const SizedBox(width: 8),
+                                Text(t.cache.clear),
+                              ],
                             ),
                           ),
-                  ),
-                  const Divider(height: 1, thickness: 0.3),
-                  ListTile(
-                    leading: const Icon(Icons.cleaning_services_outlined),
-                    title: Text(t.cache.manualClear),
-                    subtitle: Text(t.cache.manualClearSubtitle),
-                    // Miuix 迁移：FilledButton.tonalIcon → MiuixButton。
-                    trailing: MiuixButton(
-                      onPressed: _handleClearCache,
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.delete_outline, size: 18),
-                          const SizedBox(width: 8),
-                          Text(t.cache.clear),
                         ],
+                        insideMargin: MiuixSettingHelpers.itemMargin,
                       ),
-                    ),
+                    ],
                   ),
-
-                  const SizedBox(height: 8),
-                  const Divider(height: 1, thickness: 0.3),
-                  _buildSectionTitle(context, t.cache.cacheLimit),
-                  ListTile(
-                    leading: const Icon(Icons.data_thresholding_outlined),
-                    title: Text(t.cache.sizeLimit),
-                    subtitle: Text(t.cache.sizeLimitSubtitle),
-                    trailing: Builder(
-                      builder: (context) {
-                        final effectiveCacheLimit =
-                            _cacheLimitOptions.contains(
-                              state.cacheSetting.cacheSizeLimit,
-                            )
-                            ? state.cacheSetting.cacheSizeLimit
-                            : 1073741824;
-                        return FluentDropdown<int>(
-                          value: effectiveCacheLimit,
-                          displayValue: _cacheLimitLabels[effectiveCacheLimit]!,
-                          items: _cacheLimitLabels,
-                          onChanged: (int value) {
-                            cubit.updateCacheSetting(
-                              (current) =>
-                                  current.copyWith(cacheSizeLimit: value),
-                            );
-                          },
-                        );
-                      },
-                    ),
+                  MiuixSmallTitle(t.cache.cacheLimit),
+                  GroupCard(
+                    children: [
+                      MiuixOverlayDropdownPreference(
+                        title: t.cache.sizeLimit,
+                        summary: t.cache.sizeLimitSubtitle,
+                        items: [
+                          for (final option in _cacheLimitOptions)
+                            _cacheLimitLabels[option]!,
+                        ],
+                        selectedIndex: _cacheLimitOptions.indexOf(
+                          _cacheLimitOptions.contains(
+                                state.cacheSetting.cacheSizeLimit,
+                              )
+                              ? state.cacheSetting.cacheSizeLimit
+                              : 1073741824,
+                        ),
+                        onSelectedIndexChange: (index) {
+                          cubit.updateCacheSetting(
+                            (current) => current.copyWith(
+                              cacheSizeLimit: _cacheLimitOptions[index],
+                            ),
+                          );
+                        },
+                        startAction: MiuixSettingHelpers.icon(
+                          fallback: Icons.data_thresholding_outlined,
+                          name: 'data_thresholding',
+                        ),
+                        insideMargin: MiuixSettingHelpers.itemMargin,
+                      ),
+                    ],
                   ),
-
-                  const SizedBox(height: 8),
-                  const Divider(height: 1, thickness: 0.3),
-                  _buildSectionTitle(context, t.cache.autoClean),
-                  SwitchListTile(
-                    secondary: const Icon(Icons.auto_delete_outlined),
-                    title: Text(t.cache.autoClean),
-                    subtitle: Text(t.cache.autoCleanSubtitle),
-                    thumbIcon: kSettingSwitchThumbIcon,
-                    value: state.cacheSetting.autoCleanCache,
-                    onChanged: (bool value) {
-                      cubit.updateCacheSetting(
-                        (current) => current.copyWith(autoCleanCache: value),
-                      );
-                    },
+                  MiuixSmallTitle(t.cache.autoClean),
+                  GroupCard(
+                    children: [
+                      MiuixSwitchPreference(
+                        title: t.cache.autoClean,
+                        summary: t.cache.autoCleanSubtitle,
+                        value: state.cacheSetting.autoCleanCache,
+                        onChanged: (bool value) {
+                          cubit.updateCacheSetting(
+                            (current) => current.copyWith(autoCleanCache: value),
+                          );
+                        },
+                        startAction: MiuixSettingHelpers.icon(
+                          fallback: Icons.auto_delete_outlined,
+                          name: 'auto_delete',
+                        ),
+                        insideMargin: MiuixSettingHelpers.itemMargin,
+                      ),
+                    ],
                   ),
-
                   const SizedBox(height: 32),
                 ],
               ),
             ),
           ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSectionTitle(BuildContext context, String title) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 24, 20, 8),
-      child: Text(
-        title,
-        style: TextStyle(
-          fontSize: 13,
-          fontWeight: FontWeight.w600,
-          color: Theme.of(context).colorScheme.primary,
-          letterSpacing: 0.5,
         ),
       ),
     );

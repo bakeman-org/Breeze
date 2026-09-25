@@ -16,6 +16,7 @@ import 'package:zephyr/src/rust/api/simple.dart';
 import 'package:zephyr/src/rust/decode/decode.dart';
 import 'package:zephyr/source/core/native_image_fetch.dart';
 import 'package:zephyr/source/core/source_registry.dart';
+import 'package:zephyr/source/eh/api/eh_client.dart';
 import 'package:zephyr/util/get_path.dart';
 
 export 'package:zephyr/service/download/download_asset_store.dart'
@@ -555,6 +556,18 @@ Future<Uint8List> downloadImageWithRetry(
           );
         }
         throw DownloadPictureHttpException(url, e.message, statusCode: e.statusCode);
+      } on EhHttpException catch (e) {
+        if (e.statusCode == 404 || e.statusCode == 422) {
+          throw DownloadPictureNotFoundException(
+            url,
+            DownloadPictureHttpException(url, e.message, statusCode: e.statusCode),
+          );
+        }
+        throw DownloadPictureHttpException(url, e.message, statusCode: e.statusCode);
+      } on EhImage509Exception catch (e) {
+        throw DownloadPictureHttpException(url, e.toString(), statusCode: 509);
+      } on EhLoginRequiredException catch (e) {
+        throw DownloadPictureHttpException(url, e.message, statusCode: 403);
       }
     }
     return _fetchImageViaQjs(
@@ -597,6 +610,13 @@ Future<Uint8List> downloadImageWithRetry(
         if (e.statusCode == 404 || e.statusCode == 422) {
           logger.w('下载图片资源不存在，跳过: $url');
           throw DownloadPictureNotFoundException(url, e);
+        }
+        if (e.statusCode == 401 || e.statusCode == 403 || e.statusCode == 509) {
+          logger.w(
+            '下载图片被拒绝（${e.statusCode}），停止重试: $url',
+            error: e,
+          );
+          rethrow;
         }
         logger.w(
           '图片请求失败，将按重试策略处理: $url '

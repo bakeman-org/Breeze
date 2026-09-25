@@ -28,6 +28,15 @@ class EhHttpException implements Exception {
       'E-Hentai 请求失败${statusCode == null ? '' : ' HTTP $statusCode'}: $message';
 }
 
+class EhImage509Exception implements Exception {
+  const EhImage509Exception(this.url);
+
+  final String url;
+
+  @override
+  String toString() => 'E-Hentai 图片带宽受限（509）: $url';
+}
+
 const String _ehUserAgent =
     'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36';
 const String _ehAccept =
@@ -193,24 +202,33 @@ Future<EhPageImage> fetchEhImagePage(
   return parseGalleryPage(html);
 }
 
-Future<List<String>> fetchEhGalleryPageTokens({
+Future<EhPageImage> fetchEhGalleryPageApi({
   required String gid,
-  required String token,
-  required int pageCount,
-  required String firstImgkey,
+  required int page,
+  required String imgkey,
+  required String showKey,
+  String? referer,
 }) async {
-  final keys = <String>[firstImgkey];
-  var current = firstImgkey;
-  for (var page = 1; page < pageCount; page++) {
-    final url = ehGalleryPageUrl(gid, page, current);
-    final html = await fetchEhHtml(url);
-    final image = parseGalleryPage(html);
-    final next = image.nextImgkey;
-    if (next == null || next.isEmpty || keys.contains(next)) break;
-    keys.add(next);
-    current = next;
+  final gidValue = int.tryParse(gid);
+  if (gidValue == null) {
+    throw EhParseException('无效的画廊 gid: $gid');
   }
-  return keys;
+  final response = await _createEhHttp().fetch(
+    ehApiUrl(),
+    method: 'POST',
+    headers: _ehHeaders(referer: referer, withOrigin: true),
+    body: {
+      'method': 'showpage',
+      'gid': gidValue,
+      'page': page,
+      'imgkey': imgkey,
+      'showkey': showKey,
+    },
+  );
+  if (response.status >= 400) {
+    throw EhHttpException('showpage 请求失败', statusCode: response.status);
+  }
+  return parseGalleryPageApi(response.text);
 }
 
 String _formatPostedTime(int seconds) {

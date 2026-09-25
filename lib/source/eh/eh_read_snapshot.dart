@@ -1,3 +1,4 @@
+import 'package:zephyr/main.dart';
 import 'package:zephyr/page/comic_info/method/get_plugin_detail.dart';
 import 'package:zephyr/page/comic_read/model/comic_read_snapshot.dart';
 import 'package:zephyr/source/core/source_registry.dart';
@@ -6,7 +7,7 @@ import 'package:zephyr/source/eh/api/eh_url.dart';
 import 'package:zephyr/source/eh/models/eh_models.dart';
 
 final RegExp _ehPreviewLinkPattern = RegExp(
-  r'href="[^"]*/s/([0-9a-f]{10})-\d+-(\d+)/"',
+  r'href="[^"]*/s/([0-9a-f]{10})/\d+-(\d+)',
 );
 
 Future<ComicReadSnapshot> fetchEhReadSnapshot({
@@ -75,37 +76,37 @@ Future<List<String>> _fetchEhImgkeys({
 }) async {
   final keys = List<String>.filled(pageCount, '');
   final previewPages = detail.previewPages;
-  final totalPreviewPages = previewPages > 0 ? previewPages : 1;
-  final fetches = <Future<void>>[];
-  var active = 0;
+  final totalPreviewPages =
+      (previewPages > 0 ? previewPages : 1).clamp(0, 200);
+  final pendingPages = List<int>.generate(
+    totalPreviewPages,
+    (index) => index,
+  );
 
-  Future<void> fetchPreviewPage(int previewPage) async {
-    while (active >= 4) {
-      await Future.delayed(const Duration(milliseconds: 20));
-    }
-    active++;
-    try {
-      final html = await fetchEhHtml(
-        ehGalleryDetailUrl(gid, token, page: previewPage),
-      );
-      for (final match in _ehPreviewLinkPattern.allMatches(html)) {
-        final imgkey = match.group(1)!;
-        final pageNumber = int.tryParse(match.group(2)!) ?? 0;
-        if (pageNumber >= 1 && pageNumber <= pageCount) {
-          keys[pageNumber - 1] = imgkey;
+  Future<void> worker() async {
+    while (pendingPages.isNotEmpty) {
+      final previewPage = pendingPages.removeLast();
+      try {
+        final html = await fetchEhHtml(
+          ehGalleryDetailUrl(gid, token, page: previewPage),
+        );
+        for (final match in _ehPreviewLinkPattern.allMatches(html)) {
+          final imgkey = match.group(1)!;
+          final pageNumber = int.tryParse(match.group(2)!) ?? 0;
+          if (pageNumber >= 1 && pageNumber <= pageCount) {
+            keys[pageNumber - 1] = imgkey;
+          }
         }
+      } catch (e) {
+        logger.w('获取画廊预览分页失败: gid=$gid, page=$previewPage, error=$e');
       }
-    } catch (_) {
-      return;
-    } finally {
-      active--;
     }
   }
 
-  for (var p = 0; p < totalPreviewPages && p < 200; p++) {
-    fetches.add(fetchPreviewPage(p));
-  }
-  await Future.wait(fetches);
+  final workerCount = totalPreviewPages.clamp(1, 4);
+  await Future.wait(
+    List.generate(workerCount, (_) => worker()),
+  );
 
   await _fillMissingImgkeys(gid: gid, keys: keys);
   return keys;

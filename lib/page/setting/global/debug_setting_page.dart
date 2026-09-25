@@ -2,10 +2,12 @@ import 'package:auto_route/auto_route.dart';
 import 'package:flutter/foundation.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_miuix/miuix.dart';
 import 'package:zephyr/config/global/global_setting.dart';
 import 'package:zephyr/config/router/router.gr.dart';
 import 'package:zephyr/i18n/strings.g.dart';
 import 'package:zephyr/page/setting/common/setting_ui.dart';
+import 'package:zephyr/page/setting/widgets/miuix_setting_helpers.dart';
 import 'package:zephyr/src/rust/api/qjs.dart';
 import 'package:zephyr/util/impeller_config.dart';
 import 'package:zephyr/widgets/toast.dart';
@@ -50,39 +52,49 @@ class _DebugSettingPageState extends State<DebugSettingPage> {
       title: t.settings.debug,
       child: ListView(
         children: [
-          settingSectionTitle(
-            context,
-            t.settings.debug,
-            icon: Icons.bug_report_outlined,
+          settingSectionTitle(context, t.settings.debug),
+          GroupCard(
+            children: [
+              _logAddress(state, cubit),
+              _enableMemoryDebug(state, cubit),
+              _blockRustHttpRequests(state, cubit),
+              if (defaultTargetPlatform == TargetPlatform.android)
+                _forceEnableImpeller(state, cubit),
+              if (kDebugMode) ...[
+                MiuixArrowPreference(
+                  title: t.settings.colorPreview,
+                  summary: t.settings.colorPreviewSubtitle,
+                  startAction: MiuixSettingHelpers.icon(
+                    fallback: Icons.colorize_outlined,
+                    name: 'colorize',
+                  ),
+                  insideMargin: MiuixSettingHelpers.itemMargin,
+                  onClick: () => context.pushRoute(const ShowColorRoute()),
+                ),
+                MiuixArrowPreference(
+                  title: t.settings.qjsRuntimeDebug,
+                  summary: t.settings.qjsRuntimeDebugSubtitle,
+                  startAction: MiuixSettingHelpers.icon(
+                    fallback: Icons.developer_mode_outlined,
+                    name: 'developer_mode',
+                  ),
+                  insideMargin: MiuixSettingHelpers.itemMargin,
+                  onClick: () => context.pushRoute(const QjsRuntimeDebugRoute()),
+                ),
+                MiuixArrowPreference(
+                  title: t.settings.coremlDebug,
+                  summary: t.settings.coremlDebugSubtitle,
+                  startAction: MiuixSettingHelpers.icon(
+                    fallback: Icons.memory_outlined,
+                    name: 'memory',
+                  ),
+                  insideMargin: MiuixSettingHelpers.itemMargin,
+                  onClick: () =>
+                      context.pushRoute(const CoreMLUpscaleDebugRoute()),
+                ),
+              ],
+            ],
           ),
-          _logAddress(state, cubit),
-          _enableMemoryDebug(state, cubit),
-          _blockRustHttpRequests(state, cubit),
-          if (defaultTargetPlatform == TargetPlatform.android)
-            _forceEnableImpeller(state, cubit),
-          if (kDebugMode) ...[
-            ListTile(
-              leading: const Icon(Icons.colorize_outlined),
-              title: Text(t.settings.colorPreview),
-              subtitle: Text(t.settings.colorPreviewSubtitle),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () => context.pushRoute(const ShowColorRoute()),
-            ),
-            ListTile(
-              leading: const Icon(Icons.developer_mode_outlined),
-              title: Text(t.settings.qjsRuntimeDebug),
-              subtitle: Text(t.settings.qjsRuntimeDebugSubtitle),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () => context.pushRoute(const QjsRuntimeDebugRoute()),
-            ),
-            ListTile(
-              leading: const Icon(Icons.memory_outlined),
-              title: Text(t.settings.coremlDebug),
-              subtitle: Text(t.settings.coremlDebugSubtitle),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () => context.pushRoute(const CoreMLUpscaleDebugRoute()),
-            ),
-          ],
           const SizedBox(height: 32),
         ],
       ),
@@ -93,32 +105,34 @@ class _DebugSettingPageState extends State<DebugSettingPage> {
     GlobalSettingState state,
     GlobalSettingCubit cubit,
   ) {
-    return SwitchListTile(
-      secondary: const Icon(Icons.memory_outlined),
-      title: Text(t.settings.memoryDebug),
-      subtitle: Text(t.settings.memoryDebugSubtitle),
-      thumbIcon: kSettingSwitchThumbIcon,
+    return MiuixSwitchPreference(
+      title: t.settings.memoryDebug,
+      summary: t.settings.memoryDebugSubtitle,
       value: state.enableMemoryDebug,
       onChanged: (bool value) {
         cubit.updateState(
           (current) => current.copyWith(enableMemoryDebug: value),
         );
       },
+      startAction: MiuixSettingHelpers.icon(
+        fallback: Icons.memory_outlined,
+        name: 'memory',
+      ),
+      insideMargin: MiuixSettingHelpers.itemMargin,
     );
   }
 
   Widget _logAddress(GlobalSettingState state, GlobalSettingCubit cubit) {
     final logAddress = state.logAddress.trim();
-    return ListTile(
-      leading: const Icon(Icons.link_outlined),
-      title: Text(t.settings.logAddress),
-      subtitle: Text(
-        logAddress.isEmpty ? t.settings.logAddressSubtitle : logAddress,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
+    return MiuixArrowPreference(
+      title: t.settings.logAddress,
+      summary: logAddress.isEmpty ? t.settings.logAddressSubtitle : logAddress,
+      startAction: MiuixSettingHelpers.icon(
+        fallback: Icons.link_outlined,
+        name: 'link',
       ),
-      trailing: const Icon(Icons.chevron_right),
-      onTap: () async {
+      insideMargin: MiuixSettingHelpers.itemMargin,
+      onClick: () async {
         var inputValue = logAddress;
         final result = await showDialog<String>(
           context: context,
@@ -158,11 +172,9 @@ class _DebugSettingPageState extends State<DebugSettingPage> {
     GlobalSettingState state,
     GlobalSettingCubit cubit,
   ) {
-    return SwitchListTile(
-      secondary: const Icon(Icons.cloud_off_outlined),
-      title: Text(t.settings.blockRustHttpRequests),
-      subtitle: Text(t.settings.blockRustHttpRequestsSubtitle),
-      thumbIcon: kSettingSwitchThumbIcon,
+    return MiuixSwitchPreference(
+      title: t.settings.blockRustHttpRequests,
+      summary: t.settings.blockRustHttpRequestsSubtitle,
       value: state.blockRustHttpRequests,
       onChanged: (bool value) {
         setHttpRequestsBlocked(blocked: value);
@@ -170,6 +182,11 @@ class _DebugSettingPageState extends State<DebugSettingPage> {
           (current) => current.copyWith(blockRustHttpRequests: value),
         );
       },
+      startAction: MiuixSettingHelpers.icon(
+        fallback: Icons.cloud_off_outlined,
+        name: 'cloud_off',
+      ),
+      insideMargin: MiuixSettingHelpers.itemMargin,
     );
   }
 
@@ -177,11 +194,9 @@ class _DebugSettingPageState extends State<DebugSettingPage> {
     GlobalSettingState state,
     GlobalSettingCubit cubit,
   ) {
-    return SwitchListTile(
-      secondary: const Icon(Icons.auto_awesome_outlined),
-      title: Text(t.settings.forceEnableImpeller),
-      subtitle: Text(t.settings.forceEnableImpellerSubtitle),
-      thumbIcon: kSettingSwitchThumbIcon,
+    return MiuixSwitchPreference(
+      title: t.settings.forceEnableImpeller,
+      summary: t.settings.forceEnableImpellerSubtitle,
       value: state.forceEnableImpeller,
       onChanged: (bool value) async {
         cubit.updateState(
@@ -190,6 +205,11 @@ class _DebugSettingPageState extends State<DebugSettingPage> {
         await ImpellerConfig.setForceEnableImpeller(value);
         showSuccessToast(t.common.restartToTakeEffect);
       },
+      startAction: MiuixSettingHelpers.icon(
+        fallback: Icons.auto_awesome_outlined,
+        name: 'auto_awesome',
+      ),
+      insideMargin: MiuixSettingHelpers.itemMargin,
     );
   }
 }

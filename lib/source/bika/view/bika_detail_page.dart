@@ -2,10 +2,17 @@ import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_miuix/miuix.dart';
+import 'package:zephyr/config/global/accent.dart';
 import 'package:zephyr/config/router/router.gr.dart'
-    show BikaCommentsRoute, BikaDetailRoute, BikaLoginRoute, ComicReadRoute;
+    show
+        BikaCommentsRoute,
+        BikaDetailRoute,
+        BikaLoginRoute,
+        ComicReadRoute,
+        DownloadRoute;
 import 'package:zephyr/cubit/string_select.dart';
 import 'package:zephyr/i18n/strings.g.dart';
+import 'package:zephyr/page/download/models/unified_comic_download.dart';
 import 'package:zephyr/source/bika/api/bika_api.dart';
 import 'package:zephyr/source/bika/api/bika_client.dart';
 import 'package:zephyr/source/bika/models/bika_models.dart';
@@ -162,6 +169,19 @@ class _BikaDetailViewState extends State<_BikaDetailView> {
     );
   }
 
+  void _openDownload() {
+    final comic = _comic;
+    if (comic == null || !comic.allowDownload) return;
+    final info = buildBikaNormalComicInfo(comic, _chapters);
+    context.pushRoute(
+      DownloadRoute(
+        downloadInfo: UnifiedComicDownloadInfo.fromString(
+          buildBikaDetailSource(info),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return MiuixScaffold(
@@ -305,7 +325,7 @@ class _BikaDetailViewState extends State<_BikaDetailView> {
                             Text(
                               '#$tag',
                               style: theme.textTheme.labelSmall?.copyWith(
-                                color: theme.colorScheme.primary,
+                                color: accentBlue,
                               ),
                             ),
                         ],
@@ -332,33 +352,41 @@ class _BikaDetailViewState extends State<_BikaDetailView> {
           const SizedBox(height: 12),
           Row(
             children: [
-              IconButton(
+              MiuixIconButton(
                 onPressed: _actionLoading ? null : _like,
-                icon: Icon(
+                child: Icon(
                   _isLiked ? Icons.thumb_up : Icons.thumb_up_outlined,
-                  color: _isLiked ? theme.colorScheme.primary : null,
+                  size: 22,
+                  color: _isLiked ? accentBlue : null,
                 ),
               ),
               Text(
                 '$_likesCount',
                 style: theme.textTheme.bodySmall?.copyWith(
-                  color: _isLiked ? theme.colorScheme.primary : null,
+                  color: _isLiked ? accentBlue : null,
                 ),
               ),
               const SizedBox(width: 8),
-              IconButton(
+              MiuixIconButton(
                 onPressed: _actionLoading ? null : _favourite,
-                icon: Icon(
+                child: Icon(
                   _isFavourite ? Icons.favorite : Icons.favorite_border,
-                  color: _isFavourite ? theme.colorScheme.primary : null,
+                  size: 22,
+                  color: _isFavourite ? accentBlue : null,
                 ),
               ),
               const Spacer(),
-              TextButton.icon(
+              MiuixButton(
                 onPressed: () =>
                     context.pushRoute(BikaCommentsRoute(comicId: comic.id)),
-                icon: const Icon(Icons.comment_outlined, size: 18),
-                label: Text('${comic.totalComments ?? comic.commentsCount}'),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.comment_outlined, size: 18),
+                    const SizedBox(width: 6),
+                    Text('${comic.totalComments ?? comic.commentsCount}'),
+                  ],
+                ),
               ),
             ],
           ),
@@ -432,22 +460,48 @@ class _BikaDetailViewState extends State<_BikaDetailView> {
               updated_at: '',
               id: comic.id,
             );
-      return SizedBox(
-        width: double.infinity,
-        child: MiuixButton(
-          onPressed: () => _openReader(context, chapter, epsCount),
-          child: Text(t.bika.readNow),
-        ),
+      return Row(
+        children: [
+          Expanded(
+            flex: 2,
+            child: MiuixButton(
+              onPressed: () => _openReader(context, chapter, epsCount),
+              child: Text(t.bika.readNow),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: MiuixButton(
+              onPressed: comic.allowDownload ? _openDownload : null,
+              child: Text(t.bika.download),
+            ),
+          ),
+        ],
       );
     }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          '${t.bika.chapters} (${_chapters.length})',
-          style: theme.textTheme.titleSmall?.copyWith(
-            fontWeight: FontWeight.w700,
-          ),
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                '${t.bika.chapters} (${_chapters.length})',
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+            MiuixButton(
+              onPressed: comic.allowDownload ? _openDownload : null,
+              minHeight: 36,
+              insideMargin: const EdgeInsets.symmetric(
+                horizontal: 14,
+                vertical: 8,
+              ),
+              child: Text(t.bika.download),
+            ),
+          ],
         ),
         const SizedBox(height: 4),
         for (final chapter in _chapters)

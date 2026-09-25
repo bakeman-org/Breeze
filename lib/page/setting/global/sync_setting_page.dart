@@ -9,8 +9,8 @@ import 'package:zephyr/network/sync/sync_service.dart';
 import 'package:zephyr/page/comic_follow/cubit/comic_follow_cubit.dart';
 import 'package:zephyr/page/setting/common/setting_ui.dart';
 import 'package:zephyr/page/setting/global/widgets.dart';
+import 'package:zephyr/page/setting/widgets/miuix_setting_helpers.dart';
 import 'package:zephyr/util/event/event.dart';
-import 'package:zephyr/widgets/fluent_dropdown.dart';
 import 'package:zephyr/widgets/toast.dart';
 
 @RoutePage()
@@ -35,37 +35,41 @@ class _SyncSettingPageState extends State<SyncSettingPage> {
       title: t.settings.sync,
       child: ListView(
         children: [
-          settingSectionTitle(
-            context,
-            t.settings.sync,
-            icon: Icons.sync_outlined,
+          settingSectionTitle(context, t.settings.sync),
+          GroupCard(
+            children: [
+              _syncServiceType(state, cubit),
+              webdavSync(context, state.syncSetting.syncServiceType),
+              if (configuredSync) _autoSync(state, cubit),
+              if (configuredSync && state.syncSetting.autoSync)
+                _syncNotify(state, cubit),
+              if (configuredSync) _syncSettings(state, cubit),
+              if (configuredSync) _syncPlugins(state, cubit),
+            ],
           ),
-          _syncServiceType(state, cubit),
-          webdavSync(context, state.syncSetting.syncServiceType),
-          if (configuredSync) _autoSync(state, cubit),
-          if (configuredSync && state.syncSetting.autoSync)
-            _syncNotify(state, cubit),
-          if (configuredSync) _syncSettings(state, cubit),
-          if (configuredSync) _syncPlugins(state, cubit),
           if (configuredSync) ...[
-            const SizedBox(height: 8),
-            const Divider(height: 1, thickness: 0.3),
             settingSectionTitle(context, t.settings.manualSyncSection),
-            _buildManualSyncTile(
-              icon: Icons.upload_outlined,
-              title: t.settings.uploadToCloud,
-              subtitle: t.settings.uploadToCloudSubtitle,
-              actionLabel: t.settings.manualUpload,
-              busy: _uploading,
-              onPressed: _manualUpload,
-            ),
-            _buildManualSyncTile(
-              icon: Icons.download_outlined,
-              title: t.settings.downloadFromCloud,
-              subtitle: t.settings.downloadFromCloudSubtitle,
-              actionLabel: t.settings.manualDownload,
-              busy: _downloading,
-              onPressed: _manualDownload,
+            GroupCard(
+              children: [
+                _buildManualSyncTile(
+                  fallback: Icons.upload_outlined,
+                  name: 'upload',
+                  title: t.settings.uploadToCloud,
+                  subtitle: t.settings.uploadToCloudSubtitle,
+                  actionLabel: t.settings.manualUpload,
+                  busy: _uploading,
+                  onPressed: _manualUpload,
+                ),
+                _buildManualSyncTile(
+                  fallback: Icons.download_outlined,
+                  name: 'download',
+                  title: t.settings.downloadFromCloud,
+                  subtitle: t.settings.downloadFromCloudSubtitle,
+                  actionLabel: t.settings.manualDownload,
+                  busy: _downloading,
+                  onPressed: _manualDownload,
+                ),
+              ],
             ),
           ],
           const SizedBox(height: 32),
@@ -115,24 +119,29 @@ class _SyncSettingPageState extends State<SyncSettingPage> {
   }
 
   Widget _buildManualSyncTile({
-    required IconData icon,
+    required IconData fallback,
+    required String name,
     required String title,
     required String subtitle,
     required String actionLabel,
     required bool busy,
     required VoidCallback onPressed,
   }) {
-    return ListTile(
-      leading: Icon(icon),
-      title: Text(title),
-      subtitle: Text(subtitle),
-      trailing: busy
-          ? const SizedBox(
-              width: 22,
-              height: 22,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            )
-          : MiuixButton(onPressed: onPressed, child: Text(actionLabel)),
+    return MiuixBasicComponent(
+      title: title,
+      summary: subtitle,
+      startAction: MiuixSettingHelpers.icon(fallback: fallback, name: name),
+      endActions: [
+        if (busy)
+          const SizedBox(
+            width: 22,
+            height: 22,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          )
+        else
+          MiuixButton(onPressed: onPressed, child: Text(actionLabel)),
+      ],
+      insideMargin: MiuixSettingHelpers.itemMargin,
     );
   }
 
@@ -142,36 +151,37 @@ class _SyncSettingPageState extends State<SyncSettingPage> {
       SyncServiceType.webdav: t.settings.syncServiceWebdav,
       SyncServiceType.s3: t.settings.syncServiceS3,
     };
+    final modes = syncServiceItems.keys.toList();
 
-    return ListTile(
-      leading: const Icon(Icons.storage_outlined),
-      title: Text(t.settings.syncService),
-      subtitle: Text(t.settings.syncServiceSubtitle),
-      trailing: FluentDropdown<SyncServiceType>(
-        value: state.syncSetting.syncServiceType,
-        displayValue: syncServiceItems[state.syncSetting.syncServiceType]!,
-        items: syncServiceItems,
-        onChanged: (SyncServiceType value) {
-          if (value == state.syncSetting.syncServiceType) return;
-          cubit.updateSyncSetting(
-            (current) => current.copyWith(
-              syncServiceType: value,
-              syncSettings: value == SyncServiceType.none
-                  ? false
-                  : current.syncSettings,
-            ),
-          );
-        },
+    return MiuixOverlayDropdownPreference(
+      title: t.settings.syncService,
+      summary: t.settings.syncServiceSubtitle,
+      items: [for (final mode in modes) syncServiceItems[mode]!],
+      selectedIndex: modes.indexOf(state.syncSetting.syncServiceType),
+      onSelectedIndexChange: (index) {
+        final value = modes[index];
+        if (value == state.syncSetting.syncServiceType) return;
+        cubit.updateSyncSetting(
+          (current) => current.copyWith(
+            syncServiceType: value,
+            syncSettings: value == SyncServiceType.none
+                ? false
+                : current.syncSettings,
+          ),
+        );
+      },
+      startAction: MiuixSettingHelpers.icon(
+        fallback: Icons.storage_outlined,
+        name: 'storage',
       ),
+      insideMargin: MiuixSettingHelpers.itemMargin,
     );
   }
 
   Widget _autoSync(GlobalSettingState state, GlobalSettingCubit cubit) {
-    return SwitchListTile(
-      secondary: const Icon(Icons.cloud_sync_outlined),
-      title: Text(t.settings.autoSync),
-      subtitle: Text(t.settings.autoSyncSubtitle),
-      thumbIcon: kSettingSwitchThumbIcon,
+    return MiuixSwitchPreference(
+      title: t.settings.autoSync,
+      summary: t.settings.autoSyncSubtitle,
       value: state.syncSetting.autoSync,
       onChanged: (bool value) {
         cubit.updateSyncSetting((current) => current.copyWith(autoSync: value));
@@ -179,51 +189,65 @@ class _SyncSettingPageState extends State<SyncSettingPage> {
           eventBus.fire(NoticeSync());
         }
       },
+      startAction: MiuixSettingHelpers.icon(
+        fallback: Icons.cloud_sync_outlined,
+        name: 'cloud',
+      ),
+      insideMargin: MiuixSettingHelpers.itemMargin,
     );
   }
 
   Widget _syncNotify(GlobalSettingState state, GlobalSettingCubit cubit) {
-    return SwitchListTile(
-      secondary: const Icon(Icons.notifications_active_outlined),
-      title: Text(t.settings.syncNotify),
-      subtitle: Text(t.settings.syncNotifySubtitle),
-      thumbIcon: kSettingSwitchThumbIcon,
+    return MiuixSwitchPreference(
+      title: t.settings.syncNotify,
+      summary: t.settings.syncNotifySubtitle,
       value: state.syncSetting.syncNotify,
       onChanged: (bool value) {
         cubit.updateSyncSetting(
           (current) => current.copyWith(syncNotify: value),
         );
       },
+      startAction: MiuixSettingHelpers.icon(
+        fallback: Icons.notifications_active_outlined,
+        name: 'notifications',
+      ),
+      insideMargin: MiuixSettingHelpers.itemMargin,
     );
   }
 
   Widget _syncSettings(GlobalSettingState state, GlobalSettingCubit cubit) {
-    return SwitchListTile(
-      secondary: const Icon(Icons.tune_outlined),
-      title: Text(t.settings.syncSettings),
-      subtitle: Text(t.settings.syncSettingsSubtitle),
-      thumbIcon: kSettingSwitchThumbIcon,
+    return MiuixSwitchPreference(
+      title: t.settings.syncSettings,
+      summary: t.settings.syncSettingsSubtitle,
       value: state.syncSetting.syncSettings,
       onChanged: (bool value) {
         cubit.updateSyncSetting(
           (current) => current.copyWith(syncSettings: value),
         );
       },
+      startAction: MiuixSettingHelpers.icon(
+        fallback: Icons.tune_outlined,
+        name: 'tune',
+      ),
+      insideMargin: MiuixSettingHelpers.itemMargin,
     );
   }
 
   Widget _syncPlugins(GlobalSettingState state, GlobalSettingCubit cubit) {
-    return SwitchListTile(
-      secondary: const Icon(Icons.extension_outlined),
-      title: Text(t.settings.syncPlugins),
-      subtitle: Text(t.settings.syncPluginsSubtitle),
-      thumbIcon: kSettingSwitchThumbIcon,
+    return MiuixSwitchPreference(
+      title: t.settings.syncPlugins,
+      summary: t.settings.syncPluginsSubtitle,
       value: state.syncSetting.syncPlugins,
       onChanged: (bool value) {
         cubit.updateSyncSetting(
           (current) => current.copyWith(syncPlugins: value),
         );
       },
+      startAction: MiuixSettingHelpers.icon(
+        fallback: Icons.extension_outlined,
+        name: 'extension',
+      ),
+      insideMargin: MiuixSettingHelpers.itemMargin,
     );
   }
 }

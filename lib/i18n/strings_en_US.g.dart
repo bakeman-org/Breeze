@@ -556,6 +556,7 @@ class _Translations$comicInfo$en_US extends Translations$comicInfo$zh_CN {
 	@override String get zip => 'Zip archive';
 	@override String get exportSuccess => 'Export successful';
 	@override String get detailsNotLoaded => 'Comic details not fully loaded';
+	@override String get downloadNotAllowed => 'This comic does not allow downloads';
 	@override String get followed => 'Following updates';
 	@override String get unfollowed => 'Unfollowed';
 	@override String get confirmUnfollowTitle => 'Unfollow';
@@ -1452,6 +1453,8 @@ class _Translations$download$en_US extends Translations$download$zh_CN {
 	// Translations
 	@override String get title => 'Download tasks';
 	@override String get startDownload => 'Start Download';
+	@override String selectedChapters({required Object selected, required Object total}) => '${selected}/${total} selected';
+	@override String get chapterDownloaded => 'Downloaded';
 	@override String get selectChaptersPrompt => 'Please select chapters to download';
 	@override String get taskStarted => 'Download task started';
 	@override String taskStartFailed({required Object error}) => 'Failed to start download task: ${error}';
@@ -1575,6 +1578,7 @@ class _Translations$bika$en_US extends Translations$bika$zh_CN {
 	@override String get qualityHigh => 'High';
 	@override String get readNow => 'Read now';
 	@override String get continueReading => 'Continue';
+	@override String get download => 'Download';
 	@override String get chapters => 'Chapters';
 	@override String get comments => 'Comments';
 	@override String get like => 'Like';
@@ -1644,6 +1648,7 @@ class _Translations$eh$en_US extends Translations$eh$zh_CN {
 	@override String get uploaded => 'Posted';
 	@override String get comments => 'Comments';
 	@override String get readNow => 'Read Now';
+	@override String get download => 'Download';
 	@override String get settings => 'Settings';
 	@override String get cookieHint => 'Copy the cookie trio from your browser: ipb_member_id, ipb_pass_hash and igneous (required for ExHentai)';
 	@override String get networkError => 'Network error';
@@ -2092,6 +2097,7 @@ extension on TranslationsEnUs {
 			'comicInfo.zip' => 'Zip archive',
 			'comicInfo.exportSuccess' => 'Export successful',
 			'comicInfo.detailsNotLoaded' => 'Comic details not fully loaded',
+			'comicInfo.downloadNotAllowed' => 'This comic does not allow downloads',
 			'comicInfo.followed' => 'Following updates',
 			'comicInfo.unfollowed' => 'Unfollowed',
 			'comicInfo.confirmUnfollowTitle' => 'Unfollow',
@@ -2176,9 +2182,9 @@ extension on TranslationsEnUs {
 			'reader.doublePageLeadingBlank' => 'Leading blank',
 			'reader.doublePageLeadingBlankSubtitle' => 'Insert a blank page at the start of each chapter to shift page pairing',
 			'reader.landscapeReader' => 'Landscape reading',
-			'reader.landscapeReaderSubtitle' => 'Switch to landscape while reading and restore the previous direction when you leave',
 			_ => null,
 		} ?? switch (path) {
+			'reader.landscapeReaderSubtitle' => 'Switch to landscape while reading and restore the previous direction when you leave',
 			'reader.themeMode' => 'Theme mode',
 			'reader.autoRead' => 'Auto read',
 			'reader.autoReadSubtitle' => 'Automatically scroll the reader',
@@ -2690,9 +2696,9 @@ extension on TranslationsEnUs {
 			'comicEntry.deleteHistory' => 'Delete History',
 			'comicEntry.deleteHistoryConfirm' => ({required Object title}) => 'Delete history record for "${title}"?',
 			'comicEntry.deleteDownload' => 'Delete Download',
-			'comicEntry.deleteDownloadConfirm' => ({required Object title}) => 'Delete download record and files for "${title}"?',
 			_ => null,
 		} ?? switch (path) {
+			'comicEntry.deleteDownloadConfirm' => ({required Object title}) => 'Delete download record and files for "${title}"?',
 			'comicEntry.deleteFailed' => 'Delete failed',
 			'comicFollow.title' => 'Updates',
 			'comicFollow.loadFailed' => ({required Object result}) => 'Load failed: ${result}',
@@ -2776,6 +2782,8 @@ extension on TranslationsEnUs {
 			'fontSetting.sampleText' => 'Innovation in China 中国智造，慧及全球 0123456789',
 			'download.title' => 'Download tasks',
 			'download.startDownload' => 'Start Download',
+			'download.selectedChapters' => ({required Object selected, required Object total}) => '${selected}/${total} selected',
+			'download.chapterDownloaded' => 'Downloaded',
 			'download.selectChaptersPrompt' => 'Please select chapters to download',
 			'download.taskStarted' => 'Download task started',
 			'download.taskStartFailed' => ({required Object error}) => 'Failed to start download task: ${error}',
@@ -2854,6 +2862,7 @@ extension on TranslationsEnUs {
 			'bika.qualityHigh' => 'High',
 			'bika.readNow' => 'Read now',
 			'bika.continueReading' => 'Continue',
+			'bika.download' => 'Download',
 			'bika.chapters' => 'Chapters',
 			'bika.comments' => 'Comments',
 			'bika.like' => 'Like',
@@ -2914,6 +2923,7 @@ extension on TranslationsEnUs {
 			'eh.uploaded' => 'Posted',
 			'eh.comments' => 'Comments',
 			'eh.readNow' => 'Read Now',
+			'eh.download' => 'Download',
 			'eh.settings' => 'Settings',
 			'eh.cookieHint' => 'Copy the cookie trio from your browser: ipb_member_id, ipb_pass_hash and igneous (required for ExHentai)',
 			'eh.networkError' => 'Network error',

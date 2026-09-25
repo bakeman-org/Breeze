@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:material_ui/material_ui.dart';
 import 'package:window_manager/window_manager.dart';
+import 'package:zephyr/main.dart';
 import 'package:zephyr/platform/desktop/native_window.dart';
 
 /// Material 3 风格的自定义标题栏（仅桌面平台使用）
@@ -77,9 +78,8 @@ class _CustomTitleBarState extends State<CustomTitleBar> with WindowListener {
       color: colorScheme.surface,
       child: Row(
         children: [
-          // --- macOS 专属占位 ---
-          if (isMacOS) const SizedBox(width: 80), // 为系统“红绿灯”按钮留出空间
-          // 1. 左侧和中间区域：负责拖拽和双击
+          if (isMacOS) const SizedBox(width: 80),
+          _RouterBackButton(colorScheme: colorScheme),
           Expanded(
             child: GestureDetector(
               behavior: HitTestBehavior.translucent,
@@ -153,10 +153,34 @@ class _CustomTitleBarState extends State<CustomTitleBar> with WindowListener {
   }
 }
 
+class _RouterBackButton extends StatelessWidget {
+  const _RouterBackButton({required this.colorScheme});
+
+  final ColorScheme colorScheme;
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: appRouter,
+      builder: (context, _) {
+        final canPop = appRouter.canPop();
+        return _TitleBarButton(
+          icon: Icons.arrow_back,
+          onPressed: canPop ? () => appRouter.maybePop() : null,
+          hoverColor: colorScheme.onSurface.withValues(alpha: 0.08),
+          iconColor: canPop
+              ? colorScheme.onSurfaceVariant
+              : colorScheme.onSurfaceVariant.withValues(alpha: 0.3),
+        );
+      },
+    );
+  }
+}
+
 /// 标题栏上的单个按钮
 class _TitleBarButton extends StatefulWidget {
   final IconData icon;
-  final VoidCallback onPressed;
+  final VoidCallback? onPressed;
   final Color hoverColor;
   final Color iconColor;
   final Color? hoverIconColor;
@@ -178,19 +202,24 @@ class _TitleBarButtonState extends State<_TitleBarButton> {
 
   @override
   Widget build(BuildContext context) {
+    final enabled = widget.onPressed != null;
     return MouseRegion(
-      onEnter: (_) => setState(() => _isHovered = true),
+      onEnter: (_) {
+        if (enabled) setState(() => _isHovered = true);
+      },
       onExit: (_) => setState(() => _isHovered = false),
       child: GestureDetector(
         onTap: widget.onPressed,
         child: Container(
           width: 46,
           height: 40,
-          color: _isHovered ? widget.hoverColor : Colors.transparent,
+          color: _isHovered && enabled
+              ? widget.hoverColor
+              : Colors.transparent,
           child: Icon(
             widget.icon,
             size: 18,
-            color: _isHovered
+            color: _isHovered && enabled
                 ? (widget.hoverIconColor ?? widget.iconColor)
                 : widget.iconColor,
           ),

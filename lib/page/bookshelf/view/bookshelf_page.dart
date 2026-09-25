@@ -13,6 +13,7 @@ import 'package:zephyr/page/bookshelf/bookshelf.dart' hide SearchEnter;
 import 'package:zephyr/page/bookshelf/service/download_folder_service.dart';
 import 'package:zephyr/page/bookshelf/service/favorite_folder_service.dart';
 import 'package:zephyr/plugin/plugin_registry_service.dart';
+import 'package:zephyr/source/core/source_registry.dart';
 
 @RoutePage()
 class BookshelfPage extends StatelessWidget {
@@ -397,17 +398,25 @@ class _BookshelfPageContentState extends State<_BookshelfPageContent>
         (plugin) => plugin.isEnabled && !plugin.isDeleted,
       ),
     );
-    return sourceOptions
-        .map(
-          (plugin) => _FilterSourceOption(
-            pluginId: plugin.uuid,
-            title: _sourceTitle(plugin.uuid),
-          ),
-        )
-        .toList();
+    return [
+      for (final sourceId in nativeSourceIds)
+        _FilterSourceOption(pluginId: sourceId, title: _sourceTitle(sourceId)),
+      for (final plugin in sourceOptions)
+        _FilterSourceOption(
+          pluginId: plugin.uuid,
+          title: _sourceTitle(plugin.uuid),
+        ),
+    ];
   }
 
   String _sourceTitle(String pluginId) {
+    if (isNativeSourceId(pluginId)) {
+      return switch (pluginId.trim()) {
+        bikaSourceId => t.bika.appName,
+        ehSourceId => t.eh.appName,
+        _ => pluginId,
+      };
+    }
     final info = PluginRegistryService.I.getCachedPluginInfo(pluginId);
     final name = info?['name']?.toString().trim() ?? '';
     return name.isNotEmpty ? name : pluginId;
@@ -597,6 +606,11 @@ class _BookshelfPageContentState extends State<_BookshelfPageContent>
             .map((plugin) => plugin.uuid)
             .toList()
           ..sort();
+    for (final sourceId in nativeSourceIds) {
+      if (!available.contains(sourceId)) {
+        available.add(sourceId);
+      }
+    }
 
     if (listEquals(_lastAvailableSources, available)) {
       return;

@@ -1,91 +1,47 @@
-import 'package:material_ui/material_ui.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_miuix/miuix.dart';
+import 'package:zephyr/config/global/accent.dart';
+import 'package:zephyr/i18n/strings.g.dart';
 import 'package:zephyr/page/download/models/download_chapter.dart';
 
-class EpsWidget extends StatefulWidget {
-  final DownloadChapter chapter;
-  final bool downloaded;
-  final Function(String selectionKey) onUpdateDownloadInfo;
-
+class EpsWidget extends StatelessWidget {
   const EpsWidget({
     super.key,
     required this.chapter,
+    required this.selected,
     required this.downloaded,
     required this.onUpdateDownloadInfo,
   });
 
-  @override
-  State<EpsWidget> createState() => _EpsWidgetState();
-}
-
-class _EpsWidgetState extends State<EpsWidget> {
-  bool _isChecked = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _isChecked = widget.downloaded;
-  }
-
-  @override
-  void didUpdateWidget(EpsWidget oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.downloaded != widget.downloaded) {
-      setState(() => _isChecked = widget.downloaded);
-    }
-  }
+  final DownloadChapter chapter;
+  final bool selected;
+  final bool downloaded;
+  final ValueChanged<String> onUpdateDownloadInfo;
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final isChecked = _isChecked;
+    final miuixColors = MiuixTheme.of(context).colors;
 
-    return InkWell(
-      borderRadius: BorderRadius.circular(12),
-      onTap: () {
-        widget.onUpdateDownloadInfo(widget.chapter.id);
-      },
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        decoration: BoxDecoration(
-          color: isChecked
-              ? colorScheme.primaryContainer.withValues(alpha: 0.3)
-              : colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: isChecked
-                ? colorScheme.primary.withValues(alpha: 0.5)
-                : Colors.transparent,
-            width: 1,
-          ),
-        ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: <Widget>[
-            Icon(
-              isChecked ? Icons.check_circle : Icons.radio_button_unchecked,
-              color: isChecked
-                  ? colorScheme.primary
-                  : colorScheme.onSurfaceVariant,
-              size: 22,
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Text(
-                widget.chapter.displayName,
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: isChecked ? FontWeight.w600 : FontWeight.w500,
-                  color: isChecked
-                      ? colorScheme.onSurface
-                      : colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ),
-          ],
-        ),
+    return MiuixCheckboxPreference(
+      title: chapter.displayName,
+      value: selected,
+      onChanged: (_) => onUpdateDownloadInfo(chapter.id),
+      titleColor: MiuixBasicComponentColors(
+        color: selected ? accentBlue : miuixColors.onBackground,
+        disabledColor: miuixColors.disabledOnSecondaryVariant,
       ),
+      summary: downloaded ? t.download.chapterDownloaded : null,
+      checkboxColors: MiuixCheckboxColors(
+        checkedForegroundColor: miuixColors.onPrimary,
+        uncheckedForegroundColor: miuixColors.secondary,
+        disabledCheckedForegroundColor: miuixColors.disabledOnPrimary,
+        disabledUncheckedForegroundColor: miuixColors.disabledOnPrimary,
+        checkedBackgroundColor: accentBlue,
+        uncheckedBackgroundColor: miuixColors.secondary,
+        disabledCheckedBackgroundColor: miuixColors.disabledPrimary,
+        disabledUncheckedBackgroundColor: miuixColors.disabledSecondary,
+      ),
+      insideMargin: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
     );
   }
 }

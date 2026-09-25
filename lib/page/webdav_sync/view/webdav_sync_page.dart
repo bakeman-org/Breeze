@@ -8,6 +8,7 @@ import 'package:zephyr/i18n/strings.g.dart';
 import 'package:zephyr/page/webdav_sync/webdav_sync.dart';
 
 import 'package:zephyr/main.dart';
+import 'package:zephyr/page/setting/widgets/miuix_setting_helpers.dart';
 import 'package:zephyr/widgets/dialog.dart';
 import 'package:zephyr/util/event/event.dart';
 
@@ -20,12 +21,6 @@ class WebDavSyncPage extends StatefulWidget {
 }
 
 class _WebDavSyncPageState extends State<WebDavSyncPage> {
-  static const WidgetStateProperty<Icon> _thumbIcon =
-      WidgetStateProperty<Icon>.fromMap(<WidgetStatesConstraint, Icon>{
-        WidgetState.selected: Icon(Icons.check),
-        WidgetState.any: Icon(Icons.close),
-      });
-
   final TextEditingController _webdavHost = TextEditingController();
   final TextEditingController _webdavUsername = TextEditingController();
   final TextEditingController _webdavPassword = TextEditingController();
@@ -228,26 +223,26 @@ class _WebDavSyncPageState extends State<WebDavSyncPage> {
           ),
         ),
         const SizedBox(height: 4),
-        SwitchListTile(
-          title: Text(t.webdavSync.useSsl),
-          thumbIcon: _thumbIcon,
+        MiuixSwitchPreference(
+          title: t.webdavSync.useSsl,
           value: _s3UseSSL,
           onChanged: (value) {
             setState(() {
               _s3UseSSL = value;
             });
           },
+          insideMargin: MiuixSettingHelpers.itemMargin,
         ),
-        SwitchListTile(
-          title: Text(t.webdavSync.pathStyle),
-          subtitle: Text(t.webdavSync.pathStyleSubtitle),
-          thumbIcon: _thumbIcon,
+        MiuixSwitchPreference(
+          title: t.webdavSync.pathStyle,
+          summary: t.webdavSync.pathStyleSubtitle,
           value: _s3PathStyle,
           onChanged: (value) {
             setState(() {
               _s3PathStyle = value;
             });
           },
+          insideMargin: MiuixSettingHelpers.itemMargin,
         ),
       ],
     );

@@ -4,6 +4,7 @@ import 'package:material_ui/material_ui.dart' hide Page;
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:zephyr/object_box/model.dart';
 import 'package:zephyr/page/donwload_task/bloc/dowload_task_bloc.dart';
+import 'package:zephyr/config/global/accent.dart';
 import 'package:zephyr/i18n/strings.g.dart';
 import 'package:zephyr/service/download/download_queue_manager.dart';
 import 'package:zephyr/service/download/download_task_progress.dart';
@@ -88,7 +89,7 @@ class _DownloadTaskView extends StatelessWidget {
                               style: const TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.bold,
-                                color: Colors.blue,
+                                color: accentBlue,
                               ),
                             ),
                           ),
@@ -176,7 +177,7 @@ class _DownloadingTaskTile extends StatelessWidget {
         insideMargin: EdgeInsets.zero,
         child: ListTile(
           leading: CircleAvatar(
-            backgroundColor: Colors.blue,
+            backgroundColor: accentBlue,
             child: SizedBox(
               width: 20,
               height: 20,
@@ -195,7 +196,7 @@ class _DownloadingTaskTile extends StatelessWidget {
               if (statusMessage.isNotEmpty)
                 Text(
                   statusMessage,
-                  style: const TextStyle(color: Colors.blue),
+                  style: const TextStyle(color: accentBlue),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -242,7 +243,7 @@ class _DownloadingTaskTile extends StatelessWidget {
                 ),
               );
             },
-            child: const Icon(Icons.cancel_outlined, color: Colors.blue),
+            child: const Icon(Icons.cancel_outlined, color: accentBlue),
           ),
         ),
       ),

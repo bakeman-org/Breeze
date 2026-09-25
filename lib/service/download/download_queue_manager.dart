@@ -399,13 +399,13 @@ class DownloadQueueManager {
   ///
   /// 任务会被持久化到 ObjectBox，随后 [watchTasks] 的 query watcher 会触发
   /// [_processQueue] 开始执行。
-  void addTask(DownloadTaskJson task) {
+  bool addTask(DownloadTaskJson task) {
     if (taskExists(task.from, task.comicId)) {
       logger.w("任务 ${task.comicName} 已存在，跳过添加");
       showInfoToast(
         t.download.toastTaskAlreadyExists(comicName: task.comicName),
       );
-      return;
+      return false;
     }
 
     final box = objectbox.downloadTaskBox;
@@ -422,6 +422,7 @@ class DownloadQueueManager {
       'addTask: 已添加任务 id=$id, comicId=${task.comicId}, '
       'taskInfoStr=${downloadTask.dbTaskInfoStr?.substring(0, downloadTask.dbTaskInfoStr!.length > 50 ? 50 : downloadTask.dbTaskInfoStr!.length)}',
     );
+    return true;
   }
 
   /// 手动重试一个已失败任务。
@@ -602,14 +603,15 @@ bool _isTaskGoneOrCompleted(String taskKey) {
 ///
 /// 所有平台都会把任务写入数据库，由 [DownloadQueueManager] 统一调度。
 /// Android 端会确保前台服务在跑（若保活已开启则复用），前台服务本身不管理下载逻辑。
-Future<void> startDownloadTask(DownloadTaskJson task) async {
+Future<bool> startDownloadTask(DownloadTaskJson task) async {
   logger.d(
     'startDownloadTask: comicId=${task.comicId}, comicName=${task.comicName}',
   );
 
-  DownloadQueueManager.instance.addTask(task);
+  final added = DownloadQueueManager.instance.addTask(task);
 
   if (Platform.isAndroid) {
     await ForegroundTaskService.instance.start();
   }
+  return added;
 }

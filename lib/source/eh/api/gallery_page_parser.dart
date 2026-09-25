@@ -1,6 +1,26 @@
+import 'dart:convert';
+
 import 'package:html/dom.dart';
 import 'package:html/parser.dart' as html_parser;
 import 'package:zephyr/source/eh/models/eh_models.dart';
+
+class EhShowKeyMismatchException implements Exception {
+  const EhShowKeyMismatchException();
+
+  @override
+  String toString() => 'Key mismatch';
+}
+
+final RegExp _ehApiImageUrlPattern = RegExp(r'<img[^>]*src="([^"]+)" style');
+final RegExp _ehApiSkipHathKeyPattern = RegExp(
+  r'''onclick="return nl\('([^\)]+)'\)"''',
+);
+final RegExp _ehApiOriginImageUrlPattern = RegExp(
+  r'<a href="([^"]+)fullimg([^"]+)">',
+);
+final RegExp _ehApiOtherImageUrlPattern = RegExp(
+  r'''<a href="#" onclick="prompt\('Copy the URL below\.', '([^"]+)'\)''',
+);
 
 final RegExp _ehImageUrlPattern = RegExp(r'<img[^>]*src="([^"]+)" style');
 final RegExp _ehSkipHathKeyPattern = RegExp(
@@ -99,5 +119,44 @@ EhPageImage parseGalleryPage(String html) {
     }
   }
 
+  return result;
+}
+
+EhPageImage parseGalleryPageApi(String body) {
+  final data = jsonDecode(body);
+  if (data is! Map) {
+    throw const EhParseException('showpage 响应格式错误');
+  }
+  final error = data['error'];
+  if (error != null) {
+    final message = '$error';
+    if (message == 'Key mismatch') {
+      throw const EhShowKeyMismatchException();
+    }
+    throw EhParseException('showpage: $message');
+  }
+
+  final result = EhPageImage();
+  final i3 = data['i3']?.toString() ?? '';
+  final i6 = data['i6']?.toString() ?? '';
+  final i7 = data['i7']?.toString() ?? '';
+
+  var match = _ehApiImageUrlPattern.firstMatch(i3);
+  if (match != null) {
+    result.imageUrl = _unescapeXml((match.group(1) ?? '').trim());
+  }
+  match = _ehApiSkipHathKeyPattern.firstMatch(i6);
+  if (match != null) {
+    result.skipHathKey = _unescapeXml((match.group(1) ?? '').trim());
+  }
+  match = _ehApiOtherImageUrlPattern.firstMatch(i6);
+  if (match != null) {
+    result.imageUrl = _unescapeXml((match.group(1) ?? '').trim());
+  }
+  match = _ehApiOriginImageUrlPattern.firstMatch(i7);
+  if (match != null) {
+    result.originImageUrl =
+        '${_unescapeXml(match.group(1) ?? '')}fullimg${_unescapeXml(match.group(2) ?? '')}';
+  }
   return result;
 }

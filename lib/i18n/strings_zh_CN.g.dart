@@ -1417,6 +1417,9 @@ class Translations$comicInfo$zh_CN {
 	/// zh-CN: '当前详情尚未加载完成'
 	String get detailsNotLoaded => '当前详情尚未加载完成';
 
+	/// zh-CN: '该漫画不允许下载'
+	String get downloadNotAllowed => '该漫画不允许下载';
+
 	/// zh-CN: '已加入追更'
 	String get followed => '已加入追更';
 
@@ -3673,6 +3676,12 @@ class Translations$download$zh_CN {
 	/// zh-CN: '开始下载'
 	String get startDownload => '开始下载';
 
+	/// zh-CN: '已选 $selected/$total 章'
+	String selectedChapters({required Object selected, required Object total}) => '已选 ${selected}/${total} 章';
+
+	/// zh-CN: '已下载'
+	String get chapterDownloaded => '已下载';
+
 	/// zh-CN: '请选择要下载的章节'
 	String get selectChaptersPrompt => '请选择要下载的章节';
 
@@ -3952,6 +3961,9 @@ class Translations$bika$zh_CN {
 	/// zh-CN: '继续阅读'
 	String get continueReading => '继续阅读';
 
+	/// zh-CN: '下载'
+	String get download => '下载';
+
 	/// zh-CN: '章节'
 	String get chapters => '章节';
 
@@ -4140,6 +4152,9 @@ class Translations$eh$zh_CN {
 
 	/// zh-CN: '开始阅读'
 	String get readNow => '开始阅读';
+
+	/// zh-CN: '下载'
+	String get download => '下载';
 
 	/// zh-CN: '设置'
 	String get settings => '设置';
@@ -4611,6 +4626,7 @@ extension on Translations {
 			'comicInfo.zip' => '压缩包',
 			'comicInfo.exportSuccess' => '导出成功',
 			'comicInfo.detailsNotLoaded' => '当前详情尚未加载完成',
+			'comicInfo.downloadNotAllowed' => '该漫画不允许下载',
 			'comicInfo.followed' => '已加入追更',
 			'comicInfo.unfollowed' => '已取消追更',
 			'comicInfo.confirmUnfollowTitle' => '取消追更',
@@ -4694,9 +4710,9 @@ extension on Translations {
 			'reader.doublePageSeamlessSubtitle' => '左右各占一半宽度，按图片比例独立显示并消除中间留白',
 			'reader.doublePageLeadingBlank' => '首页留白',
 			'reader.doublePageLeadingBlankSubtitle' => '在每章最前插入一页空白，使配对整体错一位',
-			'reader.landscapeReader' => '横屏阅读',
 			_ => null,
 		} ?? switch (path) {
+			'reader.landscapeReader' => '横屏阅读',
 			'reader.landscapeReaderSubtitle' => '阅读时切换为横屏，离开后恢复原来的方向',
 			'reader.themeMode' => '系统模式',
 			'reader.autoRead' => '自动阅读',
@@ -5208,9 +5224,9 @@ extension on Translations {
 			'comicEntry.deleteFavoriteConfirm' => ({required Object title}) => '确定要删除（${title}）的收藏记录吗？',
 			'comicEntry.deleteHistory' => '删除历史记录',
 			'comicEntry.deleteHistoryConfirm' => ({required Object title}) => '确定要删除（${title}）的历史记录吗？',
-			'comicEntry.deleteDownload' => '删除下载记录',
 			_ => null,
 		} ?? switch (path) {
+			'comicEntry.deleteDownload' => '删除下载记录',
 			'comicEntry.deleteDownloadConfirm' => ({required Object title}) => '确定要删除（${title}）的下载记录及文件吗？',
 			'comicEntry.deleteFailed' => '删除失败',
 			'comicFollow.title' => '追更',
@@ -5295,6 +5311,8 @@ extension on Translations {
 			'fontSetting.sampleText' => 'Innovation in China 中国智造，慧及全球 0123456789',
 			'download.title' => '下载任务',
 			'download.startDownload' => '开始下载',
+			'download.selectedChapters' => ({required Object selected, required Object total}) => '已选 ${selected}/${total} 章',
+			'download.chapterDownloaded' => '已下载',
 			'download.selectChaptersPrompt' => '请选择要下载的章节',
 			'download.taskStarted' => '下载任务已启动',
 			'download.taskStartFailed' => ({required Object error}) => '下载任务启动失败，${error}',
@@ -5373,6 +5391,7 @@ extension on Translations {
 			'bika.qualityHigh' => '高',
 			'bika.readNow' => '开始阅读',
 			'bika.continueReading' => '继续阅读',
+			'bika.download' => '下载',
 			'bika.chapters' => '章节',
 			'bika.comments' => '评论',
 			'bika.like' => '点赞',
@@ -5433,6 +5452,7 @@ extension on Translations {
 			'eh.uploaded' => '发布时间',
 			'eh.comments' => '评论',
 			'eh.readNow' => '开始阅读',
+			'eh.download' => '下载',
 			'eh.settings' => '设置',
 			'eh.cookieHint' => '请从浏览器复制 Cookie 三件套：ipb_member_id、ipb_pass_hash、igneous（访问 ExHentai 必填）',
 			'eh.networkError' => '网络错误',

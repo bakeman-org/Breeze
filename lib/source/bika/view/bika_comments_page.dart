@@ -1,6 +1,7 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_miuix/miuix.dart';
+import 'package:zephyr/config/global/accent.dart';
 import 'package:zephyr/i18n/strings.g.dart';
 import 'package:zephyr/source/bika/api/bika_api.dart';
 import 'package:zephyr/source/bika/models/bika_models.dart';
@@ -502,7 +503,7 @@ class _CommentItem extends StatelessWidget {
                           isLiked ? Icons.thumb_up : Icons.thumb_up_outlined,
                           size: 16,
                           color: isLiked
-                              ? theme.colorScheme.primary
+                              ? accentBlue
                               : theme.colorScheme.onSurfaceVariant,
                         ),
                         const SizedBox(width: 4),
@@ -510,7 +511,7 @@ class _CommentItem extends StatelessWidget {
                           '$likesCount',
                           style: theme.textTheme.labelSmall?.copyWith(
                             color: isLiked
-                                ? theme.colorScheme.primary
+                                ? accentBlue
                                 : theme.colorScheme.onSurfaceVariant,
                           ),
                         ),
@@ -689,7 +690,7 @@ class _SubLikeButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final color = liked
-        ? theme.colorScheme.primary
+        ? accentBlue
         : theme.colorScheme.onSurfaceVariant;
     return InkWell(
       borderRadius: BorderRadius.circular(6),

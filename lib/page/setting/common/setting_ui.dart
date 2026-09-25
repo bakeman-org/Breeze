@@ -2,8 +2,6 @@ import 'package:auto_route/auto_route.dart';
 import 'package:flutter_miuix/miuix.dart';
 import 'package:material_ui/material_ui.dart';
 
-const EdgeInsets kSettingPagePadding = EdgeInsets.fromLTRB(16, 12, 16, 24);
-
 const WidgetStateProperty<Icon> kSettingSwitchThumbIcon =
     WidgetStateProperty<Icon>.fromMap(<WidgetStatesConstraint, Icon>{
       WidgetState.selected: Icon(Icons.check),
@@ -46,91 +44,13 @@ class SettingPageShell extends StatelessWidget {
   }
 }
 
+/// 设置页分组标题。
+///
+/// Miuix 迁移：自绘彩色标题 → `MiuixSmallTitle`，与「更多」页一致。
 Widget settingSectionTitle(
   BuildContext context,
   String title, {
   IconData? icon,
 }) {
-  return Padding(
-    padding: const EdgeInsets.fromLTRB(20, 24, 20, 8),
-    child: Row(
-      children: [
-        if (icon != null) ...[
-          Icon(icon, size: 18, color: Theme.of(context).colorScheme.primary),
-          const SizedBox(width: 8),
-        ],
-        Text(
-          title,
-          style: TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-            color: Theme.of(context).colorScheme.primary,
-            letterSpacing: 0.5,
-          ),
-        ),
-      ],
-    ),
-  );
-}
-
-Widget settingCategoryTile({
-  required IconData icon,
-  required String title,
-  required String subtitle,
-  required VoidCallback onTap,
-}) {
-  return ListTile(
-    leading: Icon(icon),
-    title: Text(title),
-    subtitle: Text(subtitle, maxLines: 2, overflow: TextOverflow.ellipsis),
-    trailing: const Icon(Icons.chevron_right),
-    onTap: onTap,
-  );
-}
-
-class SettingSectionCard extends StatelessWidget {
-  const SettingSectionCard({
-    super.key,
-    required this.title,
-    required this.icon,
-    required this.children,
-  });
-
-  final String title;
-  final IconData icon;
-  final List<Widget> children;
-
-  @override
-  Widget build(BuildContext context) {
-    // Miuix 迁移：Card → MiuixCard（insideMargin 归零以保留内部
-    // ListTile + Divider 结构）。
-    return MiuixCard(
-      cornerRadius: 18,
-      insideMargin: EdgeInsets.zero,
-      child: Column(
-        children: [
-          ListTile(
-            leading: Icon(icon),
-            title: Text(
-              title,
-              style: const TextStyle(fontWeight: FontWeight.w600),
-            ),
-          ),
-          const Divider(height: 1),
-          ..._withDividers(children),
-        ],
-      ),
-    );
-  }
-
-  List<Widget> _withDividers(List<Widget> children) {
-    final widgets = <Widget>[];
-    for (var i = 0; i < children.length; i++) {
-      widgets.add(children[i]);
-      if (i != children.length - 1) {
-        widgets.add(const Divider(height: 1));
-      }
-    }
-    return widgets;
-  }
+  return MiuixSmallTitle(title);
 }

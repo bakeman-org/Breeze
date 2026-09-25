@@ -58,6 +58,7 @@ normal.NormalComicAllInfo buildBikaNormalComicInfo(
             name: chapter.title,
             order: chapter.order,
             logicalKey: chapter.uid,
+            extern: {'bikaOrder': chapter.order},
           ),
         )
         .toList(),

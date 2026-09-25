@@ -3,12 +3,13 @@ import 'dart:io';
 import 'package:auto_route/auto_route.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_miuix/miuix.dart';
 import 'package:zephyr/config/global/global_setting.dart';
 import 'package:zephyr/i18n/strings.g.dart';
 import 'package:zephyr/page/setting/common/setting_ui.dart';
+import 'package:zephyr/page/setting/widgets/miuix_setting_helpers.dart';
 import 'package:zephyr/platform/desktop/window_logic.dart';
 import 'package:zephyr/service/lifecycle/foreground_task/foreground_task_service.dart';
-import 'package:zephyr/widgets/fluent_dropdown.dart';
 import 'package:zephyr/widgets/gesture_lock.dart';
 import 'package:zephyr/widgets/toast.dart';
 
@@ -57,20 +58,20 @@ class _AppBehaviorSettingPageState extends State<AppBehaviorSettingPage> {
       title: t.settings.appBehavior,
       child: ListView(
         children: [
-          settingSectionTitle(
-            context,
-            t.settings.appBehavior,
-            icon: Icons.settings_outlined,
+          settingSectionTitle(context, t.settings.appBehavior),
+          GroupCard(
+            children: [
+              _splashPage(state, cubit),
+              if (isDesktop) _desktopCloseBehaviorTile(),
+              if (Platform.isAndroid) _androidKeepAlive(state, cubit),
+              if (Platform.isAndroid) _backPressExit(state, cubit),
+              ..._appLockSetting(state, cubit),
+              _cloudFavoritePreferred(state, cubit),
+              _autoFollowOnCollect(state, cubit),
+              _leftHandMode(state, cubit),
+              _clickCoverToStartReading(state, cubit),
+            ],
           ),
-          _splashPage(state, cubit),
-          if (isDesktop) _desktopCloseBehaviorTile(),
-          if (Platform.isAndroid) _androidKeepAlive(state, cubit),
-          if (Platform.isAndroid) _backPressExit(state, cubit),
-          _appLockSetting(state, cubit),
-          _cloudFavoritePreferred(state, cubit),
-          _autoFollowOnCollect(state, cubit),
-          _leftHandMode(state, cubit),
-          _clickCoverToStartReading(state, cubit),
           const SizedBox(height: 32),
         ],
       ),
@@ -84,24 +85,25 @@ class _AppBehaviorSettingPageState extends State<AppBehaviorSettingPage> {
         ? 0
         : state.welcomePageNum.clamp(0, splashPageList.length - 1);
 
-    final splashPageItems = {for (final page in splashPageList) page: page};
-
-    return ListTile(
-      leading: const Icon(Icons.rocket_launch_outlined),
-      title: Text(t.settings.splashPage),
-      subtitle: Text(t.settings.splashPageSubtitle),
-      trailing: FluentDropdown<String>(
-        value: splashPageList[selectedIndex],
-        displayValue: splashPageList[selectedIndex],
-        items: splashPageItems,
-        onChanged: (String value) {
-          if (value == splashPageList[selectedIndex]) return;
-          showSuccessToast(t.common.restartToTakeEffect);
-          cubit.updateState(
-            (current) => current.copyWith(welcomePageNum: splashPage[value]!),
-          );
-        },
+    return MiuixOverlayDropdownPreference(
+      title: t.settings.splashPage,
+      summary: t.settings.splashPageSubtitle,
+      items: splashPageList,
+      selectedIndex: selectedIndex,
+      onSelectedIndexChange: (index) {
+        if (index == selectedIndex) return;
+        showSuccessToast(t.common.restartToTakeEffect);
+        cubit.updateState(
+          (current) => current.copyWith(
+            welcomePageNum: splashPage[splashPageList[index]]!,
+          ),
+        );
+      },
+      startAction: MiuixSettingHelpers.icon(
+        fallback: Icons.rocket_launch_outlined,
+        name: 'rocket_launch',
       ),
+      insideMargin: MiuixSettingHelpers.itemMargin,
     );
   }
 
@@ -109,11 +111,9 @@ class _AppBehaviorSettingPageState extends State<AppBehaviorSettingPage> {
     GlobalSettingState state,
     GlobalSettingCubit cubit,
   ) {
-    return SwitchListTile(
-      secondary: const Icon(Icons.cloud_outlined),
-      title: Text(t.settings.cloudFavoritePreferred),
-      subtitle: Text(t.settings.cloudFavoritePreferredSubtitle),
-      thumbIcon: kSettingSwitchThumbIcon,
+    return MiuixSwitchPreference(
+      title: t.settings.cloudFavoritePreferred,
+      summary: t.settings.cloudFavoritePreferredSubtitle,
       value: state.cloudFavoritePreferred,
       onChanged: (bool value) {
         cubit.updateState(
@@ -121,6 +121,11 @@ class _AppBehaviorSettingPageState extends State<AppBehaviorSettingPage> {
         );
         showSuccessToast(t.common.settingSaved);
       },
+      startAction: MiuixSettingHelpers.icon(
+        fallback: Icons.cloud_outlined,
+        name: 'cloud',
+      ),
+      insideMargin: MiuixSettingHelpers.itemMargin,
     );
   }
 
@@ -128,11 +133,9 @@ class _AppBehaviorSettingPageState extends State<AppBehaviorSettingPage> {
     GlobalSettingState state,
     GlobalSettingCubit cubit,
   ) {
-    return SwitchListTile(
-      secondary: const Icon(Icons.notifications_active_outlined),
-      title: Text(t.settings.autoFollowOnCollect),
-      subtitle: Text(t.settings.autoFollowOnCollectSubtitle),
-      thumbIcon: kSettingSwitchThumbIcon,
+    return MiuixSwitchPreference(
+      title: t.settings.autoFollowOnCollect,
+      summary: t.settings.autoFollowOnCollectSubtitle,
       value: state.autoFollowOnCollect,
       onChanged: (bool value) {
         cubit.updateState(
@@ -140,15 +143,18 @@ class _AppBehaviorSettingPageState extends State<AppBehaviorSettingPage> {
         );
         showSuccessToast(t.common.settingSaved);
       },
+      startAction: MiuixSettingHelpers.icon(
+        fallback: Icons.notifications_active_outlined,
+        name: 'notifications',
+      ),
+      insideMargin: MiuixSettingHelpers.itemMargin,
     );
   }
 
   Widget _leftHandMode(GlobalSettingState state, GlobalSettingCubit cubit) {
-    return SwitchListTile(
-      secondary: const Icon(Icons.back_hand_outlined),
-      title: Text(t.settings.leftHandMode),
-      subtitle: Text(t.settings.leftHandModeSubtitle),
-      thumbIcon: kSettingSwitchThumbIcon,
+    return MiuixSwitchPreference(
+      title: t.settings.leftHandMode,
+      summary: t.settings.leftHandModeSubtitle,
       value: state.leftHandModeEnabled,
       onChanged: (bool value) {
         cubit.updateState(
@@ -156,6 +162,11 @@ class _AppBehaviorSettingPageState extends State<AppBehaviorSettingPage> {
         );
         showSuccessToast(t.common.settingSaved);
       },
+      startAction: MiuixSettingHelpers.icon(
+        fallback: Icons.back_hand_outlined,
+        name: 'back_hand',
+      ),
+      insideMargin: MiuixSettingHelpers.itemMargin,
     );
   }
 
@@ -163,11 +174,9 @@ class _AppBehaviorSettingPageState extends State<AppBehaviorSettingPage> {
     GlobalSettingState state,
     GlobalSettingCubit cubit,
   ) {
-    return SwitchListTile(
-      secondary: const Icon(Icons.touch_app_outlined),
-      title: Text(t.settings.clickCoverToStartReading),
-      subtitle: Text(t.settings.clickCoverToStartReadingSubtitle),
-      thumbIcon: kSettingSwitchThumbIcon,
+    return MiuixSwitchPreference(
+      title: t.settings.clickCoverToStartReading,
+      summary: t.settings.clickCoverToStartReadingSubtitle,
       value: state.clickCoverToStartReading,
       onChanged: (bool value) {
         cubit.updateState(
@@ -175,15 +184,18 @@ class _AppBehaviorSettingPageState extends State<AppBehaviorSettingPage> {
         );
         showSuccessToast(t.common.settingSaved);
       },
+      startAction: MiuixSettingHelpers.icon(
+        fallback: Icons.touch_app_outlined,
+        name: 'touch_app',
+      ),
+      insideMargin: MiuixSettingHelpers.itemMargin,
     );
   }
 
   Widget _androidKeepAlive(GlobalSettingState state, GlobalSettingCubit cubit) {
-    return SwitchListTile(
-      secondary: const Icon(Icons.battery_charging_full_outlined),
-      title: Text(t.settings.androidKeepAlive),
-      subtitle: Text(t.settings.androidKeepAliveSubtitle),
-      thumbIcon: kSettingSwitchThumbIcon,
+    return MiuixSwitchPreference(
+      title: t.settings.androidKeepAlive,
+      summary: t.settings.androidKeepAliveSubtitle,
       value: state.androidKeepAliveEnabled,
       onChanged: (bool value) async {
         cubit.updateState(
@@ -203,15 +215,18 @@ class _AppBehaviorSettingPageState extends State<AppBehaviorSettingPage> {
           showErrorToast(e.toString());
         }
       },
+      startAction: MiuixSettingHelpers.icon(
+        fallback: Icons.battery_charging_full_outlined,
+        name: 'battery_charging_full',
+      ),
+      insideMargin: MiuixSettingHelpers.itemMargin,
     );
   }
 
   Widget _backPressExit(GlobalSettingState state, GlobalSettingCubit cubit) {
-    return SwitchListTile(
-      secondary: const Icon(Icons.exit_to_app_outlined),
-      title: Text(t.settings.backPressExit),
-      subtitle: Text(t.settings.backPressExitSubtitle),
-      thumbIcon: kSettingSwitchThumbIcon,
+    return MiuixSwitchPreference(
+      title: t.settings.backPressExit,
+      summary: t.settings.backPressExitSubtitle,
       value: state.backPressExitEnabled,
       onChanged: (bool value) {
         cubit.updateState(
@@ -219,6 +234,11 @@ class _AppBehaviorSettingPageState extends State<AppBehaviorSettingPage> {
         );
         showSuccessToast(t.common.settingSaved);
       },
+      startAction: MiuixSettingHelpers.icon(
+        fallback: Icons.exit_to_app_outlined,
+        name: 'exit_to_app',
+      ),
+      insideMargin: MiuixSettingHelpers.itemMargin,
     );
   }
 
@@ -228,65 +248,43 @@ class _AppBehaviorSettingPageState extends State<AppBehaviorSettingPage> {
       DesktopCloseBehavior.hide: t.settings.desktopCloseHide,
       DesktopCloseBehavior.close: t.settings.desktopCloseClose,
     };
+    final modes = closeBehaviorItems.keys.toList();
 
-    return ListTile(
-      leading: const Icon(Icons.close_fullscreen_outlined),
-      title: Text(t.settings.desktopCloseBehavior),
-      subtitle: Text(t.settings.desktopCloseBehaviorSubtitle),
-      trailing: FluentDropdown<DesktopCloseBehavior>(
-        value: _desktopCloseBehavior,
-        displayValue: closeBehaviorItems[_desktopCloseBehavior]!,
-        items: closeBehaviorItems,
-        onChanged: (DesktopCloseBehavior value) async {
-          if (value == _desktopCloseBehavior) return;
-          await WindowLogic.saveCloseBehavior(value);
-          if (!mounted) return;
-          setState(() => _desktopCloseBehavior = value);
-          showSuccessToast(t.common.settingSaved);
-        },
+    return MiuixOverlayDropdownPreference(
+      title: t.settings.desktopCloseBehavior,
+      summary: t.settings.desktopCloseBehaviorSubtitle,
+      items: [for (final mode in modes) closeBehaviorItems[mode]!],
+      selectedIndex: modes.indexOf(_desktopCloseBehavior),
+      onSelectedIndexChange: (index) async {
+        final value = modes[index];
+        if (value == _desktopCloseBehavior) return;
+        await WindowLogic.saveCloseBehavior(value);
+        if (!mounted) return;
+        setState(() => _desktopCloseBehavior = value);
+        showSuccessToast(t.common.settingSaved);
+      },
+      startAction: MiuixSettingHelpers.icon(
+        fallback: Icons.close_fullscreen_outlined,
+        name: 'close_fullscreen',
       ),
+      insideMargin: MiuixSettingHelpers.itemMargin,
     );
   }
 
-  Widget _appLockSetting(GlobalSettingState state, GlobalSettingCubit cubit) {
+  List<Widget> _appLockSetting(
+    GlobalSettingState state,
+    GlobalSettingCubit cubit,
+  ) {
     final lockSetting = state.appLockSetting;
     final isReady = lockSetting.isReady;
 
-    return Column(
-      children: [
-        SwitchListTile(
-          secondary: const Icon(Icons.lock_outline),
-          title: Text(t.settings.appLock),
-          subtitle: Text(t.settings.appLockSubtitle),
-          thumbIcon: kSettingSwitchThumbIcon,
-          value: lockSetting.enabled,
-          onChanged: (bool value) async {
-            if (value && !isReady) {
-              final nextSetting = await _configureAppLock();
-              if (nextSetting == null) {
-                return;
-              }
-              cubit.updateState(
-                (current) => current.copyWith(appLockSetting: nextSetting),
-              );
-              showSuccessToast(t.common.settingSaved);
-              return;
-            }
-
-            cubit.updateState(
-              (current) => current.copyWith(
-                appLockSetting: current.appLockSetting.copyWith(enabled: value),
-              ),
-            );
-            showSuccessToast(t.common.settingSaved);
-          },
-        ),
-        ListTile(
-          leading: const Icon(Icons.gesture_outlined),
-          title: Text(t.settings.appLock),
-          subtitle: Text(t.settings.appLockSubtitle),
-          trailing: const Icon(Icons.chevron_right),
-          onTap: () async {
+    return [
+      MiuixSwitchPreference(
+        title: t.settings.appLock,
+        summary: t.settings.appLockSubtitle,
+        value: lockSetting.enabled,
+        onChanged: (bool value) async {
+          if (value && !isReady) {
             final nextSetting = await _configureAppLock();
             if (nextSetting == null) {
               return;
@@ -295,70 +293,108 @@ class _AppBehaviorSettingPageState extends State<AppBehaviorSettingPage> {
               (current) => current.copyWith(appLockSetting: nextSetting),
             );
             showSuccessToast(t.common.settingSaved);
+            return;
+          }
+
+          cubit.updateState(
+            (current) => current.copyWith(
+              appLockSetting: current.appLockSetting.copyWith(enabled: value),
+            ),
+          );
+          showSuccessToast(t.common.settingSaved);
+        },
+        startAction: MiuixSettingHelpers.icon(
+          fallback: Icons.lock_outline,
+          name: 'lock',
+        ),
+        insideMargin: MiuixSettingHelpers.itemMargin,
+      ),
+      MiuixArrowPreference(
+        title: t.settings.appLock,
+        summary: t.settings.appLockSubtitle,
+        startAction: MiuixSettingHelpers.icon(
+          fallback: Icons.gesture_outlined,
+          name: 'gesture',
+        ),
+        insideMargin: MiuixSettingHelpers.itemMargin,
+        onClick: () async {
+          final nextSetting = await _configureAppLock();
+          if (nextSetting == null) {
+            return;
+          }
+          cubit.updateState(
+            (current) => current.copyWith(appLockSetting: nextSetting),
+          );
+          showSuccessToast(t.common.settingSaved);
+        },
+      ),
+      if (isReady)
+        MiuixArrowPreference(
+          title: t.gestureLock.pinTitle,
+          summary: t.gestureLock.pinHint,
+          startAction: MiuixSettingHelpers.icon(
+            fallback: Icons.pin_outlined,
+            name: 'pin',
+          ),
+          insideMargin: MiuixSettingHelpers.itemMargin,
+          onClick: () async {
+            final pin = await showPinCodeSetupDialog(
+              context,
+              title: t.gestureLock.pinTitle,
+              confirmTitle: t.gestureLock.pinHint,
+            );
+            if (pin == null) {
+              return;
+            }
+            cubit.updateState(
+              (current) => current.copyWith(
+                appLockSetting: current.appLockSetting.copyWith(
+                  resetPinHash: hashPinCode(pin),
+                ),
+              ),
+            );
+            showSuccessToast(t.common.settingSaved);
           },
         ),
-        if (isReady)
-          ListTile(
-            leading: const Icon(Icons.pin_outlined),
-            title: Text(t.gestureLock.pinTitle),
-            subtitle: Text(t.gestureLock.pinHint),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () async {
-              final pin = await showPinCodeSetupDialog(
-                context,
-                title: t.gestureLock.pinTitle,
-                confirmTitle: t.gestureLock.pinHint,
-              );
-              if (pin == null) {
-                return;
-              }
-              cubit.updateState(
-                (current) => current.copyWith(
-                  appLockSetting: current.appLockSetting.copyWith(
-                    resetPinHash: hashPinCode(pin),
+      if (isReady)
+        MiuixArrowPreference(
+          title: t.common.delete,
+          summary: t.settings.appLock,
+          startAction: MiuixSettingHelpers.icon(
+            fallback: Icons.delete_outline,
+            name: 'delete',
+          ),
+          insideMargin: MiuixSettingHelpers.itemMargin,
+          onClick: () async {
+            final shouldDelete = await showDialog<bool>(
+              context: context,
+              builder: (context) => AlertDialog(
+                title: Text(t.common.delete),
+                content: Text(t.settings.appLockSubtitle),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context, false),
+                    child: Text(t.common.cancel),
                   ),
-                ),
-              );
-              showSuccessToast(t.common.settingSaved);
-            },
-          ),
-        if (isReady)
-          ListTile(
-            leading: const Icon(Icons.delete_outline),
-            title: Text(t.common.delete),
-            subtitle: Text(t.settings.appLock),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () async {
-              final shouldDelete = await showDialog<bool>(
-                context: context,
-                builder: (context) => AlertDialog(
-                  title: Text(t.common.delete),
-                  content: Text(t.settings.appLockSubtitle),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(context, false),
-                      child: Text(t.common.cancel),
-                    ),
-                    TextButton(
-                      onPressed: () => Navigator.pop(context, true),
-                      child: Text(t.common.delete),
-                    ),
-                  ],
-                ),
-              );
-              if (shouldDelete != true) {
-                return;
-              }
-              cubit.updateState(
-                (current) => current.copyWith(
-                  appLockSetting: const AppLockSettingState(),
-                ),
-              );
-              showSuccessToast(t.common.settingSaved);
-            },
-          ),
-      ],
-    );
+                  TextButton(
+                    onPressed: () => Navigator.pop(context, true),
+                    child: Text(t.common.delete),
+                  ),
+                ],
+              ),
+            );
+            if (shouldDelete != true) {
+              return;
+            }
+            cubit.updateState(
+              (current) => current.copyWith(
+                appLockSetting: const AppLockSettingState(),
+              ),
+            );
+            showSuccessToast(t.common.settingSaved);
+          },
+        ),
+    ];
   }
 
   Future<AppLockSettingState?> _configureAppLock() async {
