@@ -4,6 +4,8 @@ include:
 linter:
   rules:
     always_use_package_imports: true
+    non_constant_identifier_names: false
+    constant_identifier_names: false
 
 analyzer:
   exclude:

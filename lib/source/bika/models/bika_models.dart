@@ -1,0 +1,1385 @@
+import 'dart:convert';
+
+import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:zephyr/source/bika/auth/bika_setting.dart';
+
+part 'bika_models.freezed.dart';
+part 'bika_models.g.dart';
+
+class BaseResponse<T> {
+  final int code;
+  final String message;
+  final T data;
+
+  BaseResponse({required this.code, required this.message, required this.data});
+
+  factory BaseResponse.fromJson(
+    Map<String, dynamic> json,
+    T Function(dynamic) fromJsonT,
+  ) {
+    return BaseResponse<T>(
+      code: json['code'] as int,
+      message: json['message'] as String,
+      data: fromJsonT(json['data']),
+    );
+  }
+
+  Map<String, dynamic> toJson(dynamic Function(T) toJsonT) {
+    return {'code': code, 'message': message, 'data': toJsonT(data)};
+  }
+}
+
+class LoginPayload {
+  String email;
+  String password;
+  LoginPayload({required this.email, required this.password});
+  Map<String, dynamic> toJson() => {'email': email, 'password': password};
+}
+
+@JsonSerializable()
+class LoginResponse {
+  final String token;
+  LoginResponse({required this.token});
+  factory LoginResponse.fromJson(Map<String, dynamic> json) =>
+      _$LoginResponseFromJson(json);
+
+  Map<String, dynamic> toJson() => _$LoginResponseToJson(this);
+}
+
+@JsonSerializable()
+class ImageDetail {
+  final String fileServer;
+  final String path;
+  final String originalName;
+
+  ImageDetail({
+    required this.fileServer,
+    required this.path,
+    required this.originalName,
+  });
+
+  factory ImageDetail.fromJson(Map<String, dynamic> json) =>
+      _$ImageDetailFromJson(json);
+
+  Map<String, dynamic> toJson() => _$ImageDetailToJson(this);
+
+  static ImageDetail? tryParse(Object? value) {
+    if (value == null) return null;
+    if (value is ImageDetail) return value;
+
+    final decoded = value is String ? jsonDecode(value) : value;
+    if (decoded is Map<String, dynamic>) {
+      return ImageDetail.fromJson(decoded);
+    }
+    if (decoded is Map) {
+      return ImageDetail.fromJson(Map<String, dynamic>.from(decoded));
+    }
+
+    return null;
+  }
+
+  String normalizeUrl(String url) {
+    final uri = Uri.parse(url);
+
+    final normalizedPath = uri.path.replaceAll(RegExp(r'/+'), '/');
+
+    return uri.replace(path: normalizedPath).toString();
+  }
+
+  String get directUrl => normalizeUrl(
+    fileServer.contains('static')
+        ? '$fileServer/$path'
+        : '$fileServer/static/$path',
+  );
+
+  String get proxyUrl => directUrl.replaceFirst('picacomic', 'go2778');
+
+  String get url => bikaNativeSetting.api == 'picacomic' ? directUrl : proxyUrl;
+
+  String get cacheKey => path;
+}
+
+@JsonSerializable()
+class Category {
+  @JsonKey(name: '_id')
+  final String? id;
+
+  final ImageDetail thumb;
+
+  final String title;
+
+  @JsonKey(defaultValue: '')
+  final String description;
+
+  final bool? isWeb;
+
+  final bool? active;
+
+  final String? link;
+
+  Category({
+    this.id,
+    required this.thumb,
+    required this.title,
+    required this.description,
+    this.isWeb,
+    this.active,
+    this.link,
+  });
+
+  factory Category.fromJson(Map<String, dynamic> json) =>
+      _$CategoryFromJson(json);
+
+  Map<String, dynamic> toJson() => _$CategoryToJson(this);
+}
+
+@JsonSerializable()
+class CategoriesResponse {
+  final List<Category> categories;
+
+  CategoriesResponse({required this.categories});
+
+  factory CategoriesResponse.fromJson(Map<String, dynamic> json) =>
+      _$CategoriesResponseFromJson(json);
+
+  Map<String, dynamic> toJson() => _$CategoriesResponseToJson(this);
+}
+
+enum ComicSortType {
+  dd('新到旧'),
+  da('旧到新'),
+  ld('最多喜欢'),
+  vd('最多观看');
+
+  final String title;
+
+  const ComicSortType(this.title);
+}
+
+class ComicsPayload {
+  final int? page;
+
+  final String? c;
+
+  final ComicSortType? s;
+
+  final String? t;
+
+  final String? a;
+
+  final String? ct;
+
+  final String? ca;
+
+  ComicsPayload({this.page, this.c, this.s, this.t, this.a, this.ca, this.ct});
+
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> json = {};
+    if (page != null) json['page'] = page;
+    if (c != null) json['c'] = c!;
+    if (s != null) json['s'] = s!.name;
+    if (a != null) json['a'] = a!;
+    if (ca != null) json['ca'] = ca!;
+    if (ct != null) json['ct'] = ct!;
+    if (t != null) json['t'] = t!;
+    return json;
+  }
+}
+
+@JsonSerializable()
+class Doc extends ComicBase {
+  @override
+  @JsonKey(name: '_id')
+  final String uid;
+
+  @override
+  final String title;
+
+  @override
+  @JsonKey(defaultValue: '')
+  final String author;
+
+  @override
+  @JsonKey(defaultValue: 0)
+  final int totalViews;
+
+  @override
+  final int? totalLikes;
+
+  final int pagesCount;
+
+  final int epsCount;
+
+  @override
+  final bool finished;
+
+  @override
+  final List<String> categories;
+
+  @override
+  final ImageDetail thumb;
+
+  final String? id;
+
+  @override
+  @JsonKey(defaultValue: 0)
+  final int likesCount;
+
+  @override
+  @JsonKey(defaultValue: [])
+  final List<String> tags;
+
+  Doc({
+    required this.author,
+    required this.categories,
+    required this.epsCount,
+    required this.finished,
+    this.id,
+    required this.likesCount,
+    required this.pagesCount,
+    required this.thumb,
+    required this.title,
+    this.totalLikes,
+    required this.totalViews,
+    required this.uid,
+    required this.tags,
+  });
+
+  factory Doc.fromJson(Map<String, dynamic> json) => _$DocFromJson(json);
+
+  Map<String, dynamic> toJson() => _$DocToJson(this);
+}
+
+@freezed
+abstract class Comics with _$Comics {
+  const factory Comics({
+    required List<Doc> docs,
+    required int limit,
+    required int page,
+    required int pages,
+    required int total,
+  }) = _Comics;
+
+  factory Comics.fromJson(Map<String, dynamic> json) => _$ComicsFromJson(json);
+}
+
+@freezed
+abstract class ComicsResponse with _$ComicsResponse {
+  const factory ComicsResponse({required Comics comics}) = _ComicsResponse;
+
+  factory ComicsResponse.fromJson(Map<String, dynamic> json) =>
+      _$ComicsResponseFromJson(json);
+
+  static ComicsResponse get empty => const ComicsResponse(
+    comics: Comics(docs: [], limit: 0, page: 0, pages: 0, total: 0),
+  );
+}
+
+@JsonSerializable()
+class Creator {
+  @JsonKey(name: '_id')
+  final String id;
+
+  final String gender;
+
+  final String name;
+
+  @JsonKey(defaultValue: 0)
+  final int exp;
+
+  final int level;
+
+  final String role;
+
+  final ImageDetail? avatar;
+
+  final List<String> characters;
+
+  @JsonKey(defaultValue: '')
+  final String title;
+
+  final String? slogan;
+
+  Creator({
+    required this.id,
+    this.avatar,
+    required this.characters,
+    required this.exp,
+    required this.gender,
+    required this.level,
+    required this.name,
+    required this.role,
+    required this.title,
+    this.slogan,
+  });
+
+  factory Creator.fromJson(Map<String, dynamic> json) =>
+      _$CreatorFromJson(json);
+
+  Map<String, dynamic> toJson() => _$CreatorToJson(this);
+}
+
+@JsonSerializable()
+class Comic {
+  @JsonKey(name: '_id')
+  final String id;
+
+  @JsonKey(name: '_creator')
+  final Creator creator;
+
+  final String title;
+
+  @JsonKey(defaultValue: '')
+  final String description;
+
+  final ImageDetail thumb;
+
+  final String? author;
+
+  final List<String> categories;
+
+  @JsonKey(defaultValue: '')
+  final String chineseTeam;
+
+  final List<String> tags;
+
+  final int pagesCount;
+
+  final int epsCount;
+
+  final bool finished;
+
+  final String updated_at;
+
+  final String created_at;
+
+  final bool allowDownload;
+
+  final bool allowComment;
+
+  final int totalLikes;
+
+  final int totalViews;
+
+  final int? totalComments;
+
+  final int viewsCount;
+
+  final int likesCount;
+
+  @JsonKey(defaultValue: 0)
+  final int commentsCount;
+
+  final bool isFavourite;
+
+  final bool isLiked;
+
+  Comic({
+    required this.author,
+    required this.categories,
+    required this.chineseTeam,
+    required this.created_at,
+    required this.description,
+    required this.epsCount,
+    required this.finished,
+    required this.id,
+    required this.isFavourite,
+    required this.isLiked,
+    required this.likesCount,
+    required this.pagesCount,
+    required this.tags,
+    required this.thumb,
+    required this.title,
+    required this.totalLikes,
+    required this.totalViews,
+    required this.totalComments,
+    required this.updated_at,
+    required this.viewsCount,
+    required this.creator,
+    required this.allowDownload,
+    required this.allowComment,
+    required this.commentsCount,
+  });
+
+  factory Comic.fromJson(Map<String, dynamic> json) => _$ComicFromJson(json);
+
+  Map<String, dynamic> toJson() => _$ComicToJson(this);
+}
+
+@JsonSerializable()
+class ComicDetailsResponse {
+  final Comic comic;
+
+  ComicDetailsResponse({required this.comic});
+
+  factory ComicDetailsResponse.fromJson(Map<String, dynamic> json) =>
+      _$ComicDetailsResponseFromJson(json);
+
+  Map<String, dynamic> toJson() => _$ComicDetailsResponseToJson(this);
+}
+
+@JsonSerializable()
+class Chapter {
+  @JsonKey(name: '_id')
+  final String uid;
+
+  final String title;
+
+  final int order;
+
+  final String updated_at;
+
+  final String id;
+
+  Chapter({
+    required this.uid,
+    required this.title,
+    required this.order,
+    required this.updated_at,
+    required this.id,
+  });
+
+  factory Chapter.fromJson(Map<String, dynamic> json) =>
+      _$ChapterFromJson(json);
+
+  Map<String, dynamic> toJson() => _$ChapterToJson(this);
+}
+
+@JsonSerializable()
+class Chapters {
+  final List<Chapter> docs;
+
+  final int total;
+
+  final int limit;
+
+  final int page;
+
+  final int pages;
+
+  Chapters({
+    required this.docs,
+    required this.total,
+    required this.limit,
+    required this.page,
+    required this.pages,
+  });
+
+  factory Chapters.fromJson(Map<String, dynamic> json) =>
+      _$ChaptersFromJson(json);
+
+  Map<String, dynamic> toJson() => _$ChaptersToJson(this);
+}
+
+@JsonSerializable()
+class ChaptersResponse {
+  final Chapters eps;
+
+  ChaptersResponse({required this.eps});
+
+  factory ChaptersResponse.fromJson(Map<String, dynamic> json) =>
+      _$ChaptersResponseFromJson(json);
+
+  Map<String, dynamic> toJson() => _$ChaptersResponseToJson(this);
+}
+
+@JsonSerializable()
+class RecommendComic {
+  @JsonKey(name: '_id')
+  final String id;
+
+  final String title;
+
+  @JsonKey(defaultValue: '')
+  final String author;
+
+  final ImageDetail thumb;
+
+  @JsonKey(defaultValue: 0)
+  final int pagesCount;
+
+  @JsonKey(defaultValue: 0)
+  final int epsCount;
+
+  final bool finished;
+
+  final List<String> categories;
+
+  @JsonKey(defaultValue: 0)
+  final int likesCount;
+
+  RecommendComic({
+    required this.id,
+    required this.title,
+    required this.author,
+    required this.thumb,
+    required this.pagesCount,
+    required this.epsCount,
+    required this.finished,
+    required this.categories,
+    required this.likesCount,
+  });
+
+  factory RecommendComic.fromJson(Map<String, dynamic> json) =>
+      _$RecommendComicFromJson(json);
+
+  Map<String, dynamic> toJson() => _$RecommendComicToJson(this);
+}
+
+@JsonSerializable()
+class RecommendComics {
+  final List<RecommendComic> comics;
+
+  RecommendComics({required this.comics});
+
+  factory RecommendComics.fromJson(Map<String, dynamic> json) =>
+      _$RecommendComicsFromJson(json);
+
+  Map<String, dynamic> toJson() => _$RecommendComicsToJson(this);
+}
+
+@JsonSerializable()
+class ActionResponse {
+  final String action;
+
+  ActionResponse({required this.action});
+
+  factory ActionResponse.fromJson(Map<String, dynamic> json) =>
+      _$ActionResponseFromJson(json);
+
+  Map<String, dynamic> toJson() => _$ActionResponseToJson(this);
+}
+
+class CommentsPayload {
+  final String id;
+
+  final int page;
+
+  CommentsPayload({required this.id, required this.page});
+}
+
+@JsonSerializable()
+class Comment {
+  @JsonKey(name: '_id')
+  final String uid;
+
+  final String content;
+
+  @JsonKey(name: '_user')
+  final Creator user;
+
+  @JsonKey(name: '_comic')
+  final String comic;
+
+  final int? totalComments;
+
+  final bool isTop;
+
+  final bool hide;
+
+  final String created_at;
+
+  final String id;
+
+  @JsonKey(defaultValue: 0)
+  final int likesCount;
+
+  final int commentsCount;
+
+  final bool isLiked;
+
+  Comment({
+    required this.uid,
+    required this.content,
+    required this.user,
+    required this.comic,
+    required this.totalComments,
+    required this.isTop,
+    required this.hide,
+    required this.created_at,
+    required this.id,
+    required this.likesCount,
+    required this.commentsCount,
+    required this.isLiked,
+  });
+
+  factory Comment.fromJson(Map<String, dynamic> json) =>
+      _$CommentFromJson(json);
+
+  Map<String, dynamic> toJson() => _$CommentToJson(this);
+}
+
+int pageFormat(dynamic value) => int.tryParse(value.toString()) ?? 1;
+
+@freezed
+abstract class Comments with _$Comments {
+  const factory Comments({
+    required List<Comment> docs,
+    required int total,
+    @Default(20) int limit,
+    @JsonKey(fromJson: pageFormat) required int page,
+    required int pages,
+  }) = _Comments;
+
+  factory Comments.fromJson(Map<String, dynamic> json) =>
+      _$CommentsFromJson(json);
+}
+
+@freezed
+abstract class CommentsResponse with _$CommentsResponse {
+  const factory CommentsResponse({required Comments comments}) =
+      _CommentsResponse;
+
+  factory CommentsResponse.fromJson(Map<String, dynamic> json) =>
+      _$CommentsResponseFromJson(json);
+
+  static CommentsResponse get empty => const CommentsResponse(
+    comments: Comments(docs: [], total: 0, limit: 0, page: 0, pages: 0),
+  );
+}
+
+class SendCommentPayload {
+  final String id;
+
+  final String content;
+
+  SendCommentPayload({required this.id, required this.content});
+
+  Map<String, dynamic> toJson() => {'content': content};
+}
+
+@JsonSerializable()
+class SubComment {
+  @JsonKey(name: '_id')
+  final String uid;
+
+  final String content;
+
+  @JsonKey(name: '_user')
+  final Creator user;
+
+  final String created_at;
+
+  final bool hide;
+
+  final String id;
+
+  final bool isLiked;
+
+  final bool isTop;
+
+  final int likesCount;
+
+  final int totalComments;
+
+  @JsonKey(name: '_comic')
+  final String? comic;
+
+  @JsonKey(name: '_game')
+  final String? game;
+
+  @JsonKey(name: '_parent')
+  final String parent;
+
+  SubComment({
+    required this.uid,
+    required this.content,
+    required this.user,
+    required this.created_at,
+    required this.hide,
+    required this.id,
+    required this.isLiked,
+    required this.isTop,
+    required this.likesCount,
+    required this.totalComments,
+    required this.comic,
+    required this.parent,
+    required this.game,
+  });
+
+  factory SubComment.fromJson(Map<String, dynamic> json) =>
+      _$SubCommentFromJson(json);
+
+  Map<String, dynamic> toJson() => _$SubCommentToJson(this);
+}
+
+@freezed
+abstract class SubComments with _$SubComments {
+  const factory SubComments({
+    required List<SubComment> docs,
+    required int total,
+    required int limit,
+    required String page,
+    required int pages,
+  }) = _SubComments;
+
+  factory SubComments.fromJson(Map<String, dynamic> json) =>
+      _$SubCommentsFromJson(json);
+}
+
+@freezed
+abstract class SubCommentsResponse with _$SubCommentsResponse {
+  const factory SubCommentsResponse({required SubComments comments}) =
+      _SubCommentsResponse;
+
+  factory SubCommentsResponse.fromJson(Map<String, dynamic> json) =>
+      _$SubCommentsResponseFromJson(json);
+
+  static SubCommentsResponse get empty => const SubCommentsResponse(
+    comments: SubComments(docs: [], total: 0, limit: 0, page: '', pages: 0),
+  );
+}
+
+class SubCommentsPayload {
+  final String id;
+
+  final int page;
+
+  SubCommentsPayload({required this.id, required this.page});
+
+  Map<String, dynamic> toJson() => {'page': page};
+}
+
+class SearchPayload {
+  final String keyword;
+
+  final int page;
+
+  final ComicSortType sort;
+
+  final Set<String> categories;
+
+  const SearchPayload({
+    required this.keyword,
+    required this.page,
+    required this.sort,
+    this.categories = const {},
+  });
+
+  Map<String, dynamic> toJson() => {
+    'keyword': keyword,
+    'sort': sort.name,
+    if (categories.isNotEmpty) 'categories': categories.toList(),
+  };
+}
+
+@JsonSerializable()
+class SearchComic extends ComicBase {
+  final String updated_at;
+
+  @override
+  final ImageDetail thumb;
+
+  @override
+  @JsonKey(defaultValue: '??')
+  final String author;
+
+  final String? description;
+
+  final String? chineseTeam;
+
+  final String created_at;
+
+  @override
+  final bool finished;
+
+  @override
+  final int? totalViews;
+
+  @override
+  final List<String> categories;
+
+  @override
+  @JsonKey(fromJson: _totalLikesFromJson)
+  final int? totalLikes;
+
+  @override
+  final String title;
+
+  @override
+  final List<String> tags;
+
+  @override
+  @JsonKey(name: '_id')
+  final String uid;
+
+  @override
+  @JsonKey(defaultValue: 0, fromJson: _likesCountFromJson)
+  final int likesCount;
+
+  static int _likesCountFromJson(dynamic value) {
+    if (value is int) return value;
+    if (value is String) return int.tryParse(value) ?? 0;
+    return 0;
+  }
+
+  static int? _totalLikesFromJson(dynamic value) {
+    if (value is int) return value;
+    if (value is String) return int.tryParse(value);
+    return null;
+  }
+
+  SearchComic({
+    required this.updated_at,
+    required this.thumb,
+    required this.author,
+    required this.description,
+    required this.chineseTeam,
+    required this.created_at,
+    required this.finished,
+    required this.totalViews,
+    required this.categories,
+    required this.totalLikes,
+    required this.title,
+    required this.tags,
+    required this.uid,
+    required this.likesCount,
+  });
+
+  factory SearchComic.fromJson(Map<String, dynamic> json) =>
+      _$SearchComicFromJson(json);
+
+  Map<String, dynamic> toJson() => _$SearchComicToJson(this);
+}
+
+@freezed
+abstract class SearchComics with _$SearchComics {
+  const factory SearchComics({
+    required List<SearchComic> docs,
+    required int total,
+    required int limit,
+    required int page,
+    required int pages,
+  }) = _SearchComics;
+
+  factory SearchComics.fromJson(Map<String, dynamic> json) =>
+      _$SearchComicsFromJson(json);
+}
+
+@freezed
+abstract class SearchResponse with _$SearchResponse {
+  const factory SearchResponse({required SearchComics comics}) =
+      _SearchResponse;
+
+  factory SearchResponse.fromJson(Map<String, dynamic> json) =>
+      _$SearchResponseFromJson(json);
+
+  static SearchResponse get empty => const SearchResponse(
+    comics: SearchComics(docs: [], total: 0, limit: 0, page: 0, pages: 0),
+  );
+}
+
+class UserFavoritePayload {
+  final int page;
+
+  final ComicSortType sort;
+
+  UserFavoritePayload({required this.page, required this.sort});
+
+  Map<String, dynamic> toJson() => {'page': page, 's': sort.name};
+}
+
+class ExtraRecommendComic {
+  final String id;
+
+  final String title;
+
+  final String pic;
+
+  final String cacheKey;
+
+  ExtraRecommendComic({
+    required this.id,
+    required this.title,
+    required this.pic,
+    required this.cacheKey,
+  });
+
+  factory ExtraRecommendComic.fromJson(Map<String, dynamic> json) =>
+      ExtraRecommendComic(
+        id: json['id'],
+        title: json['title'],
+        pic: json['pic'],
+        cacheKey: json['cacheKey'],
+      );
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'title': title,
+    'pic': pic,
+    'cacheKey': cacheKey,
+  };
+}
+
+class ExtraRecommendComicIdsResponse {
+  final int code;
+
+  final List<String> recommendations;
+
+  final int count;
+
+  const ExtraRecommendComicIdsResponse({
+    required this.code,
+    required this.recommendations,
+    required this.count,
+  });
+
+  factory ExtraRecommendComicIdsResponse.fromJson(Map<String, dynamic> json) {
+    final recommendations =
+        (json['recommendations'] as List<dynamic>? ?? const [])
+            .map((id) => id.toString())
+            .toList();
+
+    return ExtraRecommendComicIdsResponse(
+      code: _intFromJson(json['code']),
+      recommendations: recommendations,
+      count: json['count'] == null
+          ? recommendations.length
+          : _intFromJson(json['count']),
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'code': code,
+    'recommendations': recommendations,
+    'count': count,
+  };
+
+  static int _intFromJson(dynamic value) {
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    return int.parse(value.toString());
+  }
+}
+
+class FetchChapterImagesPayload {
+  final String id;
+  final int order;
+
+  const FetchChapterImagesPayload({required this.id, required this.order});
+}
+
+abstract class ImageBase {
+  String get url;
+  String? get cacheKey;
+  String? get id;
+  String get uid;
+}
+
+@JsonSerializable()
+class ChapterImage extends ImageBase {
+  @override
+  @JsonKey(name: '_id')
+  final String uid;
+
+  @override
+  final String? id;
+
+  final ImageDetail media;
+
+  ChapterImage({required this.uid, required this.id, required this.media});
+
+  factory ChapterImage.fromJson(Map<String, dynamic> json) =>
+      _$ChapterImageFromJson(json);
+
+  Map<String, dynamic> toJson() => _$ChapterImageToJson(this);
+
+  @override
+  String get url => media.url;
+
+  @override
+  String get cacheKey => media.cacheKey;
+}
+
+@JsonSerializable()
+class ChaptersImages {
+  final List<ChapterImage> docs;
+
+  final int total;
+
+  final int limit;
+
+  final int page;
+
+  final int pages;
+
+  ChaptersImages({
+    required this.docs,
+    required this.total,
+    required this.limit,
+    required this.page,
+    required this.pages,
+  });
+
+  factory ChaptersImages.fromJson(Map<String, dynamic> json) =>
+      _$ChaptersImagesFromJson(json);
+
+  Map<String, dynamic> toJson() => _$ChaptersImagesToJson(this);
+}
+
+@JsonSerializable()
+class ChapterEpisode {
+  @JsonKey(name: '_id')
+  final String id;
+
+  final String title;
+
+  ChapterEpisode({required this.id, required this.title});
+
+  factory ChapterEpisode.fromJson(Map<String, dynamic> json) =>
+      _$ChapterEpisodeFromJson(json);
+
+  Map<String, dynamic> toJson() => _$ChapterEpisodeToJson(this);
+}
+
+@JsonSerializable()
+class FetchChapterImagesResponse {
+  final ChaptersImages pages;
+
+  final ChapterEpisode ep;
+
+  FetchChapterImagesResponse({required this.pages, required this.ep});
+
+  factory FetchChapterImagesResponse.fromJson(Map<String, dynamic> json) =>
+      _$FetchChapterImagesResponseFromJson(json);
+
+  Map<String, dynamic> toJson() => _$FetchChapterImagesResponseToJson(this);
+}
+
+@JsonSerializable()
+class UserProfileResponse {
+  final User user;
+
+  UserProfileResponse({required this.user});
+
+  factory UserProfileResponse.fromJson(Map<String, dynamic> json) =>
+      _$UserProfileResponseFromJson(json);
+
+  Map<String, dynamic> toJson() => _$UserProfileResponseToJson(this);
+}
+
+@JsonSerializable()
+class User {
+  @JsonKey(name: '_id')
+  final String id;
+
+  @JsonKey(defaultValue: '')
+  final String birthday;
+
+  @JsonKey(defaultValue: '')
+  final String email;
+
+  @JsonKey(defaultValue: 'm')
+  final String gender;
+
+  @JsonKey(defaultValue: '')
+  final String name;
+
+  @JsonKey(defaultValue: '')
+  final String slogan;
+
+  @JsonKey(defaultValue: '萌新')
+  final String title;
+
+  @JsonKey(defaultValue: false)
+  final bool verified;
+
+  @JsonKey(defaultValue: 0)
+  final int exp;
+
+  @JsonKey(defaultValue: 0)
+  final int level;
+
+  @JsonKey(defaultValue: [])
+  final List<String> characters;
+
+  @JsonKey(defaultValue: "")
+  final String created_at;
+
+  final ImageDetail? avatar;
+
+  @JsonKey(defaultValue: false)
+  final bool isPunched;
+
+  @JsonKey(defaultValue: '')
+  final String character;
+
+  @JsonKey(defaultValue: 0)
+  final int comicsUploaded;
+
+  User({
+    required this.id,
+    required this.birthday,
+    required this.email,
+    required this.gender,
+    required this.name,
+    required this.slogan,
+    required this.title,
+    required this.verified,
+    required this.exp,
+    required this.level,
+    required this.characters,
+    required this.created_at,
+    required this.avatar,
+    required this.isPunched,
+    required this.character,
+    required this.comicsUploaded,
+  });
+
+  factory User.fromJson(Map<String, dynamic> json) => _$UserFromJson(json);
+
+  Map<String, dynamic> toJson() => _$UserToJson(this);
+}
+
+enum ComicRankType { H24, D7, D30 }
+
+class ComicRankPayload {
+  final ComicRankType type;
+
+  ComicRankPayload({required this.type});
+
+  Map<String, dynamic> toJson() => {'tt': type.name, 'ct': 'VC'};
+}
+
+@JsonSerializable()
+class ComicRankResponse {
+  final List<Doc> comics;
+
+  ComicRankResponse({required this.comics});
+
+  factory ComicRankResponse.fromJson(Map<String, dynamic> json) =>
+      _$ComicRankResponseFromJson(json);
+
+  Map<String, dynamic> toJson() => _$ComicRankResponseToJson(this);
+}
+
+@JsonSerializable()
+class KnightRankResponse {
+  final List<User> users;
+
+  KnightRankResponse({required this.users});
+
+  factory KnightRankResponse.fromJson(Map<String, dynamic> json) =>
+      _$KnightRankResponseFromJson(json);
+
+  Map<String, dynamic> toJson() => _$KnightRankResponseToJson(this);
+}
+
+@JsonSerializable()
+class RandomComicsResponse {
+  final List<Doc> comics;
+
+  RandomComicsResponse({required this.comics});
+
+  factory RandomComicsResponse.fromJson(Map<String, dynamic> json) =>
+      _$RandomComicsResponseFromJson(json);
+
+  Map<String, dynamic> toJson() => _$RandomComicsResponseToJson(this);
+}
+
+@JsonSerializable()
+class Source {
+  final String title;
+
+  @JsonKey(name: '_id')
+  final String id;
+
+  Source({required this.title, required this.id});
+
+  factory Source.fromJson(Map<String, dynamic> json) => _$SourceFromJson(json);
+
+  Map<String, dynamic> toJson() => _$SourceToJson(this);
+}
+
+@JsonSerializable()
+class PersonalComment {
+  @JsonKey(name: '_id')
+  final String uid;
+
+  final String content;
+
+  @JsonKey(name: '_comic')
+  final Source? comic;
+
+  @JsonKey(name: '_game')
+  final Source? game;
+
+  final int? totalComments;
+
+  @JsonKey(defaultValue: false)
+  final bool hide;
+
+  final String created_at;
+
+  final String? id;
+
+  final int likesCount;
+
+  @JsonKey(defaultValue: 0)
+  final int commentsCount;
+
+  final bool isLiked;
+
+  const PersonalComment({
+    required this.uid,
+    required this.content,
+    required this.comic,
+    required this.game,
+    required this.totalComments,
+    required this.hide,
+    required this.created_at,
+    required this.id,
+    required this.likesCount,
+    required this.commentsCount,
+    required this.isLiked,
+  });
+
+  factory PersonalComment.fromJson(Map<String, dynamic> json) =>
+      _$PersonalCommentFromJson(json);
+
+  Map<String, dynamic> toJson() => _$PersonalCommentToJson(this);
+
+  Comment toComment(User user) => Comment(
+    uid: uid,
+    content: content,
+    user: Creator(
+      id: user.id,
+      characters: user.characters,
+      exp: user.exp,
+      gender: user.gender,
+      level: user.level,
+      name: user.name,
+      role: '',
+      title: user.title,
+      avatar: user.avatar,
+    ),
+    comic: comic?.title ?? '',
+    totalComments: totalComments,
+    isTop: false,
+    hide: hide,
+    created_at: created_at,
+    id: uid,
+    likesCount: likesCount,
+    commentsCount: commentsCount,
+    isLiked: isLiked,
+  );
+}
+
+@freezed
+abstract class PersonalComments with _$PersonalComments {
+  const factory PersonalComments({
+    required List<PersonalComment> docs,
+    required int pages,
+    required int total,
+    required int limit,
+    required String page,
+  }) = _PersonalComments;
+
+  factory PersonalComments.fromJson(Map<String, dynamic> json) =>
+      _$PersonalCommentsFromJson(json);
+}
+
+@freezed
+abstract class PersonalCommentsResponse with _$PersonalCommentsResponse {
+  const factory PersonalCommentsResponse({required PersonalComments comments}) =
+      _PersonalCommentsResponse;
+
+  factory PersonalCommentsResponse.fromJson(Map<String, dynamic> json) =>
+      _$PersonalCommentsResponseFromJson(json);
+
+  static PersonalCommentsResponse get empty => const PersonalCommentsResponse(
+    comments: PersonalComments(
+      docs: [],
+      pages: 0,
+      total: 0,
+      limit: 0,
+      page: '0',
+    ),
+  );
+}
+
+@JsonSerializable()
+class HotSearchWordsResponse {
+  final List<String> keywords;
+
+  HotSearchWordsResponse({required this.keywords});
+
+  factory HotSearchWordsResponse.fromJson(Map<String, dynamic> json) =>
+      _$HotSearchWordsResponseFromJson(json);
+
+  Map<String, dynamic> toJson() => _$HotSearchWordsResponseToJson(this);
+}
+
+class UpdatePasswordPayload {
+  final String oldPassword;
+  final String newPassword;
+
+  UpdatePasswordPayload({required this.oldPassword, required this.newPassword});
+
+  Map<String, dynamic> toJson() => {
+    'new_password': newPassword,
+    'old_password': oldPassword,
+  };
+}
+
+class RegisterPayload {
+  final String birthday;
+  final String email;
+  final String gender;
+  final String name;
+  final String password;
+
+  RegisterPayload({
+    required this.birthday,
+    required this.email,
+    required this.gender,
+    required this.name,
+    required this.password,
+  });
+
+  Map<String, dynamic> toJson() => {
+    'birthday': birthday,
+    'email': email,
+    'gender': gender,
+    'name': name,
+    'password': password,
+    'question1': '1',
+    'question2': '2',
+    'question3': '3',
+    'answer1': '4',
+    'answer2': '5',
+    'answer3': '6',
+  };
+}
+
+abstract class ComicBase {
+  String get uid;
+  String get title;
+  String get author;
+  List<String> get categories;
+  List<String> get tags;
+  ImageDetail get thumb;
+  bool get finished;
+  int? get totalViews;
+  int? get totalLikes;
+  int get likesCount;
+}
+
+class ReadTrackPayload {
+  final String fromId;
+  final String toId;
+
+  const ReadTrackPayload({required this.fromId, required this.toId});
+
+  Map<String, dynamic> toJson() => {'from_id': fromId, 'to_id': toId};
+}
+
+class ExtraRecommendComicPayload {
+  final String id;
+
+  final int limit;
+
+  const ExtraRecommendComicPayload({required this.id, this.limit = 10});
+
+  Map<String, dynamic> toJson() => {'id': id, 'limit': limit};
+}
