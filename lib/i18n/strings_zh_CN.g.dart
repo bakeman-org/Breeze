@@ -657,11 +657,11 @@ class Translations$settings$zh_CN {
 	/// zh-CN: '开启后收藏漫画时将自动加入追更列表'
 	String get autoFollowOnCollectSubtitle => '开启后收藏漫画时将自动加入追更列表';
 
-	/// zh-CN: '左手优化'
-	String get leftHandMode => '左手优化';
+	/// zh-CN: '单手模式（初始位置）'
+	String get leftHandMode => '单手模式（初始位置）';
 
-	/// zh-CN: '开启后将悬浮按钮等操作按钮移到屏幕左侧'
-	String get leftHandModeSubtitle => '开启后将悬浮按钮等操作按钮移到屏幕左侧';
+	/// zh-CN: '拖拽悬浮按钮后位置会被记住；此选项仅控制初始对齐方向'
+	String get leftHandModeSubtitle => '拖拽悬浮按钮后位置会被记住；此选项仅控制初始对齐方向';
 
 	/// zh-CN: '点击封面开始阅读'
 	String get clickCoverToStartReading => '点击封面开始阅读';
@@ -4135,8 +4135,8 @@ extension on Translations {
 			'settings.cloudFavoritePreferredSubtitle' => '开启后漫画信息页的收藏按钮将执行云端收藏，原云端收藏菜单项切换为本地收藏',
 			'settings.autoFollowOnCollect' => '收藏自动追更',
 			'settings.autoFollowOnCollectSubtitle' => '开启后收藏漫画时将自动加入追更列表',
-			'settings.leftHandMode' => '左手优化',
-			'settings.leftHandModeSubtitle' => '开启后将悬浮按钮等操作按钮移到屏幕左侧',
+			'settings.leftHandMode' => '单手模式（初始位置）',
+			'settings.leftHandModeSubtitle' => '拖拽悬浮按钮后位置会被记住；此选项仅控制初始对齐方向',
 			'settings.clickCoverToStartReading' => '点击封面开始阅读',
 			'settings.clickCoverToStartReadingSubtitle' => '在漫画详情页点击封面直接开始阅读',
 			'settings.checkUpdateOnStartup' => '启动时检查更新',

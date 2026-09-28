@@ -291,8 +291,8 @@ class _Translations$settings$en_US extends Translations$settings$zh_CN {
 	@override String get cloudFavoritePreferredSubtitle => 'When enabled, the favorite button on the comic info page performs cloud collection, and the original cloud collection menu item switches to local collection';
 	@override String get autoFollowOnCollect => 'Auto-follow on collect';
 	@override String get autoFollowOnCollectSubtitle => 'Automatically add comics to the follow list when favorited';
-	@override String get leftHandMode => 'Left-hand mode';
-	@override String get leftHandModeSubtitle => 'Move floating action buttons and other controls to the left side';
+	@override String get leftHandMode => 'One-hand mode (initial)';
+	@override String get leftHandModeSubtitle => 'Dragged FAB positions are remembered; this only sets the initial alignment';
 	@override String get clickCoverToStartReading => 'Tap cover to start reading';
 	@override String get clickCoverToStartReadingSubtitle => 'Tap the cover on the comic info page to start reading directly';
 	@override String get checkUpdateOnStartup => 'Check for updates on startup';
@@ -1763,8 +1763,8 @@ extension on TranslationsEnUs {
 			'settings.cloudFavoritePreferredSubtitle' => 'When enabled, the favorite button on the comic info page performs cloud collection, and the original cloud collection menu item switches to local collection',
 			'settings.autoFollowOnCollect' => 'Auto-follow on collect',
 			'settings.autoFollowOnCollectSubtitle' => 'Automatically add comics to the follow list when favorited',
-			'settings.leftHandMode' => 'Left-hand mode',
-			'settings.leftHandModeSubtitle' => 'Move floating action buttons and other controls to the left side',
+			'settings.leftHandMode' => 'One-hand mode (initial)',
+			'settings.leftHandModeSubtitle' => 'Dragged FAB positions are remembered; this only sets the initial alignment',
 			'settings.clickCoverToStartReading' => 'Tap cover to start reading',
 			'settings.clickCoverToStartReadingSubtitle' => 'Tap the cover on the comic info page to start reading directly',
 			'settings.checkUpdateOnStartup' => 'Check for updates on startup',

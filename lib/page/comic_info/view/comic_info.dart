@@ -23,6 +23,7 @@ import 'package:zephyr/page/comic_info/widgets/episode_list_section.dart';
 import 'package:zephyr/page/comic_info/widgets/inline_preview_grid.dart';
 import 'package:zephyr/page/comic_info/widgets/preview_controls.dart';
 import 'package:zephyr/page/comic_info/widgets/section_widgets.dart';
+import 'package:zephyr/widgets/draggable_fab_group.dart';
 // ★ 新增：查 objectbox 下载记录。
 import 'package:zephyr/object_box/objectbox.g.dart';
 // ★ 新增：构造 UnifiedComicDownloadInfo 传给下载页。
@@ -179,9 +180,9 @@ class _ComicInfoState extends State<_ComicInfo>
           .query(UnifiedComicDownload_.uniqueKey.equals(key))
           .watch()
           .listen((_) {
-        if (!mounted) return;
-        setState(() {});
-      });
+            if (!mounted) return;
+            setState(() {});
+          });
     } catch (_) {
       // objectbox 未就绪时忽略；下次 build 仍会查询。
     }
@@ -420,97 +421,105 @@ class _ComicInfoState extends State<_ComicInfo>
           ),
         ),
       ),
-      content: (padding) => Material(
-        type: MaterialType.transparency,
-        child: Padding(
-          padding: padding,
-          child: BlocBuilder<GetComicInfoBloc, GetComicInfoState>(
-            builder: (context, state) {
-              switch (state.status) {
-                case GetComicInfoStatus.initial:
-                  _cloudFavoriteStateOverridden = false;
-                  return const Center(child: CircularProgressIndicator());
-                case GetComicInfoStatus.failure:
-                  if (state.result.contains("under review") &&
-                      state.result.contains("1014")) {
-                    return Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            t.comicInfo.discontinued,
-                            style: const TextStyle(fontSize: 20),
+      content: (padding) => Stack(
+        children: [
+          Material(
+            type: MaterialType.transparency,
+            child: Padding(
+              padding: padding,
+              child: BlocBuilder<GetComicInfoBloc, GetComicInfoState>(
+                builder: (context, state) {
+                  switch (state.status) {
+                    case GetComicInfoStatus.initial:
+                      _cloudFavoriteStateOverridden = false;
+                      return const Center(child: CircularProgressIndicator());
+                    case GetComicInfoStatus.failure:
+                      if (state.result.contains("under review") &&
+                          state.result.contains("1014")) {
+                        return Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                t.comicInfo.discontinued,
+                                style: const TextStyle(fontSize: 20),
+                              ),
+                              const SizedBox(height: 10),
+                              MiuixButton(
+                                onPressed: () => context.pop(),
+                                child: Text(t.comicInfo.back),
+                              ),
+                            ],
                           ),
-                          const SizedBox(height: 10),
-                          MiuixButton(
-                            onPressed: () => context.pop(),
-                            child: Text(t.comicInfo.back),
-                          ),
-                        ],
-                      ),
-                    );
-                  }
-                  return ErrorView(
-                    errorMessage: t.comicInfo.loadFailedWithError(
-                      error: state.result.toString(),
-                    ),
-                    onRetry: () {
-                      context.read<GetComicInfoBloc>().add(
-                        GetComicInfoEvent(
-                          comicId: _comicId,
-                          from: widget.from,
-                          type: _type,
-                          extern: widget.extern,
+                        );
+                      }
+                      return ErrorView(
+                        errorMessage: t.comicInfo.loadFailedWithError(
+                          error: state.result.toString(),
                         ),
+                        onRetry: () {
+                          context.read<GetComicInfoBloc>().add(
+                            GetComicInfoEvent(
+                              comicId: _comicId,
+                              from: widget.from,
+                              type: _type,
+                              extern: widget.extern,
+                            ),
+                          );
+                        },
                       );
-                    },
-                  );
-                case GetComicInfoStatus.success:
-                  comicInfoDyn = state.comicInfo;
-                  _currentInfo = state.allInfo;
-                  _comicId = state.comicId ?? _comicId;
-                  _ensureDownloadWatch();
-                  if (!_cloudFavoriteStateOverridden) {
-                    _isCloudCollected = state.allInfo?.isFavourite ?? false;
+                    case GetComicInfoStatus.success:
+                      comicInfoDyn = state.comicInfo;
+                      _currentInfo = state.allInfo;
+                      _comicId = state.comicId ?? _comicId;
+                      _ensureDownloadWatch();
+                      if (!_cloudFavoriteStateOverridden) {
+                        _isCloudCollected = state.allInfo?.isFavourite ?? false;
+                      }
+                      _syncLocalCollectStatus(state.allInfo!);
+                      initHistory(
+                        context,
+                        _comicId,
+                        widget.from,
+                        chapters: state.allInfo!.eps,
+                      );
+                      return _infoView(state.allInfo!);
                   }
-                  _syncLocalCollectStatus(state.allInfo!);
-                  initHistory(
-                    context,
-                    _comicId,
-                    widget.from,
-                    chapters: state.allInfo!.eps,
-                  );
-                  return _infoView(state.allInfo!);
-              }
-            },
+                },
+              ),
+            ),
           ),
-        ),
+          if (_loadingComplete)
+            Positioned.fill(
+              child: BlocBuilder<StringSelectCubit, String>(
+                builder: (context, stringSelectDate) {
+                  return DraggableFabGroup(
+                    pageKey: 'comic_info',
+                    defaultAlignment: leftHandMode
+                        ? Alignment.bottomLeft
+                        : Alignment.bottomRight,
+                    child: ComicInfoFabGroup(
+                      scrollController: _scrollController,
+                      hasHistory: stringSelectDate.isNotEmpty,
+                      isLeftHanded: leftHandMode,
+                      // ★ 关键：已下载 → 导出；未下载 → 下载。
+                      isDownloaded: isDownloaded,
+                      onDownload: _handleDownload,
+                      onExport: _handleExport,
+                      onRead: () => goToComicRead(
+                        context,
+                        _comicId,
+                        widget.type,
+                        comicInfoDyn,
+                        widget.from,
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+        ],
       ),
-      floatingActionButtonPosition: leftHandMode
-          ? MiuixFabPosition.start
-          : MiuixFabPosition.end,
-      floatingActionButton: _loadingComplete
-          ? BlocBuilder<StringSelectCubit, String>(
-              builder: (context, stringSelectDate) {
-                return ComicInfoFabGroup(
-                  scrollController: _scrollController,
-                  hasHistory: stringSelectDate.isNotEmpty,
-                  isLeftHanded: leftHandMode,
-                  // ★ 关键：已下载 → 导出；未下载 → 下载。
-                  isDownloaded: isDownloaded,
-                  onDownload: _handleDownload,
-                  onExport: _handleExport,
-                  onRead: () => goToComicRead(
-                    context,
-                    _comicId,
-                    widget.type,
-                    comicInfoDyn,
-                    widget.from,
-                  ),
-                );
-              },
-            )
-          : null,
     );
   }
 
@@ -778,7 +787,10 @@ class _ComicInfoState extends State<_ComicInfo>
       return;
     }
     try {
-      final downloadInfo = resolveUnifiedDownloadInfo(comicInfoDyn, widget.from);
+      final downloadInfo = resolveUnifiedDownloadInfo(
+        comicInfoDyn,
+        widget.from,
+      );
       await showDownloadDialog(context, downloadInfo);
       if (!mounted) return;
       // 对话框关闭后立即重建一次：若已是已下载章节会立刻反映为「导出」。

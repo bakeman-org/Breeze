@@ -30,6 +30,7 @@ import 'package:zephyr/object_box/object_box.dart';
 import 'package:zephyr/service/app_icon/app_icon_service.dart';
 import 'package:zephyr/service/app_theme/app_theme_cache.dart';
 import 'package:zephyr/util/error_filter.dart';
+import 'package:zephyr/util/fab_position_store.dart';
 import 'package:zero_inspector_kit/zero_inspector_kit.dart';
 
 // 项目里到处 import main.dart 来用 fetch / WindHttp，必须继续 re-export。
@@ -139,6 +140,9 @@ Future<void> main(List<String> args) async {
 
   // 预热：主题缓存（SharedPreferences，一次性初始化）。
   await AppThemeCache.init();
+
+  // 预热：FAB 位置持久化（SharedPreferences，同步读前置）。
+  await FabPositionStore.init();
 
   if (kDebugMode) {
     FlutterError.onError = (FlutterErrorDetails details) {

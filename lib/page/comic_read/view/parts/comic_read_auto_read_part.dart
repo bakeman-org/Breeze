@@ -55,33 +55,35 @@ extension _ComicReadAutoReadPart on _ComicReadPageState {
         return BlocSelector<ReaderCubit, ReaderState, bool>(
           selector: (state) => state.isMenuVisible,
           builder: (context, isMenuVisible) {
-            final bottomSafe = context.bottomSafeHeight;
-            return AnimatedPositioned(
-              duration: const Duration(milliseconds: 300),
-              curve: Curves.easeOutCubic,
-              left: leftHandMode ? 14 : null,
-              right: leftHandMode ? null : 14,
-              bottom: (isMenuVisible ? 122.0 : 14.0) + bottomSafe,
-              child: Tooltip(
-                // Miuix 迁移：FloatingActionButton.small → 40x40
-                // MiuixFloatingActionButton + Tooltip（heroTag 无需保留）。
-                message: _autoReadController.isPaused
-                    ? t.reader.resumeAutoRead
-                    : t.reader.pauseAutoRead,
-                child: MiuixFloatingActionButton(
-                  minWidth: 40,
-                  minHeight: 40,
-                  onPressed: _toggleAutoReadPaused,
-                  child: AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 220),
-                    transitionBuilder: (child, animation) {
-                      return ScaleTransition(scale: animation, child: child);
-                    },
-                    child: Icon(
-                      _autoReadController.isPaused
-                          ? Icons.play_arrow_rounded
-                          : Icons.pause_rounded,
-                      key: ValueKey(_autoReadController.isPaused),
+            // 可拖拽 + 位置持久化的自动阅读控制按钮。
+            // 菜单可见时抬高 108px，避免被底部菜单遮挡（不写入存储）。
+            return Positioned.fill(
+              child: DraggableFabGroup(
+                pageKey: 'reader_auto_read',
+                defaultAlignment: leftHandMode
+                    ? Alignment.bottomLeft
+                    : Alignment.bottomRight,
+                margin: 14,
+                extraShift: Offset(0, isMenuVisible ? -108.0 : 0.0),
+                child: Tooltip(
+                  message: _autoReadController.isPaused
+                      ? t.reader.resumeAutoRead
+                      : t.reader.pauseAutoRead,
+                  child: MiuixFloatingActionButton(
+                    minWidth: 40,
+                    minHeight: 40,
+                    onPressed: _toggleAutoReadPaused,
+                    child: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 220),
+                      transitionBuilder: (child, animation) {
+                        return ScaleTransition(scale: animation, child: child);
+                      },
+                      child: Icon(
+                        _autoReadController.isPaused
+                            ? Icons.play_arrow_rounded
+                            : Icons.pause_rounded,
+                        key: ValueKey(_autoReadController.isPaused),
+                      ),
                     ),
                   ),
                 ),

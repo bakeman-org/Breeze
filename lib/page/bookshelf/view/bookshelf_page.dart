@@ -14,6 +14,7 @@ import 'package:zephyr/page/bookshelf/service/download_folder_service.dart';
 import 'package:zephyr/page/bookshelf/service/favorite_folder_service.dart';
 import 'package:zephyr/plugin/plugin_registry_service.dart';
 import 'package:zephyr/source/core/source_registry.dart';
+import 'package:zephyr/widgets/draggable_fab_group.dart';
 
 @RoutePage()
 class BookshelfPage extends StatelessWidget {
@@ -143,49 +144,75 @@ class _BookshelfPageContentState extends State<_BookshelfPageContent>
             ),
           ],
         ),
-        content: (padding) => Material(
-          type: MaterialType.transparency,
-          child: Padding(
-            padding: padding,
-            child: Column(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-                  child: MiuixTabRowWithContour(
-                    tabs: _labels,
-                    selectedTabIndex: _currentIndex,
-                    onTabSelected: _onTabChanged,
-                  ),
+        content: (padding) => Stack(
+          children: [
+            Material(
+              type: MaterialType.transparency,
+              child: Padding(
+                padding: padding,
+                child: Column(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                      child: MiuixTabRowWithContour(
+                        tabs: _labels,
+                        selectedTabIndex: _currentIndex,
+                        onTabSelected: _onTabChanged,
+                      ),
+                    ),
+                    if (showSearchField)
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                        child: _buildSearchField(),
+                      ),
+                    Expanded(
+                      child: TabBarView(
+                        controller: _tabController,
+                        children: [
+                          FolderShelfPage(
+                            mode: ShelfPageMode.favorite,
+                            refreshSignal: _refreshSignals[0],
+                            isActive: _currentIndex == 0,
+                          ),
+                          LocalShelfPage(
+                            mode: ShelfPageMode.history,
+                            refreshSignal: _refreshSignals[1],
+                          ),
+                          FolderShelfPage(
+                            mode: ShelfPageMode.download,
+                            refreshSignal: _refreshSignals[2],
+                            isActive: _currentIndex == 2,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
-                if (showSearchField)
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-                    child: _buildSearchField(),
-                  ),
-                Expanded(
-                  child: TabBarView(
-                    controller: _tabController,
-                    children: [
-                      FolderShelfPage(
-                        mode: ShelfPageMode.favorite,
-                        refreshSignal: _refreshSignals[0],
-                        isActive: _currentIndex == 0,
-                      ),
-                      LocalShelfPage(
-                        mode: ShelfPageMode.history,
-                        refreshSignal: _refreshSignals[1],
-                      ),
-                      FolderShelfPage(
-                        mode: ShelfPageMode.download,
-                        refreshSignal: _refreshSignals[2],
-                        isActive: _currentIndex == 2,
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+              ),
             ),
-          ),
+            // 单手可拖拽的筛选悬浮按钮，位置持久化。
+            Positioned.fill(
+              child: BlocBuilder<GlobalSettingCubit, GlobalSettingState>(
+                buildWhen: (p, c) =>
+                    p.leftHandModeEnabled != c.leftHandModeEnabled,
+                builder: (context, gss) {
+                  return DraggableFabGroup(
+                    pageKey: 'bookshelf',
+                    defaultAlignment: gss.leftHandModeEnabled
+                        ? Alignment.bottomLeft
+                        : Alignment.bottomRight,
+                    child: Tooltip(
+                      message: t.bookshelf.filter,
+                      child: MiuixFloatingActionButton(
+                        onPressed: _openFilter,
+                        child: const Icon(Icons.tune_rounded),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
         ),
       ),
     );

@@ -4,6 +4,7 @@ import 'package:auto_route/auto_route.dart';
 import 'package:flutter_miuix/miuix.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:zephyr/config/global/global_setting.dart';
 import 'package:zephyr/config/router/router.gr.dart';
 import 'package:zephyr/object_box/model.dart';
 import 'package:zephyr/page/comic_follow/cubit/comic_follow_cubit.dart';
@@ -11,6 +12,7 @@ import 'package:zephyr/type/enum.dart';
 import 'package:zephyr/util/context/context_extensions.dart';
 import 'package:zephyr/widgets/comic_entry/models/models.dart';
 import 'package:zephyr/widgets/comic_simplify_entry/cover.dart';
+import 'package:zephyr/widgets/draggable_fab_group.dart';
 import 'package:zephyr/i18n/strings.g.dart';
 import 'package:zephyr/widgets/error_view.dart';
 import 'package:zephyr/widgets/toast.dart';
@@ -70,33 +72,74 @@ class _ComicFollowPageContent extends StatelessWidget {
           ),
         ],
       ),
-      content: (padding) => Material(
-        type: MaterialType.transparency,
-        child: Padding(
-          padding: padding,
-          child: BlocBuilder<ComicFollowCubit, ComicFollowState>(
-            builder: (context, state) {
-              switch (state.status) {
-                case ComicFollowStatus.initial:
-                case ComicFollowStatus.loading:
-                  return const Center(child: CircularProgressIndicator());
-                case ComicFollowStatus.failure:
-                  return ErrorView(
-                    errorMessage: t.comicFollow.loadFailed(
-                      result: state.result,
-                    ),
-                    onRetry: () =>
-                        context.read<ComicFollowCubit>().loadFromDatabase(),
-                  );
-                case ComicFollowStatus.success:
-                  if (state.items.isEmpty) {
-                    return _buildEmptyView(context);
+      content: (padding) => Stack(
+        children: [
+          Material(
+            type: MaterialType.transparency,
+            child: Padding(
+              padding: padding,
+              child: BlocBuilder<ComicFollowCubit, ComicFollowState>(
+                builder: (context, state) {
+                  switch (state.status) {
+                    case ComicFollowStatus.initial:
+                    case ComicFollowStatus.loading:
+                      return const Center(child: CircularProgressIndicator());
+                    case ComicFollowStatus.failure:
+                      return ErrorView(
+                        errorMessage: t.comicFollow.loadFailed(
+                          result: state.result,
+                        ),
+                        onRetry: () =>
+                            context.read<ComicFollowCubit>().loadFromDatabase(),
+                      );
+                    case ComicFollowStatus.success:
+                      if (state.items.isEmpty) {
+                        return _buildEmptyView(context);
+                      }
+                      return _buildContent(context, state);
                   }
-                  return _buildContent(context, state);
-              }
-            },
+                },
+              ),
+            ),
           ),
-        ),
+          // 单手可拖拽的刷新悬浮按钮，位置持久化。
+          Positioned.fill(
+            child: BlocBuilder<GlobalSettingCubit, GlobalSettingState>(
+              buildWhen: (p, c) =>
+                  p.leftHandModeEnabled != c.leftHandModeEnabled,
+              builder: (context, gss) {
+                return BlocBuilder<ComicFollowCubit, ComicFollowState>(
+                  buildWhen: (p, c) =>
+                      p.isCheckingUpdates != c.isCheckingUpdates,
+                  builder: (context, state) {
+                    return DraggableFabGroup(
+                      pageKey: 'follow',
+                      defaultAlignment: gss.leftHandModeEnabled
+                          ? Alignment.bottomLeft
+                          : Alignment.bottomRight,
+                      child: MiuixFloatingActionButton(
+                        onPressed: state.isCheckingUpdates
+                            ? null
+                            : () => context
+                                  .read<ComicFollowCubit>()
+                                  .checkUpdates(),
+                        child: state.isCheckingUpdates
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : const Icon(Icons.refresh_rounded),
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
