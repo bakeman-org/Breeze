@@ -5,6 +5,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:zephyr/config/global/global_setting.dart';
 import 'package:zephyr/page/comic_read/cubit/reader_cubit.dart';
+import 'package:zephyr/service/translation/translation_batch_service.dart';
 import 'package:zephyr/service/translation/translation_service.dart';
 import 'package:zephyr/i18n/strings.g.dart';
 import 'package:zephyr/page/comments/widgets/title.dart';
@@ -107,7 +108,9 @@ class ComicReadAppBar extends StatelessWidget {
             return GestureDetector(
               behavior: HitTestBehavior.opaque,
               onTap: controller.cycleViewMode,
-              onLongPress: controller.retranslateCurrentPage,
+              onLongPress: () => TranslationBatchService.instance.runChapter(
+                controller.registeredImagePaths(),
+              ),
               child: MiuixIconButton(
                 onPressed: null,
                 child: translating

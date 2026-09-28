@@ -163,6 +163,12 @@ class TranslationController {
 
   List<TranslatedBlock>? blocksFor(String key) => _cache[key];
 
+  /// 当前已构建页的图片路径（按槽位排序），供批量翻译整章使用。
+  List<String> registeredImagePaths() {
+    final slots = _registeredPages.keys.toList()..sort();
+    return [for (final s in slots) _registeredPages[s]!];
+  }
+
   // ── overlay 注册 ──────────────────────────────────────────────────
 
   /// overlay 在帧末同步自身状态：更新槽位注册表；活动页同时刷新

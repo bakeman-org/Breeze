@@ -1281,6 +1281,11 @@
     "viewModeImageToast": "Translated image mode: shows generated translated images",
     "retranslateStartedToast": "Re-translating current page…",
     "retranslateInProgressToast": "Current page is already translating",
+    "batchStartedToast": "Batch translating $total pages…",
+    "batchNoPagesToast": "No pages to translate",
+    "batchAlreadyRunningToast": "Batch translation in progress, please wait",
+    "batchCancelledToast": "Batch translation cancelled",
+    "batchFinishedToast": "Batch done: $success succeeded, $failed failed",
     "translationFailed": "Translation failed: $error",
     "ocrFailed": "OCR failed: $error",
     "noTextFound": "No text recognized"

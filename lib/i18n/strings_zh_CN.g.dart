@@ -4033,6 +4033,21 @@ class Translations$translation$zh_CN {
 	/// zh-CN: '当前页正在翻译中，请稍候'
 	String get retranslateInProgressToast => '当前页正在翻译中，请稍候';
 
+	/// zh-CN: '开始批量翻译 $total 页…'
+	String batchStartedToast({required Object total}) => '开始批量翻译 ${total} 页…';
+
+	/// zh-CN: '无可翻译的页面'
+	String get batchNoPagesToast => '无可翻译的页面';
+
+	/// zh-CN: '批量翻译进行中，请稍候'
+	String get batchAlreadyRunningToast => '批量翻译进行中，请稍候';
+
+	/// zh-CN: '批量翻译已取消'
+	String get batchCancelledToast => '批量翻译已取消';
+
+	/// zh-CN: '批量翻译完成：成功 $success 页，失败 $failed 页'
+	String batchFinishedToast({required Object success, required Object failed}) => '批量翻译完成：成功 ${success} 页，失败 ${failed} 页';
+
 	/// zh-CN: '翻译失败: $error'
 	String translationFailed({required Object error}) => '翻译失败: ${error}';
 
@@ -5265,6 +5280,11 @@ extension on Translations {
 			'translation.viewModeImageToast' => '译文图片模式：显示已生成的翻译图片',
 			'translation.retranslateStartedToast' => '正在重新翻译当前页…',
 			'translation.retranslateInProgressToast' => '当前页正在翻译中，请稍候',
+			'translation.batchStartedToast' => ({required Object total}) => '开始批量翻译 ${total} 页…',
+			'translation.batchNoPagesToast' => '无可翻译的页面',
+			'translation.batchAlreadyRunningToast' => '批量翻译进行中，请稍候',
+			'translation.batchCancelledToast' => '批量翻译已取消',
+			'translation.batchFinishedToast' => ({required Object success, required Object failed}) => '批量翻译完成：成功 ${success} 页，失败 ${failed} 页',
 			'translation.translationFailed' => ({required Object error}) => '翻译失败: ${error}',
 			'translation.ocrFailed' => ({required Object error}) => 'OCR 识别失败: ${error}',
 			'translation.noTextFound' => '未识别到文字',

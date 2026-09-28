@@ -1608,6 +1608,11 @@ class _Translations$translation$en_US extends Translations$translation$zh_CN {
 	@override String get viewModeImageToast => 'Translated image mode: shows generated translated images';
 	@override String get retranslateStartedToast => 'Re-translating current page…';
 	@override String get retranslateInProgressToast => 'Current page is already translating';
+	@override String batchStartedToast({required Object total}) => 'Batch translating ${total} pages…';
+	@override String get batchNoPagesToast => 'No pages to translate';
+	@override String get batchAlreadyRunningToast => 'Batch translation in progress, please wait';
+	@override String get batchCancelledToast => 'Batch translation cancelled';
+	@override String batchFinishedToast({required Object success, required Object failed}) => 'Batch done: ${success} succeeded, ${failed} failed';
 	@override String translationFailed({required Object error}) => 'Translation failed: ${error}';
 	@override String ocrFailed({required Object error}) => 'OCR failed: ${error}';
 	@override String get noTextFound => 'No text recognized';
@@ -2834,6 +2839,11 @@ extension on TranslationsEnUs {
 			'translation.viewModeImageToast' => 'Translated image mode: shows generated translated images',
 			'translation.retranslateStartedToast' => 'Re-translating current page…',
 			'translation.retranslateInProgressToast' => 'Current page is already translating',
+			'translation.batchStartedToast' => ({required Object total}) => 'Batch translating ${total} pages…',
+			'translation.batchNoPagesToast' => 'No pages to translate',
+			'translation.batchAlreadyRunningToast' => 'Batch translation in progress, please wait',
+			'translation.batchCancelledToast' => 'Batch translation cancelled',
+			'translation.batchFinishedToast' => ({required Object success, required Object failed}) => 'Batch done: ${success} succeeded, ${failed} failed',
 			'translation.translationFailed' => ({required Object error}) => 'Translation failed: ${error}',
 			'translation.ocrFailed' => ({required Object error}) => 'OCR failed: ${error}',
 			'translation.noTextFound' => 'No text recognized',

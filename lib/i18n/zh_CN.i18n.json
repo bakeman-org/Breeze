@@ -1282,6 +1282,11 @@
     "viewModeImageToast": "译文图片模式：显示已生成的翻译图片",
     "retranslateStartedToast": "正在重新翻译当前页…",
     "retranslateInProgressToast": "当前页正在翻译中，请稍候",
+    "batchStartedToast": "开始批量翻译 $total 页…",
+    "batchNoPagesToast": "无可翻译的页面",
+    "batchAlreadyRunningToast": "批量翻译进行中，请稍候",
+    "batchCancelledToast": "批量翻译已取消",
+    "batchFinishedToast": "批量翻译完成：成功 $success 页，失败 $failed 页",
     "translationFailed": "翻译失败: $error",
     "ocrFailed": "OCR 识别失败: $error",
     "noTextFound": "未识别到文字"
