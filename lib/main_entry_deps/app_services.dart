@@ -227,7 +227,8 @@ Future<(GlobalSettingCubit, PluginRegistryCubit)> initServices() async {
       FlutterForegroundTask.initCommunicationPort();
       GestureBinding.instance.resamplingEnabled = true;
 
-      SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+      // 不使用沉浸式 edgeToEdge：保留系统状态栏（时间/Wi-Fi）可见。
+      // 仅统一导航栏图标样式，状态栏由系统默认绘制。
       SystemChrome.setSystemUIOverlayStyle(
         const SystemUiOverlayStyle(
           systemNavigationBarColor: Colors.transparent,

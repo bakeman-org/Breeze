@@ -377,8 +377,8 @@ class _ComicFollowListItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    const coverWidth = 100.0;
-    const coverHeight = 133.0;
+    const coverWidth = 96.0;
+    const coverHeight = 138.0;
 
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
@@ -387,39 +387,41 @@ class _ComicFollowListItem extends StatelessWidget {
       child: Container(
         margin: const EdgeInsets.symmetric(vertical: 6),
         decoration: BoxDecoration(
-          color: theme.colorScheme.surface,
-          borderRadius: BorderRadius.circular(12),
+          color: theme.colorScheme.surfaceContainerLow,
+          borderRadius: BorderRadius.circular(14),
           border: Border.all(
             color: hasUnreadUpdate
-                ? theme.colorScheme.primary
-                : theme.colorScheme.outlineVariant,
+                ? theme.colorScheme.primary.withValues(alpha: 0.55)
+                : theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
+            width: hasUnreadUpdate ? 1.2 : 1,
           ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
+        clipBehavior: Clip.antiAlias,
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (hasUnreadUpdate)
-              Container(
-                width: 4,
-                height: coverHeight,
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.primary,
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(12),
-                    bottomLeft: Radius.circular(12),
-                  ),
-                ),
+            SizedBox(
+              width: coverWidth,
+              height: coverHeight,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  _buildCover(coverWidth, coverHeight),
+                  if (hasUnreadUpdate)
+                    Positioned(
+                      top: 6,
+                      right: 6,
+                      child: _UpdateBadge(count: unreadChapterCount),
+                    ),
+                ],
               ),
-            ClipRRect(
-              borderRadius: BorderRadius.only(
-                topLeft: hasUnreadUpdate
-                    ? Radius.zero
-                    : const Radius.circular(12),
-                bottomLeft: hasUnreadUpdate
-                    ? Radius.zero
-                    : const Radius.circular(12),
-              ),
-              child: _buildCover(coverWidth, coverHeight),
             ),
             Expanded(
               child: Padding(
@@ -433,24 +435,13 @@ class _ComicFollowListItem extends StatelessWidget {
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  follow.title,
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: theme.textTheme.titleSmall?.copyWith(
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                              ),
-                              if (hasUnreadUpdate) ...[
-                                const SizedBox(width: 8),
-                                _UpdateBadge(count: unreadChapterCount),
-                              ],
-                            ],
+                          Text(
+                            follow.title,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.w700,
+                            ),
                           ),
                           const SizedBox(height: 10),
                           _buildStatusLine(theme),

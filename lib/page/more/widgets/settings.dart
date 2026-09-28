@@ -83,6 +83,17 @@ class SettingsWidget extends StatelessWidget {
               onClick: () => context.pushRoute(ChangelogRoute()),
             ),
             MiuixArrowPreference(
+              title: '本地追踪',
+              summary: '记录临时想法和 Bug，可绑定 GitHub 远程',
+              startAction: MiuixSettingHelpers.icon(
+                fallback: Icons.assignment_outlined,
+                name: 'assignment',
+              ),
+              insideMargin: MiuixSettingHelpers.itemMargin,
+              onClick: () =>
+                  context.pushRoute(const LocalIssueTrackerRoute()),
+            ),
+            MiuixArrowPreference(
               title: t.about.title,
               startAction: MiuixSettingHelpers.icon(
                 fallback: Icons.info_outline,

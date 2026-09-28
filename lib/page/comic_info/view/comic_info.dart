@@ -11,7 +11,6 @@ import 'package:path/path.dart' as p;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:zephyr/config/global/global_setting.dart';
 import 'package:zephyr/config/router/router.dart';
-import 'package:zephyr/config/router/router.gr.dart' as app_router;
 import 'package:zephyr/cubit/string_select.dart';
 import 'package:zephyr/i18n/strings.g.dart';
 import 'package:zephyr/main.dart';
@@ -28,6 +27,7 @@ import 'package:zephyr/page/comic_info/widgets/section_widgets.dart';
 import 'package:zephyr/object_box/objectbox.g.dart';
 // ★ 新增：构造 UnifiedComicDownloadInfo 传给下载页。
 import 'package:zephyr/page/download/models/unified_comic_download.dart';
+import 'package:zephyr/page/download/view/download_dialog.dart';
 import 'package:zephyr/type/enum.dart';
 import 'package:zephyr/type/pipe.dart';
 import 'package:zephyr/util/context/context_extensions.dart';
@@ -144,18 +144,47 @@ class _ComicInfoState extends State<_ComicInfo>
   int _previewTotalPages = 0;
   int _previewReloadKey = 0;
 
+  // 下载完成监听：objectbox 的 reactive query，下载记录写入/更新时触发重建，
+  // 让 FAB 在「下载 → 导出」之间自动同步。
+  StreamSubscription<dynamic>? _downloadWatchSub;
+  String _watchedDownloadKey = '';
+
   @override
   void initState() {
     super.initState();
     _type = type;
     _comicId = widget.comicId;
     _loadPreviewPrefs();
+    _ensureDownloadWatch();
   }
 
   @override
   void dispose() {
+    _downloadWatchSub?.cancel();
     _scrollController.dispose();
     super.dispose();
+  }
+
+  /// 订阅当前漫画的 objectbox 下载记录变化。
+  ///
+  /// 当 comicId 在加载后被修正时（例如 bika 的 id 与路由传入的不同），
+  /// 会自动切换订阅到正确的 uniqueKey。
+  void _ensureDownloadWatch() {
+    final key = '${widget.from.trim()}:$_comicId';
+    if (key == _watchedDownloadKey) return;
+    _watchedDownloadKey = key;
+    _downloadWatchSub?.cancel();
+    try {
+      _downloadWatchSub = objectbox.unifiedDownloadBox
+          .query(UnifiedComicDownload_.uniqueKey.equals(key))
+          .watch()
+          .listen((_) {
+        if (!mounted) return;
+        setState(() {});
+      });
+    } catch (_) {
+      // objectbox 未就绪时忽略；下次 build 仍会查询。
+    }
   }
 
   /// 当前漫画是否已在 objectbox 里有下载记录。
@@ -440,6 +469,7 @@ class _ComicInfoState extends State<_ComicInfo>
                   comicInfoDyn = state.comicInfo;
                   _currentInfo = state.allInfo;
                   _comicId = state.comicId ?? _comicId;
+                  _ensureDownloadWatch();
                   if (!_cloudFavoriteStateOverridden) {
                     _isCloudCollected = state.allInfo?.isFavourite ?? false;
                   }
@@ -731,8 +761,10 @@ class _ComicInfoState extends State<_ComicInfo>
   // 下载
   // ─────────────────────────────────────────────────────────────────
 
-  /// 点击「下载」FAB：构造 UnifiedComicDownloadInfo 并跳转到下载页。
+  /// 点击「下载」FAB：弹出章节选择对话框（与漫画详情操作区的下载按钮一致）。
   ///
+  /// 下载任务派发后通过 [_ensureDownloadWatch] 订阅的 objectbox reactive
+  /// query 自动同步 FAB 状态（下载完成 → 切换为「导出」）。
   Future<void> _handleDownload() async {
     final info = _currentInfo;
     if (info == null) {
@@ -744,31 +776,13 @@ class _ComicInfoState extends State<_ComicInfo>
       return;
     }
     try {
-      // 把 List<Ep> 转成 List<UnifiedComicDownloadChapter>。
-      // 字段映射与 UnifiedComicDownloadInfo.fromString 内部保持一致。
-      final chapters = info.eps.map((ep) {
-        final id = ep.id.trim();
-        return UnifiedComicDownloadChapter(
-          id: id.isNotEmpty ? id : info.comicInfo.id,
-          title: ep.name,
-          order: ep.order,
-          requestId: ep.requestId.trim(),
-          storageChapterId: ep.storageChapterId.trim(),
-          logicalKey: ep.logicalKey.trim(),
-          extern: Map<String, dynamic>.from(ep.extern),
-        );
-      }).toList();
-
-      final downloadInfo = UnifiedComicDownloadInfo(
-        source: widget.from,
-        comicId: info.comicInfo.id,
-        title: info.comicInfo.title,
-        chapters: chapters,
-      );
-
-      context.pushRoute(app_router.DownloadRoute(downloadInfo: downloadInfo));
+      final downloadInfo = resolveUnifiedDownloadInfo(comicInfoDyn, widget.from);
+      await showDownloadDialog(context, downloadInfo);
+      if (!mounted) return;
+      // 对话框关闭后立即重建一次：若已是已下载章节会立刻反映为「导出」。
+      setState(() {});
     } catch (e, s) {
-      logger.e('打开下载页失败', error: e, stackTrace: s);
+      logger.e('打开下载对话框失败', error: e, stackTrace: s);
       if (!mounted) return;
       showErrorToast(
         t.error.operationFailed,
