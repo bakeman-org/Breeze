@@ -80,6 +80,7 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	late final Translations$dialog$zh_CN dialog = Translations$dialog$zh_CN.internal(_root);
 	late final Translations$bika$zh_CN bika = Translations$bika$zh_CN.internal(_root);
 	late final Translations$eh$zh_CN eh = Translations$eh$zh_CN.internal(_root);
+	late final Translations$translation$zh_CN translation = Translations$translation$zh_CN.internal(_root);
 }
 
 // Path: common
@@ -3946,6 +3947,66 @@ class Translations$eh$zh_CN {
 	String get builtInHostsDesc => '使用硬编码 IP 绕过 DNS 污染，需重启页面生效';
 }
 
+// Path: translation
+class Translations$translation$zh_CN {
+	Translations$translation$zh_CN.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// zh-CN: '实验性功能'
+	String get experimental => '实验性功能';
+
+	/// zh-CN: '漫画翻译'
+	String get comicTranslation => '漫画翻译';
+
+	/// zh-CN: '实验性功能：OCR 识别漫画文字并翻译，仅支持 Android/iOS'
+	String get comicTranslationSubtitle => '实验性功能：OCR 识别漫画文字并翻译，仅支持 Android/iOS';
+
+	/// zh-CN: '翻译服务'
+	String get provider => '翻译服务';
+
+	/// zh-CN: 'Google 翻译（免 Key）'
+	String get providerGoogle => 'Google 翻译（免 Key）';
+
+	/// zh-CN: 'DeepL'
+	String get providerDeepl => 'DeepL';
+
+	/// zh-CN: 'API Key'
+	String get apiKey => 'API Key';
+
+	/// zh-CN: 'DeepL 需要 API Key'
+	String get apiKeySubtitle => 'DeepL 需要 API Key';
+
+	/// zh-CN: '输入 DeepL API Key'
+	String get apiKeyHint => '输入 DeepL API Key';
+
+	/// zh-CN: '目标语言'
+	String get targetLang => '目标语言';
+
+	/// zh-CN: '中文'
+	String get langZh => '中文';
+
+	/// zh-CN: 'English'
+	String get langEn => 'English';
+
+	/// zh-CN: '翻译当前页'
+	String get translate => '翻译当前页';
+
+	/// zh-CN: '翻译中…'
+	String get translating => '翻译中…';
+
+	/// zh-CN: '翻译失败: $error'
+	String translationFailed({required Object error}) => '翻译失败: ${error}';
+
+	/// zh-CN: 'OCR 识别失败: $error'
+	String ocrFailed({required Object error}) => 'OCR 识别失败: ${error}';
+
+	/// zh-CN: '未识别到文字'
+	String get noTextFound => '未识别到文字';
+}
+
 /// The flat map containing all translations for locale <zh-CN>.
 /// Only for edge cases! For simple maps, use the map function of this library.
 ///
@@ -5142,6 +5203,23 @@ extension on Translations {
 			'eh.notSet' => '未设置',
 			'eh.builtInHosts' => '内置 hosts 直连',
 			'eh.builtInHostsDesc' => '使用硬编码 IP 绕过 DNS 污染，需重启页面生效',
+			'translation.experimental' => '实验性功能',
+			'translation.comicTranslation' => '漫画翻译',
+			'translation.comicTranslationSubtitle' => '实验性功能：OCR 识别漫画文字并翻译，仅支持 Android/iOS',
+			'translation.provider' => '翻译服务',
+			'translation.providerGoogle' => 'Google 翻译（免 Key）',
+			'translation.providerDeepl' => 'DeepL',
+			'translation.apiKey' => 'API Key',
+			'translation.apiKeySubtitle' => 'DeepL 需要 API Key',
+			'translation.apiKeyHint' => '输入 DeepL API Key',
+			'translation.targetLang' => '目标语言',
+			'translation.langZh' => '中文',
+			'translation.langEn' => 'English',
+			'translation.translate' => '翻译当前页',
+			'translation.translating' => '翻译中…',
+			'translation.translationFailed' => ({required Object error}) => '翻译失败: ${error}',
+			'translation.ocrFailed' => ({required Object error}) => 'OCR 识别失败: ${error}',
+			'translation.noTextFound' => '未识别到文字',
 			_ => null,
 		};
 	}

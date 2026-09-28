@@ -1253,5 +1253,24 @@
     "notSet": "Not set",
     "builtInHosts": "Built-in hosts",
     "builtInHostsDesc": "Use hardcoded IPs to bypass DNS pollution"
+  },
+  "translation": {
+    "experimental": "Experimental",
+    "comicTranslation": "Comic translation",
+    "comicTranslationSubtitle": "Experimental: OCR comic text and translate. Android/iOS only",
+    "provider": "Provider",
+    "providerGoogle": "Google (no key)",
+    "providerDeepl": "DeepL",
+    "apiKey": "API key",
+    "apiKeySubtitle": "DeepL requires an API key",
+    "apiKeyHint": "Enter DeepL API key",
+    "targetLang": "Target language",
+    "langZh": "中文",
+    "langEn": "English",
+    "translate": "Translate current page",
+    "translating": "Translating…",
+    "translationFailed": "Translation failed: $error",
+    "ocrFailed": "OCR failed: $error",
+    "noTextFound": "No text recognized"
   }
 }

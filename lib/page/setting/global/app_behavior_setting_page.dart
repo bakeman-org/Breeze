@@ -10,6 +10,7 @@ import 'package:zephyr/page/setting/common/setting_ui.dart';
 import 'package:zephyr/page/setting/widgets/miuix_setting_helpers.dart';
 import 'package:zephyr/platform/desktop/window_logic.dart';
 import 'package:zephyr/service/lifecycle/foreground_task/foreground_task_service.dart';
+import 'package:zephyr/service/translation/translation_service.dart';
 import 'package:zephyr/widgets/gesture_lock.dart';
 import 'package:zephyr/widgets/toast.dart';
 
@@ -73,9 +74,151 @@ class _AppBehaviorSettingPageState extends State<AppBehaviorSettingPage> {
               _checkUpdateOnStartup(state, cubit),
             ],
           ),
+          if (TranslationService.isSupported) ...[
+            settingSectionTitle(context, t.translation.experimental),
+            GroupCard(
+              children: [
+                _translationSwitch(state, cubit),
+                if (state.enableTranslation) ...[
+                  _translationProvider(state, cubit),
+                  if (state.translationProvider == 'deepl')
+                    _translationApiKey(state, cubit),
+                  _translationTargetLang(state, cubit),
+                ],
+              ],
+            ),
+          ],
           const SizedBox(height: 32),
         ],
       ),
+    );
+  }
+
+  Widget _translationSwitch(
+    GlobalSettingState state,
+    GlobalSettingCubit cubit,
+  ) {
+    return MiuixSwitchPreference(
+      title: t.translation.comicTranslation,
+      summary: t.translation.comicTranslationSubtitle,
+      value: state.enableTranslation,
+      onChanged: (bool value) {
+        cubit.updateState(
+          (current) => current.copyWith(enableTranslation: value),
+        );
+        showSuccessToast(t.common.settingSaved);
+      },
+      startAction: MiuixSettingHelpers.icon(
+        fallback: Icons.translate,
+        name: 'translate',
+      ),
+      insideMargin: MiuixSettingHelpers.itemMargin,
+    );
+  }
+
+  Widget _translationProvider(
+    GlobalSettingState state,
+    GlobalSettingCubit cubit,
+  ) {
+    const providers = ['google', 'deepl'];
+    final labels = {
+      'google': t.translation.providerGoogle,
+      'deepl': t.translation.providerDeepl,
+    };
+    final selectedIndex = providers.indexOf(state.translationProvider);
+    return MiuixOverlayDropdownPreference(
+      title: t.translation.provider,
+      items: [for (final p in providers) labels[p]!],
+      selectedIndex: selectedIndex < 0 ? 0 : selectedIndex,
+      onSelectedIndexChange: (index) {
+        cubit.updateState(
+          (current) => current.copyWith(translationProvider: providers[index]),
+        );
+        showSuccessToast(t.common.settingSaved);
+      },
+      startAction: MiuixSettingHelpers.icon(
+        fallback: Icons.language,
+        name: 'language',
+      ),
+      insideMargin: MiuixSettingHelpers.itemMargin,
+    );
+  }
+
+  Widget _translationApiKey(
+    GlobalSettingState state,
+    GlobalSettingCubit cubit,
+  ) {
+    final current = state.translationApiKey;
+    return MiuixArrowPreference(
+      title: t.translation.apiKey,
+      summary: current.isEmpty
+          ? t.translation.apiKeySubtitle
+          : '••••••••${current.substring(current.length - 4)}',
+      startAction: MiuixSettingHelpers.icon(
+        fallback: Icons.key_outlined,
+        name: 'key',
+      ),
+      insideMargin: MiuixSettingHelpers.itemMargin,
+      onClick: () async {
+        var inputValue = current;
+        final result = await showDialog<String>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Text(t.translation.apiKey),
+            content: TextFormField(
+              initialValue: current,
+              autofocus: true,
+              onChanged: (value) => inputValue = value.trim(),
+              decoration: InputDecoration(
+                hintText: t.translation.apiKeyHint,
+                border: const OutlineInputBorder(),
+              ),
+            ),
+            actions: [
+              TextButton(
+                child: Text(t.common.cancel),
+                onPressed: () => Navigator.pop(context),
+              ),
+              TextButton(
+                child: Text(t.common.ok),
+                onPressed: () => Navigator.pop(context, inputValue),
+              ),
+            ],
+          ),
+        );
+        if (result != null && result != current) {
+          cubit.updateState(
+            (currentSetting) =>
+                currentSetting.copyWith(translationApiKey: result),
+          );
+          showSuccessToast(t.common.settingSaved);
+        }
+      },
+    );
+  }
+
+  Widget _translationTargetLang(
+    GlobalSettingState state,
+    GlobalSettingCubit cubit,
+  ) {
+    const langs = ['zh', 'en'];
+    final labels = {'zh': t.translation.langZh, 'en': t.translation.langEn};
+    final selectedIndex = langs.indexOf(state.translationTargetLang);
+    return MiuixOverlayDropdownPreference(
+      title: t.translation.targetLang,
+      items: [for (final lang in langs) labels[lang]!],
+      selectedIndex: selectedIndex < 0 ? 0 : selectedIndex,
+      onSelectedIndexChange: (index) {
+        cubit.updateState(
+          (current) => current.copyWith(translationTargetLang: langs[index]),
+        );
+        showSuccessToast(t.common.settingSaved);
+      },
+      startAction: MiuixSettingHelpers.icon(
+        fallback: Icons.flag_outlined,
+        name: 'flag',
+      ),
+      insideMargin: MiuixSettingHelpers.itemMargin,
     );
   }
 

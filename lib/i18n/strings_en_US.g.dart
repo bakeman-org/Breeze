@@ -75,6 +75,7 @@ class TranslationsEnUs extends Translations with BaseTranslations<AppLocale, Tra
 	@override late final _Translations$dialog$en_US dialog = _Translations$dialog$en_US._(_root);
 	@override late final _Translations$bika$en_US bika = _Translations$bika$en_US._(_root);
 	@override late final _Translations$eh$en_US eh = _Translations$eh$en_US._(_root);
+	@override late final _Translations$translation$en_US translation = _Translations$translation$en_US._(_root);
 }
 
 // Path: common
@@ -1574,6 +1575,32 @@ class _Translations$eh$en_US extends Translations$eh$zh_CN {
 	@override String get builtInHostsDesc => 'Use hardcoded IPs to bypass DNS pollution';
 }
 
+// Path: translation
+class _Translations$translation$en_US extends Translations$translation$zh_CN {
+	_Translations$translation$en_US._(TranslationsEnUs root) : this._root = root, super.internal(root);
+
+	final TranslationsEnUs _root; // ignore: unused_field
+
+	// Translations
+	@override String get experimental => 'Experimental';
+	@override String get comicTranslation => 'Comic translation';
+	@override String get comicTranslationSubtitle => 'Experimental: OCR comic text and translate. Android/iOS only';
+	@override String get provider => 'Provider';
+	@override String get providerGoogle => 'Google (no key)';
+	@override String get providerDeepl => 'DeepL';
+	@override String get apiKey => 'API key';
+	@override String get apiKeySubtitle => 'DeepL requires an API key';
+	@override String get apiKeyHint => 'Enter DeepL API key';
+	@override String get targetLang => 'Target language';
+	@override String get langZh => '中文';
+	@override String get langEn => 'English';
+	@override String get translate => 'Translate current page';
+	@override String get translating => 'Translating…';
+	@override String translationFailed({required Object error}) => 'Translation failed: ${error}';
+	@override String ocrFailed({required Object error}) => 'OCR failed: ${error}';
+	@override String get noTextFound => 'No text recognized';
+}
+
 /// The flat map containing all translations for locale <en-US>.
 /// Only for edge cases! For simple maps, use the map function of this library.
 ///
@@ -2769,6 +2796,23 @@ extension on TranslationsEnUs {
 			'eh.notSet' => 'Not set',
 			'eh.builtInHosts' => 'Built-in hosts',
 			'eh.builtInHostsDesc' => 'Use hardcoded IPs to bypass DNS pollution',
+			'translation.experimental' => 'Experimental',
+			'translation.comicTranslation' => 'Comic translation',
+			'translation.comicTranslationSubtitle' => 'Experimental: OCR comic text and translate. Android/iOS only',
+			'translation.provider' => 'Provider',
+			'translation.providerGoogle' => 'Google (no key)',
+			'translation.providerDeepl' => 'DeepL',
+			'translation.apiKey' => 'API key',
+			'translation.apiKeySubtitle' => 'DeepL requires an API key',
+			'translation.apiKeyHint' => 'Enter DeepL API key',
+			'translation.targetLang' => 'Target language',
+			'translation.langZh' => '中文',
+			'translation.langEn' => 'English',
+			'translation.translate' => 'Translate current page',
+			'translation.translating' => 'Translating…',
+			'translation.translationFailed' => ({required Object error}) => 'Translation failed: ${error}',
+			'translation.ocrFailed' => ({required Object error}) => 'OCR failed: ${error}',
+			'translation.noTextFound' => 'No text recognized',
 			_ => null,
 		};
 	}

@@ -1,9 +1,12 @@
+import 'dart:async';
 import 'dart:ui';
 
 import 'package:flutter_miuix/miuix.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:zephyr/config/global/global_setting.dart';
 import 'package:zephyr/page/comic_read/cubit/reader_cubit.dart';
+import 'package:zephyr/service/translation/translation_service.dart';
 import 'package:zephyr/i18n/strings.g.dart';
 import 'package:zephyr/page/comments/widgets/title.dart';
 import 'package:zephyr/util/context/context_extensions.dart';
@@ -26,6 +29,9 @@ class ComicReadAppBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final isMenuVisible = context.select(
       (ReaderCubit cubit) => cubit.state.isMenuVisible,
+    );
+    final enableTranslation = context.select(
+      (GlobalSettingCubit cubit) => cubit.state.enableTranslation,
     );
     final colorScheme = context.theme.colorScheme;
     const appBarRadius = 14.0;
@@ -52,6 +58,8 @@ class ComicReadAppBar extends StatelessWidget {
                 actions: [
                   // Miuix 迁移：IconButton → MiuixIconButton（仍处于 AppBar
                   // 提供的 Material 祖先内，模糊/圆角容器保持原样）。
+                  if (TranslationController.isSupported && enableTranslation)
+                    _translationAction(),
                   if (onToggleFullscreen != null)
                     Tooltip(
                       message: isDesktopFullscreen
@@ -81,6 +89,31 @@ class ComicReadAppBar extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _translationAction() {
+    final controller = TranslationController.instance;
+    return ValueListenableBuilder<String?>(
+      valueListenable: controller.loadingKey,
+      builder: (context, loadingKey, _) {
+        final translating =
+            loadingKey != null &&
+            loadingKey == controller.currentImagePath.value;
+        return Tooltip(
+          message: t.translation.translate,
+          child: MiuixIconButton(
+            onPressed: () => unawaited(controller.toggleCurrentPage()),
+            child: translating
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.translate),
+          ),
+        );
+      },
     );
   }
 }

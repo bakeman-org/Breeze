@@ -47,6 +47,10 @@ _GlobalSettingState _$GlobalSettingStateFromJson(
   autoFollowOnCollect: json['autoFollowOnCollect'] as bool? ?? false,
   leftHandModeEnabled: json['leftHandModeEnabled'] as bool? ?? false,
   clickCoverToStartReading: json['clickCoverToStartReading'] as bool? ?? false,
+  enableTranslation: json['enableTranslation'] as bool? ?? false,
+  translationProvider: json['translationProvider'] as String? ?? 'google',
+  translationApiKey: json['translationApiKey'] as String? ?? '',
+  translationTargetLang: json['translationTargetLang'] as String? ?? 'zh',
   checkUpdateOnStartup: json['checkUpdateOnStartup'] as bool? ?? true,
   searchHistory:
       (json['searchHistory'] as List<dynamic>?)
@@ -118,6 +122,10 @@ Map<String, dynamic> _$GlobalSettingStateToJson(_GlobalSettingState instance) =>
       'autoFollowOnCollect': instance.autoFollowOnCollect,
       'leftHandModeEnabled': instance.leftHandModeEnabled,
       'clickCoverToStartReading': instance.clickCoverToStartReading,
+      'enableTranslation': instance.enableTranslation,
+      'translationProvider': instance.translationProvider,
+      'translationApiKey': instance.translationApiKey,
+      'translationTargetLang': instance.translationTargetLang,
       'checkUpdateOnStartup': instance.checkUpdateOnStartup,
       'searchHistory': instance.searchHistory,
       'proxySetting': instance.proxySetting.toJson(),

@@ -1254,5 +1254,24 @@
     "notSet": "未设置",
     "builtInHosts": "内置 hosts 直连",
     "builtInHostsDesc": "使用硬编码 IP 绕过 DNS 污染，需重启页面生效"
+  },
+  "translation": {
+    "experimental": "实验性功能",
+    "comicTranslation": "漫画翻译",
+    "comicTranslationSubtitle": "实验性功能：OCR 识别漫画文字并翻译，仅支持 Android/iOS",
+    "provider": "翻译服务",
+    "providerGoogle": "Google 翻译（免 Key）",
+    "providerDeepl": "DeepL",
+    "apiKey": "API Key",
+    "apiKeySubtitle": "DeepL 需要 API Key",
+    "apiKeyHint": "输入 DeepL API Key",
+    "targetLang": "目标语言",
+    "langZh": "中文",
+    "langEn": "English",
+    "translate": "翻译当前页",
+    "translating": "翻译中…",
+    "translationFailed": "翻译失败: $error",
+    "ocrFailed": "OCR 识别失败: $error",
+    "noTextFound": "未识别到文字"
   }
 }

@@ -8,6 +8,7 @@ import 'package:zephyr/config/global/global_setting.dart';
 import 'package:zephyr/main.dart';
 import 'package:zephyr/page/comic_read/cubit/image_size_cubit.dart';
 import 'package:zephyr/page/comic_read/cubit/reader_cubit.dart';
+import 'package:zephyr/page/comic_read/widgets/image/translation_overlay.dart';
 
 class ImageDisplay extends StatefulWidget {
   final String imagePath;
@@ -220,57 +221,70 @@ class _ImageDisplayState extends State<ImageDisplay> {
 
         return Align(
           alignment: widget.imageAlignment,
-          child: Image.file(
-            File(widget.imagePath),
-            width: width,
-            cacheWidth: cacheWidth,
-            fit: isColumn ? BoxFit.fill : BoxFit.contain,
-            alignment: widget.imageAlignment,
-            gaplessPlayback: true,
-            frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
-              if (wasSynchronouslyLoaded || frame != null) {
-                if (!isColumn &&
-                    canUseEinkMask &&
-                    isActiveRowImage &&
-                    !_einkDelayFinished) {
-                  return Container(width: width, color: Colors.white);
-                }
-                return child;
-              }
+          child: Stack(
+            children: [
+              Image.file(
+                File(widget.imagePath),
+                width: width,
+                cacheWidth: cacheWidth,
+                fit: isColumn ? BoxFit.fill : BoxFit.contain,
+                alignment: widget.imageAlignment,
+                gaplessPlayback: true,
+                frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
+                  if (wasSynchronouslyLoaded || frame != null) {
+                    if (!isColumn &&
+                        canUseEinkMask &&
+                        isActiveRowImage &&
+                        !_einkDelayFinished) {
+                      return Container(width: width, color: Colors.white);
+                    }
+                    return child;
+                  }
 
-              if (isColumn) {
-                return Container(
-                  width: width,
-                  color: backgroundColor,
-                  alignment: Alignment.center,
-                  child: SizedBox(
-                    width: 24,
-                    height: 24,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: progressColor,
-                    ),
-                  ),
-                );
-              } else {
-                if (canUseEinkMask && isActiveRowImage && !_einkDelayFinished) {
-                  return Container(width: width, color: Colors.white);
-                }
-                return Container(
-                  width: width,
-                  color: backgroundColor,
-                  alignment: Alignment.center,
-                  child: SizedBox(
-                    width: 24,
-                    height: 24,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: progressColor,
-                    ),
-                  ),
-                );
-              }
-            },
+                  if (isColumn) {
+                    return Container(
+                      width: width,
+                      color: backgroundColor,
+                      alignment: Alignment.center,
+                      child: SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: progressColor,
+                        ),
+                      ),
+                    );
+                  } else {
+                    if (canUseEinkMask &&
+                        isActiveRowImage &&
+                        !_einkDelayFinished) {
+                      return Container(width: width, color: Colors.white);
+                    }
+                    return Container(
+                      width: width,
+                      color: backgroundColor,
+                      alignment: Alignment.center,
+                      child: SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: progressColor,
+                        ),
+                      ),
+                    );
+                  }
+                },
+              ),
+              // 译文浮层：与图片边界完全重合，归一化 rect 直接按此尺寸缩放。
+              Positioned.fill(
+                child: TranslationOverlay(
+                  imagePath: widget.imagePath,
+                  pageSlotIndex: widget.pageSlotIndex,
+                ),
+              ),
+            ],
           ),
         );
       },
