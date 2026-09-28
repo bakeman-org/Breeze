@@ -131,4 +131,8 @@ dependencies {
     // 添加核心库脱糖依赖
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.5")
     implementation("rustls:rustls-platform-verifier:0.1.1")
+    // ML Kit 中文 OCR 模型：google_mlkit_text_recognition 0.13+ 默认只内置
+    // 拉丁文模型，TextRecognitionScript.chinese 需要此依赖，缺失会在运行时
+    // 抛 NoClassDefFoundError: ChineseTextRecognizerOptions$Builder 闪退。
+    implementation("com.google.mlkit:text-recognition-chinese:16.0.1")
 }
