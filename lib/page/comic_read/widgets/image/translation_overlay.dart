@@ -4,6 +4,7 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:zephyr/page/comic_read/cubit/reader_cubit.dart';
+import 'package:zephyr/service/translation/text_fit_painter.dart';
 import 'package:zephyr/service/translation/translation_service.dart';
 
 class TranslationOverlay extends StatefulWidget {
@@ -130,50 +131,8 @@ class _TranslationPainter extends CustomPainter {
         Paint()..color = Colors.black.withValues(alpha: 0.72),
       );
 
-      _drawFittedText(canvas, rect, block.translated);
+      drawFittedText(canvas, rect, block.translated, color: Colors.white);
     }
-  }
-
-  void _drawFittedText(Canvas canvas, Rect rect, String text) {
-    const maxFontSize = 32.0;
-    const minFontSize = 6.0;
-
-    double fontSize = (rect.height * 0.72).clamp(minFontSize, maxFontSize);
-    TextPainter painter = _layout(text, fontSize, rect.width);
-
-    // 放不下则逐步缩小字号。
-    var shrunk = false;
-    while (painter.height > rect.height && fontSize > minFontSize) {
-      fontSize = (fontSize * 0.85).clamp(minFontSize, maxFontSize);
-      painter = _layout(text, fontSize, rect.width);
-      shrunk = true;
-    }
-    // 缩到底还放不下就裁掉溢出部分（clip 在 bgRect 内）。
-    if (shrunk && painter.height > rect.height) {
-      canvas.save();
-      canvas.clipRect(rect.inflate(2));
-      painter.paint(canvas, rect.topLeft);
-      canvas.restore();
-      return;
-    }
-
-    painter.paint(
-      canvas,
-      Offset(rect.left, rect.top + (rect.height - painter.height) / 2),
-    );
-  }
-
-  TextPainter _layout(String text, double fontSize, double maxWidth) {
-    final painter = TextPainter(
-      text: TextSpan(
-        text: text,
-        style: TextStyle(fontSize: fontSize, height: 1.15, color: Colors.white),
-      ),
-      textAlign: TextAlign.center,
-      textDirection: TextDirection.ltr,
-    );
-    painter.layout(maxWidth: maxWidth);
-    return painter;
   }
 
   @override
