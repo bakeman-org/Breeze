@@ -171,6 +171,18 @@ class _GlobalSettingPageState extends State<GlobalSettingPage> {
                   insideMargin: _m,
                   onClick: () => _openSubPage(const DebugSettingRoute()),
                 ),
+                // ── 本地追踪 ──
+                MiuixArrowPreference(
+                  title: '本地追踪',
+                  summary: '记录临时想法和 Bug',
+                  startAction: MiuixSettingHelpers.icon(
+                    fallback: Icons.assignment_outlined,
+                    name: 'assignment',
+                  ),
+                  insideMargin: _m,
+                  onClick: () =>
+                      context.pushRoute(const LocalIssueTrackerRoute()),
+                ),
               ],
             ),
           ],

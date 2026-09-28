@@ -4,10 +4,11 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_miuix/miuix.dart';
 import 'package:zephyr/config/global/accent.dart';
 import 'package:zephyr/config/router/router.gr.dart'
-    show ComicReadRoute, DownloadRoute, EhCommentsRoute, EhLoginRoute;
+    show ComicReadRoute, EhCommentsRoute, EhLoginRoute;
 import 'package:zephyr/cubit/string_select.dart';
 import 'package:zephyr/i18n/strings.g.dart';
 import 'package:zephyr/page/download/models/unified_comic_download.dart';
+import 'package:zephyr/page/download/view/download_dialog.dart';
 import 'package:zephyr/source/eh/api/eh_client.dart';
 import 'package:zephyr/source/eh/models/eh_models.dart';
 import 'package:zephyr/source/eh/utils/eh_detail_convert.dart';
@@ -108,12 +109,9 @@ class _EhDetailViewState extends State<_EhDetailView> {
     final detail = _detail;
     if (detail == null || detail.pages <= 0) return;
     final info = buildEhNormalComicInfo(detail);
-    context.pushRoute(
-      DownloadRoute(
-        downloadInfo: UnifiedComicDownloadInfo.fromString(
-          buildEhDetailSource(info),
-        ),
-      ),
+    showDownloadDialog(
+      context,
+      UnifiedComicDownloadInfo.fromString(buildEhDetailSource(info)),
     );
   }
 

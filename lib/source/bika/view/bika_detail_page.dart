@@ -8,11 +8,11 @@ import 'package:zephyr/config/router/router.gr.dart'
         BikaCommentsRoute,
         BikaDetailRoute,
         BikaLoginRoute,
-        ComicReadRoute,
-        DownloadRoute;
+        ComicReadRoute;
 import 'package:zephyr/cubit/string_select.dart';
 import 'package:zephyr/i18n/strings.g.dart';
 import 'package:zephyr/page/download/models/unified_comic_download.dart';
+import 'package:zephyr/page/download/view/download_dialog.dart';
 import 'package:zephyr/source/bika/api/bika_api.dart';
 import 'package:zephyr/source/bika/api/bika_client.dart';
 import 'package:zephyr/source/bika/models/bika_models.dart';
@@ -176,12 +176,9 @@ class _BikaDetailViewState extends State<_BikaDetailView> {
     final comic = _comic;
     if (comic == null || !comic.allowDownload) return;
     final info = buildBikaNormalComicInfo(comic, _chapters);
-    context.pushRoute(
-      DownloadRoute(
-        downloadInfo: UnifiedComicDownloadInfo.fromString(
-          buildBikaDetailSource(info),
-        ),
-      ),
+    showDownloadDialog(
+      context,
+      UnifiedComicDownloadInfo.fromString(buildBikaDetailSource(info)),
     );
   }
 
