@@ -84,7 +84,7 @@ class _BikaSearchPageState extends State<BikaSearchPage> {
       );
       if (!mounted || seq != _requestSeq) return;
       setState(() {
-        _comics = resp.comics.docs;
+        _comics = List.from(resp.comics.docs);
         _pages = resp.comics.pages;
         _searching = false;
       });

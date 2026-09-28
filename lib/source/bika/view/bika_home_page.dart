@@ -72,7 +72,7 @@ class _BikaHomePageState extends State<BikaHomePage> {
       ]);
       if (!mounted || seq != _requestSeq) return;
       setState(() {
-        _comics = (results[0] as ComicsResponse).comics.docs;
+        _comics = List.from((results[0] as ComicsResponse).comics.docs);
         _pages = (results[0] as ComicsResponse).comics.pages;
         _categories = (results[1] as CategoriesResponse).categories;
         _initialLoading = false;
@@ -95,7 +95,7 @@ class _BikaHomePageState extends State<BikaHomePage> {
       ]);
       if (!mounted || seq != _requestSeq) return;
       setState(() {
-        _comics = (results[0] as ComicsResponse).comics.docs;
+        _comics = List.from((results[0] as ComicsResponse).comics.docs);
         _pages = (results[0] as ComicsResponse).comics.pages;
         _categories = (results[1] as CategoriesResponse).categories;
         _page = 1;

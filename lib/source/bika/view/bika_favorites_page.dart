@@ -69,7 +69,7 @@ class _BikaFavoritesPageState extends State<BikaFavoritesPage> {
       );
       if (!mounted || seq != _requestSeq) return;
       setState(() {
-        _comics = resp.comics.docs;
+        _comics = List.from(resp.comics.docs);
         _pages = resp.comics.pages;
         _initialLoading = false;
       });
@@ -90,7 +90,7 @@ class _BikaFavoritesPageState extends State<BikaFavoritesPage> {
       );
       if (!mounted || seq != _requestSeq) return;
       setState(() {
-        _comics = resp.comics.docs;
+        _comics = List.from(resp.comics.docs);
         _pages = resp.comics.pages;
         _page = 1;
         _error = null;

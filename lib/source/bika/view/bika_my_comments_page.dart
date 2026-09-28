@@ -53,7 +53,7 @@ class _BikaMyCommentsPageState extends State<BikaMyCommentsPage> {
       final resp = await fetchBikaPersonalComments(1);
       if (!mounted) return;
       setState(() {
-        _comments = resp.comments.docs;
+        _comments = List.from(resp.comments.docs);
         _pages = resp.comments.pages;
         _page = 1;
         _initialLoading = false;
@@ -72,7 +72,7 @@ class _BikaMyCommentsPageState extends State<BikaMyCommentsPage> {
       final resp = await fetchBikaPersonalComments(1);
       if (!mounted) return;
       setState(() {
-        _comments = resp.comments.docs;
+        _comments = List.from(resp.comments.docs);
         _pages = resp.comments.pages;
         _page = 1;
         _error = null;

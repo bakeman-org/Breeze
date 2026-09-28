@@ -89,7 +89,7 @@ class _BikaCommentsPageState extends State<BikaCommentsPage> {
       );
       if (!mounted) return;
       setState(() {
-        _comments = resp.comments.docs;
+        _comments = List.from(resp.comments.docs);
         _pages = resp.comments.pages;
         _page = 1;
         _loading = false;
@@ -110,7 +110,7 @@ class _BikaCommentsPageState extends State<BikaCommentsPage> {
       );
       if (!mounted) return;
       setState(() {
-        _comments = resp.comments.docs;
+        _comments = List.from(resp.comments.docs);
         _pages = resp.comments.pages;
         _page = 1;
         _error = null;
@@ -204,7 +204,7 @@ class _BikaCommentsPageState extends State<BikaCommentsPage> {
       );
       if (!mounted) return;
       setState(() {
-        _subComments[uid] = resp.comments.docs;
+        _subComments[uid] = List.from(resp.comments.docs);
         _subLoading.remove(uid);
       });
     } catch (e) {
