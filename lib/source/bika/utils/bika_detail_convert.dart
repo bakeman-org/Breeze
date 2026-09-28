@@ -77,5 +77,9 @@ normal.NormalComicAllInfo buildBikaNormalComicInfo(
 }
 
 PluginComicDetailSource buildBikaDetailSource(normal.NormalComicAllInfo info) {
-  return PluginComicDetailSource(from: bikaSourceId, normalInfo: info, raw: const {});
+  return PluginComicDetailSource(
+    from: bikaSourceId,
+    normalInfo: info,
+    raw: const {},
+  );
 }

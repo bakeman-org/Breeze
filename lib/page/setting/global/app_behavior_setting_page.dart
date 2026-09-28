@@ -70,6 +70,7 @@ class _AppBehaviorSettingPageState extends State<AppBehaviorSettingPage> {
               _autoFollowOnCollect(state, cubit),
               _leftHandMode(state, cubit),
               _clickCoverToStartReading(state, cubit),
+              _checkUpdateOnStartup(state, cubit),
             ],
           ),
           const SizedBox(height: 32),
@@ -187,6 +188,28 @@ class _AppBehaviorSettingPageState extends State<AppBehaviorSettingPage> {
       startAction: MiuixSettingHelpers.icon(
         fallback: Icons.touch_app_outlined,
         name: 'touch_app',
+      ),
+      insideMargin: MiuixSettingHelpers.itemMargin,
+    );
+  }
+
+  Widget _checkUpdateOnStartup(
+    GlobalSettingState state,
+    GlobalSettingCubit cubit,
+  ) {
+    return MiuixSwitchPreference(
+      title: t.settings.checkUpdateOnStartup,
+      summary: t.settings.checkUpdateOnStartupSubtitle,
+      value: state.checkUpdateOnStartup,
+      onChanged: (bool value) {
+        cubit.updateState(
+          (current) => current.copyWith(checkUpdateOnStartup: value),
+        );
+        showSuccessToast(t.common.settingSaved);
+      },
+      startAction: MiuixSettingHelpers.icon(
+        fallback: Icons.system_update_outlined,
+        name: 'system_update',
       ),
       insideMargin: MiuixSettingHelpers.itemMargin,
     );
@@ -387,9 +410,8 @@ class _AppBehaviorSettingPageState extends State<AppBehaviorSettingPage> {
               return;
             }
             cubit.updateState(
-              (current) => current.copyWith(
-                appLockSetting: const AppLockSettingState(),
-              ),
+              (current) =>
+                  current.copyWith(appLockSetting: const AppLockSettingState()),
             );
             showSuccessToast(t.common.settingSaved);
           },

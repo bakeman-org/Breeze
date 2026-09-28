@@ -79,18 +79,8 @@ class _DebugSettingPageState extends State<DebugSettingPage> {
                     name: 'developer_mode',
                   ),
                   insideMargin: MiuixSettingHelpers.itemMargin,
-                  onClick: () => context.pushRoute(const QjsRuntimeDebugRoute()),
-                ),
-                MiuixArrowPreference(
-                  title: t.settings.coremlDebug,
-                  summary: t.settings.coremlDebugSubtitle,
-                  startAction: MiuixSettingHelpers.icon(
-                    fallback: Icons.memory_outlined,
-                    name: 'memory',
-                  ),
-                  insideMargin: MiuixSettingHelpers.itemMargin,
                   onClick: () =>
-                      context.pushRoute(const CoreMLUpscaleDebugRoute()),
+                      context.pushRoute(const QjsRuntimeDebugRoute()),
                 ),
               ],
             ],

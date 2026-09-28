@@ -45,8 +45,7 @@ class _DownloadTaskView extends StatelessWidget {
           child: BlocBuilder<DowloadTaskBloc, DowloadTaskState>(
             builder: (context, state) {
               return state.when(
-                initial: () =>
-                    const Center(child: CircularProgressIndicator()),
+                initial: () => const Center(child: CircularProgressIndicator()),
                 loaded: (tasks, pendingCount) {
                   if (tasks.isEmpty) {
                     return Center(
@@ -95,7 +94,10 @@ class _DownloadTaskView extends StatelessWidget {
                           ),
                         ),
                         SliverList(
-                          delegate: SliverChildBuilderDelegate((context, index) {
+                          delegate: SliverChildBuilderDelegate((
+                            context,
+                            index,
+                          ) {
                             final task = downloadingTasks[index];
                             return _DownloadingTaskTile(
                               key: ValueKey(task.id),
@@ -119,16 +121,17 @@ class _DownloadTaskView extends StatelessWidget {
                           ),
                         ),
                         SliverList(
-                          delegate: SliverChildBuilderDelegate((context, index) {
+                          delegate: SliverChildBuilderDelegate((
+                            context,
+                            index,
+                          ) {
                             final task = pendingTasks[index];
                             return _PendingTaskTile(
                               key: ValueKey(task.id),
                               task: task,
                               onRetry: task.taskInfo?.stateCode == 'failed'
-                                  ? () =>
-                                        DownloadQueueManager.instance.retryTask(
-                                        task.id,
-                                      )
+                                  ? () => DownloadQueueManager.instance
+                                        .retryTask(task.id)
                                   : null,
                               onDelete: () {
                                 context.read<DowloadTaskBloc>().add(

@@ -22,7 +22,10 @@ class ComicErrorWidget extends StatelessWidget {
           children: [
             Text(t.reader.chapterNotDownloaded, style: TextStyle(fontSize: 20)),
             SizedBox(height: 10),
-            MiuixButton(onPressed: () => context.pop(), child: Text(t.common.back)),
+            MiuixButton(
+              onPressed: () => context.pop(),
+              child: Text(t.common.back),
+            ),
           ],
         ),
       );

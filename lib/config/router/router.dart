@@ -11,7 +11,6 @@ class AppRouter extends RootStackRouter {
   @override
   List<AutoRoute> get routes => [
     AutoRoute(page: AppBootstrapRoute.page, initial: true),
-    AutoRoute(page: CoreMLUpscaleDebugRoute.page),
     AutoRoute(page: NavigationBar.page),
     AutoRoute(page: LoginRoute.page),
     AutoRoute(page: ComicListRoute.page),
@@ -45,7 +44,6 @@ class AppRouter extends RootStackRouter {
     AutoRoute(page: MoreRoute.page),
     AutoRoute(page: QjsRuntimeDebugRoute.page),
     AutoRoute(page: CacheSettingRoute.page),
-    AutoRoute(page: RealSrSettingRoute.page),
     AutoRoute(page: BookshelfSettingRoute.page),
     AutoRoute(page: DataBackupRoute.page),
     AutoRoute(page: ComicFollowRoute.page),

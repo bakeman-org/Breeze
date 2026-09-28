@@ -52,7 +52,6 @@ class _BikaCoverImageState extends State<BikaCoverImage> {
       url: url,
       path: path,
       pictureType: PictureType.cover,
-      applyRealSr: false,
     );
   }
 
@@ -73,7 +72,9 @@ class _BikaCoverImageState extends State<BikaCoverImage> {
             ),
           );
         }
-        if (snapshot.hasError || snapshot.data == null || snapshot.data!.isEmpty) {
+        if (snapshot.hasError ||
+            snapshot.data == null ||
+            snapshot.data!.isEmpty) {
           logger.w('bika cover load failed', error: snapshot.error);
           return const ColoredBox(
             color: Color(0x11000000),

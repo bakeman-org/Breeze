@@ -6,7 +6,6 @@ import 'package:zephyr/config/global/global_setting.dart';
 import 'package:zephyr/config/router/router.gr.dart';
 import 'package:zephyr/i18n/strings.g.dart';
 import 'package:zephyr/page/comic_read/widgets/settings/reader_settings_sheet.dart';
-import 'package:zephyr/page/setting/real_sr/service/real_sr_super_resolution.dart';
 import 'package:zephyr/page/setting/widgets/miuix_setting_helpers.dart';
 
 /// 全局设置主页。
@@ -22,8 +21,7 @@ import 'package:zephyr/page/setting/widgets/miuix_setting_helpers.dart';
 ///         │    ├── 内容与网络
 ///         │    ├── 应用行为
 ///         │    ├── 书架设置
-///         │    ├── 存储
-///         │    └── 图片超分（条件显示）
+///         │    └── 存储
 ///         ├── MiuixSmallTitle「调试」
 ///         └── GroupCard
 ///              └── 调试
@@ -38,16 +36,12 @@ class GlobalSettingPage extends StatefulWidget {
 }
 
 class _GlobalSettingPageState extends State<GlobalSettingPage> {
-  /// RealSR 是否支持：异步查一次，避免每次 build 重复请求硬件信息。
-  late final Future<bool> _realSrAvailable;
-
   /// 所有 preference 项统一的内边距。
   static const _m = MiuixSettingHelpers.itemMargin;
 
   @override
   void initState() {
     super.initState();
-    _realSrAvailable = RealSrSuperResolution.isDeviceSupported;
   }
 
   /// 打开子设置页，回来后触发一次 rebuild。
@@ -155,27 +149,6 @@ class _GlobalSettingPageState extends State<GlobalSettingPage> {
                   ),
                   insideMargin: _m,
                   onClick: () => _openSubPage(const StorageSettingRoute()),
-                ),
-
-                // ── 图片超分（条件显示） ──
-                // 只有设备支持 RealSR 时才出现；FutureBuilder 完成前
-                // 返回 SizedBox.shrink()，不占位。
-                FutureBuilder<bool>(
-                  future: _realSrAvailable,
-                  builder: (context, snapshot) {
-                    if (snapshot.data != true) {
-                      return const SizedBox.shrink();
-                    }
-                    return MiuixArrowPreference(
-                      title: t.settings.realSr,
-                      startAction: MiuixSettingHelpers.icon(
-                        fallback: Icons.auto_fix_high_outlined,
-                        name: 'auto_fix_high',
-                      ),
-                      insideMargin: _m,
-                      onClick: () => _openSubPage(const RealSrSettingRoute()),
-                    );
-                  },
                 ),
               ],
             ),

@@ -689,9 +689,7 @@ class _SubLikeButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final color = liked
-        ? accentBlue
-        : theme.colorScheme.onSurfaceVariant;
+    final color = liked ? accentBlue : theme.colorScheme.onSurfaceVariant;
     return InkWell(
       borderRadius: BorderRadius.circular(6),
       onTap: onTap,

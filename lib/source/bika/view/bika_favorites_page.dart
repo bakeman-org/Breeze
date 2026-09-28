@@ -115,7 +115,9 @@ class _BikaFavoritesPageState extends State<BikaFavoritesPage> {
         _page = next;
         _pages = resp.comics.pages;
         final existing = _comics.map((c) => c.uid).toSet();
-        _comics.addAll(resp.comics.docs.where((c) => !existing.contains(c.uid)));
+        _comics.addAll(
+          resp.comics.docs.where((c) => !existing.contains(c.uid)),
+        );
         _loadingMore = false;
       });
     } catch (e) {
@@ -156,7 +158,9 @@ class _BikaFavoritesPageState extends State<BikaFavoritesPage> {
             initialValue: _sort,
             onSelected: _selectSort,
             itemBuilder: (context) => ComicSortType.values
-                .map((type) => PopupMenuItem(value: type, child: Text(type.title)))
+                .map(
+                  (type) => PopupMenuItem(value: type, child: Text(type.title)),
+                )
                 .toList(),
             child: const Icon(Icons.sort),
           ),
@@ -177,7 +181,10 @@ class _BikaFavoritesPageState extends State<BikaFavoritesPage> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text(t.bika.loginRequired, style: Theme.of(context).textTheme.titleMedium),
+          Text(
+            t.bika.loginRequired,
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
           const SizedBox(height: 16),
           MiuixButton(onPressed: _goLogin, child: Text(t.bika.login)),
         ],
@@ -194,7 +201,10 @@ class _BikaFavoritesPageState extends State<BikaFavoritesPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(t.bika.networkError, style: Theme.of(context).textTheme.titleMedium),
+            Text(
+              t.bika.networkError,
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
             const SizedBox(height: 12),
             MiuixButton(onPressed: _reload, child: Text(t.bika.retry)),
           ],

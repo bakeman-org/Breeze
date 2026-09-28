@@ -215,7 +215,8 @@ String _resolveEhToken(ChapterExtern chapterExtern, dynamic comicInfo) {
   if (fromExtern.isNotEmpty) return fromExtern;
 
   if (comicInfo is PluginComicDetailSource) {
-    final extern = comicInfo.normalInfo.extern['token']?.toString().trim() ?? '';
+    final extern =
+        comicInfo.normalInfo.extern['token']?.toString().trim() ?? '';
     if (extern.isNotEmpty) return extern;
     final eps = comicInfo.normalInfo.eps;
     if (eps.isNotEmpty) {

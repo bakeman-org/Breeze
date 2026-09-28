@@ -117,7 +117,10 @@ class _BikaRankPageState extends State<BikaRankPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(t.bika.networkError, style: Theme.of(context).textTheme.titleMedium),
+            Text(
+              t.bika.networkError,
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
             const SizedBox(height: 12),
             MiuixButton(onPressed: _load, child: Text(t.bika.retry)),
           ],

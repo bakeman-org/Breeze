@@ -76,12 +76,8 @@ Future<List<String>> _fetchEhImgkeys({
 }) async {
   final keys = List<String>.filled(pageCount, '');
   final previewPages = detail.previewPages;
-  final totalPreviewPages =
-      (previewPages > 0 ? previewPages : 1).clamp(0, 200);
-  final pendingPages = List<int>.generate(
-    totalPreviewPages,
-    (index) => index,
-  );
+  final totalPreviewPages = (previewPages > 0 ? previewPages : 1).clamp(0, 200);
+  final pendingPages = List<int>.generate(totalPreviewPages, (index) => index);
 
   Future<void> worker() async {
     while (pendingPages.isNotEmpty) {
@@ -104,9 +100,7 @@ Future<List<String>> _fetchEhImgkeys({
   }
 
   final workerCount = totalPreviewPages.clamp(1, 4);
-  await Future.wait(
-    List.generate(workerCount, (_) => worker()),
-  );
+  await Future.wait(List.generate(workerCount, (_) => worker()));
 
   await _fillMissingImgkeys(gid: gid, keys: keys);
   return keys;

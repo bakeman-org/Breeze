@@ -80,10 +80,8 @@ class _PluginCommentsScaffoldState extends State<PluginCommentsScaffold> {
                   child: _buildBody(state, cubit),
                 ),
               ),
-              floatingActionButtonPosition: context
-                  .watch<GlobalSettingCubit>()
-                  .state
-                  .leftHandModeEnabled
+              floatingActionButtonPosition:
+                  context.watch<GlobalSettingCubit>().state.leftHandModeEnabled
                   ? MiuixFabPosition.start
                   : MiuixFabPosition.end,
               floatingActionButton: state.canCommentComic

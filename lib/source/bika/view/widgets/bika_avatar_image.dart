@@ -54,7 +54,6 @@ class _BikaAvatarImageState extends State<BikaAvatarImage> {
       url: url,
       path: path,
       pictureType: PictureType.user,
-      applyRealSr: false,
     );
   }
 

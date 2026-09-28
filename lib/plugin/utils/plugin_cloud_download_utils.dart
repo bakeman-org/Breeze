@@ -10,7 +10,7 @@ import 'package:zephyr/src/rust/api/simple.dart';
 import 'package:zephyr/util/json/json_value.dart';
 
 const _cloudPluginListDirectUrl =
-    'https://raw.githubusercontent.com/deretame/Breeze-plugin-list/main/plugins_data.json';
+    'https://raw.githubusercontent.com/bakeman-org/breeze-plugin-list/main/plugins_data.json';
 
 const cloudPluginListApi = 'https://api.windy-78.site/plugin-list';
 
@@ -69,7 +69,7 @@ Future<String> fetchCloudPluginListWithCdnFallback() async {
 
   for (final mirror in _ghCdnMirrors) {
     final url =
-        '${mirror}gh/deretame/Breeze-plugin-list@$version/plugins_data.json';
+        '${mirror}gh/bakeman-org/breeze-plugin-list@$version/plugins_data.json';
     logger.d('尝试使用 GitHub CDN 镜像: $url');
     try {
       final response = await client.fetch(

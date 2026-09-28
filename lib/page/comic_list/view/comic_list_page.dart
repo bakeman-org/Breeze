@@ -79,10 +79,7 @@ class _ComicListViewState extends State<_ComicListView>
           ),
           content: (padding) => Material(
             type: MaterialType.transparency,
-            child: Padding(
-              padding: padding,
-              child: _buildBody(context, state),
-            ),
+            child: Padding(padding: padding, child: _buildBody(context, state)),
           ),
         );
       },

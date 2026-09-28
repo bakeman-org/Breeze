@@ -18,8 +18,8 @@ void applyProxySetting(ProxySettingState setting) {
         applyProxySetting(const ProxySettingState(mode: ProxyMode.direct));
         return;
       }
-      final proxyUrl = address.startsWith('http://') ||
-              address.startsWith('https://')
+      final proxyUrl =
+          address.startsWith('http://') || address.startsWith('https://')
           ? address
           : 'http://$address';
       setHttpProxy(proxy: proxyUrl);

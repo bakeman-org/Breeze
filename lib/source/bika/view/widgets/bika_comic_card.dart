@@ -88,8 +88,7 @@ class BikaComicGrid extends StatelessWidget {
           physics: physics,
           controller: controller,
           itemCount: comics.length,
-          itemBuilder: (context, index) =>
-              BikaComicCard(comic: comics[index]),
+          itemBuilder: (context, index) => BikaComicCard(comic: comics[index]),
         );
       },
     );

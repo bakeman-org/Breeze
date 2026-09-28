@@ -213,9 +213,7 @@ class _TitleBarButtonState extends State<_TitleBarButton> {
         child: Container(
           width: 46,
           height: 40,
-          color: _isHovered && enabled
-              ? widget.hoverColor
-              : Colors.transparent,
+          color: _isHovered && enabled ? widget.hoverColor : Colors.transparent,
           child: Icon(
             widget.icon,
             size: 18,

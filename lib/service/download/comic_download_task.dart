@@ -134,12 +134,12 @@ Future<void> unifiedDownloadTask(
     updateTaskStatus(t.download.statusFetchingComicInfo);
     reporter.updateMessage(t.download.statusFetchingComicInfo);
     final detail = isNative
-        ? await getNativeComicDetail(pluginId, comicId, extern: _taskExtern(task))
-        : await getComicDetailByPlugin(
+        ? await getNativeComicDetail(
+            pluginId,
             comicId,
-            from,
-            pluginId: pluginId,
-          );
+            extern: _taskExtern(task),
+          )
+        : await getComicDetailByPlugin(comicId, from, pluginId: pluginId);
     comicId = detail.comicId;
 
     final downloadInfo = UnifiedComicDownloadInfo.fromString(detail.source);

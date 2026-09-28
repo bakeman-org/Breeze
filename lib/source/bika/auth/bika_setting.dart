@@ -21,8 +21,9 @@ abstract class BikaNativeSetting with _$BikaNativeSetting {
 extension BikaNativeSettingX on BikaNativeSetting {
   bool get hasAuthorization => authorization.trim().isNotEmpty;
 
-  String get apiHost =>
-      api == 'picacomic' ? 'https://picaapi.picacomic.com/' : 'https://picaapi.go2778.com/';
+  String get apiHost => api == 'picacomic'
+      ? 'https://picaapi.picacomic.com/'
+      : 'https://picaapi.go2778.com/';
 }
 
 BikaNativeSetting get bikaNativeSetting {

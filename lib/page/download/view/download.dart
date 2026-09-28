@@ -94,7 +94,9 @@ class _DownloadPageState extends State<DownloadPage> {
   }
 
   int get selectedCount {
-    return _chapters.where((chapter) => _downloadInfo[chapter.id] == true).length;
+    return _chapters
+        .where((chapter) => _downloadInfo[chapter.id] == true)
+        .length;
   }
 
   // 切换全选或取消全选
@@ -129,16 +131,48 @@ class _DownloadPageState extends State<DownloadPage> {
       ),
       content: (padding) => Material(
         type: MaterialType.transparency,
-        child: Center(
+        child: Align(
+          alignment: Alignment.topCenter,
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 800),
             child: ListView(
-              padding: padding.copyWith(bottom: 24),
+              padding: padding.copyWith(bottom: 80),
               children: [
-                MiuixSmallTitle(
-                  t.download.selectedChapters(
-                    selected: selectedCount,
-                    total: _chapters.length,
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          t.download.selectedChapters(
+                            selected: selectedCount,
+                            total: _chapters.length,
+                          ),
+                          style: Theme.of(context).textTheme.titleSmall,
+                        ),
+                      ),
+                      MiuixButton(
+                        onPressed: toggleSelectAll,
+                        colors: MiuixButtonDefaults.buttonColorsPrimary(
+                          context,
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              isAllSelected ? Icons.deselect : Icons.select_all,
+                              size: 16,
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              isAllSelected
+                                  ? t.bookshelf.deselectAll
+                                  : t.common.selectAll,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                 ),
                 Padding(
@@ -146,7 +180,11 @@ class _DownloadPageState extends State<DownloadPage> {
                   child: MiuixCard(
                     child: Column(
                       children: [
-                        for (var index = 0; index < _chapters.length; index++) ...[
+                        for (
+                          var index = 0;
+                          index < _chapters.length;
+                          index++
+                        ) ...[
                           if (index > 0) const MiuixHorizontalDivider(),
                           EpsWidget(
                             chapter: _chapters[index],

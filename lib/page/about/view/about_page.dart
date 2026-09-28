@@ -48,7 +48,7 @@ class _AboutPageState extends State<AboutPage> {
   }
 
   Future<void> _fetchContributors() async {
-    const repoPath = '/repos/deretame/Breeze/contributors';
+    const repoPath = '/repos/bakeman-org/breeze/contributors';
     final urls = [
       ...mirrorBaseUrls.map((base) => '${base}https://api.github.com$repoPath'),
       'https://api.github.com$repoPath',
@@ -140,7 +140,7 @@ class _AboutPageState extends State<AboutPage> {
                         title: t.about.projectAddress,
                         desc: t.about.projectAddressDesc,
                         linkText: t.about.projectLink,
-                        url: "https://github.com/deretame/Breeze",
+                        url: "https://github.com/bakeman-org/breeze",
                         delay: 200,
                       ),
 
@@ -160,7 +160,7 @@ class _AboutPageState extends State<AboutPage> {
                         title: t.about.feedback,
                         desc: t.about.feedbackDesc,
                         linkText: t.about.feedbackLink,
-                        url: "https://github.com/deretame/Breeze/issues",
+                        url: "https://github.com/bakeman-org/breeze/issues",
                         delay: 600,
                       ),
 

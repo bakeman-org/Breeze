@@ -2,10 +2,7 @@ import 'package:zephyr/network/http/wind_http.dart';
 import 'package:zephyr/source/bika/api/bika_client.dart';
 import 'package:zephyr/source/bika/models/bika_models.dart';
 
-T _bikaData<T>(
-  dynamic response,
-  T Function(dynamic) fromJsonT,
-) {
+T _bikaData<T>(dynamic response, T Function(dynamic) fromJsonT) {
   return BaseResponse<T>.fromJson(
     response as Map<String, dynamic>,
     fromJsonT,
@@ -23,9 +20,10 @@ Future<LoginResponse> bikaLogin(LoginPayload payload) async {
 
 Future<CategoriesResponse> fetchBikaCategories() async {
   final response = await bikaRequest('categories') as Map<String, dynamic>;
-  response['data']['categories'] = (response['data']['categories'] as List<dynamic>)
-      .where((category) => category['isWeb'] != true)
-      .toList();
+  response['data']['categories'] =
+      (response['data']['categories'] as List<dynamic>)
+          .where((category) => category['isWeb'] != true)
+          .toList();
   return _bikaData(response, (data) => CategoriesResponse.fromJson(data));
 }
 
@@ -42,7 +40,10 @@ Future<ComicDetailsResponse> fetchBikaComicDetails(String id) async {
 Future<List<Chapter>> fetchBikaChapters(String id) async {
   final url = 'comics/$id/eps';
   final response = await bikaRequest(url, payload: {'page': 1});
-  final eps = _bikaData(response, (data) => ChaptersResponse.fromJson(data)).eps;
+  final eps = _bikaData(
+    response,
+    (data) => ChaptersResponse.fromJson(data),
+  ).eps;
   final chapters = List<Chapter>.from(eps.docs);
   final results = await Future.wait(
     List.generate(
@@ -63,7 +64,10 @@ Future<RecommendComics> fetchBikaComicRecommendation(String id) async {
 }
 
 Future<ActionResponse> likeBikaComic(String id) async {
-  final response = await bikaRequest('comics/$id/like', method: BikaMethod.post);
+  final response = await bikaRequest(
+    'comics/$id/like',
+    method: BikaMethod.post,
+  );
   return _bikaData(response, (data) => ActionResponse.fromJson(data));
 }
 
@@ -126,7 +130,9 @@ Future<SearchResponse> searchBikaComics(SearchPayload payload) async {
   return _bikaData(response, (data) => SearchResponse.fromJson(data));
 }
 
-Future<ComicsResponse> fetchBikaFavoriteComics(UserFavoritePayload payload) async {
+Future<ComicsResponse> fetchBikaFavoriteComics(
+  UserFavoritePayload payload,
+) async {
   final response = await bikaRequest(
     'users/favourite',
     payload: payload.toJson(),
@@ -166,7 +172,10 @@ Future<UserProfileResponse> fetchBikaUserProfile() async {
 }
 
 Future<ComicRankResponse> fetchBikaComicRank(ComicRankPayload payload) async {
-  final response = await bikaRequest('comics/leaderboard', payload: payload.toJson());
+  final response = await bikaRequest(
+    'comics/leaderboard',
+    payload: payload.toJson(),
+  );
   return _bikaData(response, (data) => ComicRankResponse.fromJson(data));
 }
 

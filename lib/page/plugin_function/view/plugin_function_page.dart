@@ -76,11 +76,9 @@ class _PluginFunctionView extends StatelessWidget {
                         Text(state.error),
                         const SizedBox(height: 12),
                         MiuixButton(
-                          onPressed: () =>
-                              context.read<PluginFunctionCubit>().load(
-                                from: from,
-                                functionId: functionId,
-                              ),
+                          onPressed: () => context
+                              .read<PluginFunctionCubit>()
+                              .load(from: from, functionId: functionId),
                           child: Text(t.common.retry),
                         ),
                       ],

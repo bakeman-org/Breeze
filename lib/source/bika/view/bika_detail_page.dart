@@ -73,11 +73,12 @@ class _BikaDetailViewState extends State<_BikaDetailView> {
     });
     try {
       final detailsFuture = fetchBikaComicDetails(widget.comicId);
-      final chaptersFuture = fetchBikaChapters(widget.comicId).catchError(
-        (Object e) => const <Chapter>[],
-      );
-      final recommendFuture = fetchBikaComicRecommendation(widget.comicId)
-          .catchError((Object e) => RecommendComics(comics: const []));
+      final chaptersFuture = fetchBikaChapters(
+        widget.comicId,
+      ).catchError((Object e) => const <Chapter>[]);
+      final recommendFuture = fetchBikaComicRecommendation(
+        widget.comicId,
+      ).catchError((Object e) => RecommendComics(comics: const []));
       final details = await detailsFuture;
       final chapters = await chaptersFuture;
       final recommendations = await recommendFuture;
@@ -142,7 +143,9 @@ class _BikaDetailViewState extends State<_BikaDetailView> {
         _isFavourite = !_isFavourite;
         _actionLoading = false;
       });
-      showSuccessToast(_isFavourite ? t.bika.favouriteAdded : t.bika.favouriteRemoved);
+      showSuccessToast(
+        _isFavourite ? t.bika.favouriteAdded : t.bika.favouriteRemoved,
+      );
     } catch (e) {
       if (!mounted) return;
       setState(() => _actionLoading = false);
@@ -194,10 +197,7 @@ class _BikaDetailViewState extends State<_BikaDetailView> {
       ),
       content: (padding) => Material(
         type: MaterialType.transparency,
-        child: Padding(
-          padding: padding,
-          child: _buildBody(context),
-        ),
+        child: Padding(padding: padding, child: _buildBody(context)),
       ),
     );
   }
@@ -211,7 +211,10 @@ class _BikaDetailViewState extends State<_BikaDetailView> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(t.bika.loginRequired, style: Theme.of(context).textTheme.titleMedium),
+            Text(
+              t.bika.loginRequired,
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
             const SizedBox(height: 16),
             MiuixButton(onPressed: _goLogin, child: Text(t.bika.login)),
           ],
@@ -223,7 +226,10 @@ class _BikaDetailViewState extends State<_BikaDetailView> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(t.bika.networkError, style: Theme.of(context).textTheme.titleMedium),
+            Text(
+              t.bika.networkError,
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
             const SizedBox(height: 12),
             MiuixButton(onPressed: _load, child: Text(t.bika.retry)),
           ],
@@ -339,14 +345,30 @@ class _BikaDetailViewState extends State<_BikaDetailView> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              _buildStat(theme, Icons.visibility_outlined, t.bika.views,
-                  comic.totalViews),
-              _buildStat(theme, Icons.favorite_outline, t.bika.likes,
-                  comic.totalLikes),
-              _buildStat(theme, Icons.description_outlined, t.bika.pages,
-                  comic.pagesCount),
-              _buildStat(theme, Icons.format_list_numbered, t.bika.chapters,
-                  comic.epsCount),
+              _buildStat(
+                theme,
+                Icons.visibility_outlined,
+                t.bika.views,
+                comic.totalViews,
+              ),
+              _buildStat(
+                theme,
+                Icons.favorite_outline,
+                t.bika.likes,
+                comic.totalLikes,
+              ),
+              _buildStat(
+                theme,
+                Icons.description_outlined,
+                t.bika.pages,
+                comic.pagesCount,
+              ),
+              _buildStat(
+                theme,
+                Icons.format_list_numbered,
+                t.bika.chapters,
+                comic.epsCount,
+              ),
             ],
           ),
           const SizedBox(height: 12),
@@ -421,12 +443,7 @@ class _BikaDetailViewState extends State<_BikaDetailView> {
     );
   }
 
-  Widget _buildStat(
-    ThemeData theme,
-    IconData icon,
-    String label,
-    int value,
-  ) {
+  Widget _buildStat(ThemeData theme, IconData icon, String label, int value) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -453,13 +470,7 @@ class _BikaDetailViewState extends State<_BikaDetailView> {
     if (epsCount == 1 || _chapters.length <= 1) {
       final chapter = _chapters.isNotEmpty
           ? _chapters.first
-          : Chapter(
-              uid: '',
-              title: '',
-              order: 1,
-              updated_at: '',
-              id: comic.id,
-            );
+          : Chapter(uid: '', title: '', order: 1, updated_at: '', id: comic.id);
       return Row(
         children: [
           Expanded(

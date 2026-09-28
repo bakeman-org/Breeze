@@ -39,7 +39,8 @@ class ContentNetworkSettingPage extends StatelessWidget {
                 value: state.retryDownloadUntilSuccess,
                 onChanged: (value) {
                   cubit.updateState(
-                    (current) => current.copyWith(retryDownloadUntilSuccess: value),
+                    (current) =>
+                        current.copyWith(retryDownloadUntilSuccess: value),
                   );
                 },
                 startAction: MiuixSettingHelpers.icon(

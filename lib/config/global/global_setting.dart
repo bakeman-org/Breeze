@@ -143,6 +143,7 @@ abstract class GlobalSettingState with _$GlobalSettingState {
     @Default(false) bool autoFollowOnCollect,
     @Default(false) bool leftHandModeEnabled,
     @Default(false) bool clickCoverToStartReading,
+    @Default(true) bool checkUpdateOnStartup,
     @Default([]) List<String> searchHistory,
     @Default(ProxySettingState()) ProxySettingState proxySetting,
     @Default(1280.0) double windowWidth,

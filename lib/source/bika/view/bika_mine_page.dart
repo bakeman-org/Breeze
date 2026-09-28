@@ -128,7 +128,10 @@ class _BikaMinePageState extends State<BikaMinePage> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text(t.bika.loginRequired, style: Theme.of(context).textTheme.titleMedium),
+          Text(
+            t.bika.loginRequired,
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
           const SizedBox(height: 16),
           MiuixButton(onPressed: _goLogin, child: Text(t.bika.login)),
         ],
@@ -145,7 +148,10 @@ class _BikaMinePageState extends State<BikaMinePage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(t.bika.networkError, style: Theme.of(context).textTheme.titleMedium),
+            Text(
+              t.bika.networkError,
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
             const SizedBox(height: 12),
             MiuixButton(onPressed: _load, child: Text(t.bika.retry)),
           ],
@@ -163,7 +169,9 @@ class _BikaMinePageState extends State<BikaMinePage> {
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
+            color: theme.colorScheme.surfaceContainerHighest.withValues(
+              alpha: 0.4,
+            ),
             borderRadius: BorderRadius.circular(14),
           ),
           child: Row(
@@ -202,7 +210,10 @@ class _BikaMinePageState extends State<BikaMinePage> {
               ),
               if (user.isPunched)
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: theme.colorScheme.primaryContainer,
                     borderRadius: BorderRadius.circular(8),

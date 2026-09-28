@@ -67,9 +67,7 @@ class _BikaHomePageState extends State<BikaHomePage> {
     });
     try {
       final results = await Future.wait([
-        fetchBikaComics(
-          ComicsPayload(page: 1, c: _selectedCategory, s: _sort),
-        ),
+        fetchBikaComics(ComicsPayload(page: 1, c: _selectedCategory, s: _sort)),
         fetchBikaCategories(),
       ]);
       if (!mounted || seq != _requestSeq) return;
@@ -92,9 +90,7 @@ class _BikaHomePageState extends State<BikaHomePage> {
     final seq = _nextSeq();
     try {
       final results = await Future.wait([
-        fetchBikaComics(
-          ComicsPayload(page: 1, c: _selectedCategory, s: _sort),
-        ),
+        fetchBikaComics(ComicsPayload(page: 1, c: _selectedCategory, s: _sort)),
         fetchBikaCategories(),
       ]);
       if (!mounted || seq != _requestSeq) return;
@@ -125,7 +121,9 @@ class _BikaHomePageState extends State<BikaHomePage> {
         _page = next;
         _pages = resp.comics.pages;
         final existing = _comics.map((c) => c.uid).toSet();
-        _comics.addAll(resp.comics.docs.where((c) => !existing.contains(c.uid)));
+        _comics.addAll(
+          resp.comics.docs.where((c) => !existing.contains(c.uid)),
+        );
         _loadingMore = false;
       });
     } catch (e) {
@@ -196,12 +194,12 @@ class _BikaHomePageState extends State<BikaHomePage> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text(t.bika.loginRequired, style: Theme.of(context).textTheme.titleMedium),
-          const SizedBox(height: 16),
-          MiuixButton(
-            onPressed: _goLogin,
-            child: Text(t.bika.login),
+          Text(
+            t.bika.loginRequired,
+            style: Theme.of(context).textTheme.titleMedium,
           ),
+          const SizedBox(height: 16),
+          MiuixButton(onPressed: _goLogin, child: Text(t.bika.login)),
         ],
       ),
     );
@@ -216,7 +214,10 @@ class _BikaHomePageState extends State<BikaHomePage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(t.bika.networkError, style: Theme.of(context).textTheme.titleMedium),
+            Text(
+              t.bika.networkError,
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
             const SizedBox(height: 12),
             MiuixButton(onPressed: _reload, child: Text(t.bika.retry)),
           ],
@@ -258,10 +259,8 @@ class _BikaHomePageState extends State<BikaHomePage> {
                 onSelected: _selectSort,
                 itemBuilder: (context) => ComicSortType.values
                     .map(
-                      (type) => PopupMenuItem(
-                        value: type,
-                        child: Text(type.title),
-                      ),
+                      (type) =>
+                          PopupMenuItem(value: type, child: Text(type.title)),
                     )
                     .toList(),
                 child: const Icon(Icons.sort),

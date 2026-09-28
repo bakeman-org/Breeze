@@ -39,7 +39,10 @@ Future<void> migrateV10ToV11() async {
       ? ProxyMode.direct
       : (type == 'socks5' ? ProxyMode.socks5 : ProxyMode.http);
 
-  proxyJson..remove('enabled')..remove('type')..['mode'] = mode.name;
+  proxyJson
+    ..remove('enabled')
+    ..remove('type')
+    ..['mode'] = mode.name;
   json['proxySetting'] = proxyJson;
 
   userSetting.globalSettingData = jsonEncode(json);

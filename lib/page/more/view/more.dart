@@ -67,9 +67,7 @@ class _MorePageState extends State<MorePage> {
                   ),
                   // 底部 240 预留原本由列表尾部的 SizedBox(height: 240) 承担，
                   // 这里并入 padding，保证最后一项能完整滚出底栏。
-                  padding: padding.copyWith(
-                    bottom: padding.bottom + 240,
-                  ),
+                  padding: padding.copyWith(bottom: padding.bottom + 240),
                   children: [
                     // ★ 用 _CollapsibleHeader 替代 AnimatedContainer。
                     //   一条 AnimationController 驱动高度/透明度/位移/缩放，

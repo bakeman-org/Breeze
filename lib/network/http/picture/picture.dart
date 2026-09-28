@@ -10,7 +10,6 @@ import 'package:zephyr/service/download/download_asset_store.dart';
 import 'package:zephyr/type/enum.dart';
 import 'package:zephyr/type/pipe.dart';
 import 'package:zephyr/service/download/download_cancel_signal.dart';
-import 'package:zephyr/page/setting/real_sr/service/real_sr_super_resolution.dart';
 
 import 'package:zephyr/src/rust/api/simple.dart';
 import 'package:zephyr/src/rust/decode/decode.dart';
@@ -43,7 +42,6 @@ Future<String> getCachePicture({
   PictureType pictureType = PictureType.page,
   Map<String, dynamic>? extern,
   int index = 0,
-  bool applyRealSr = true,
   bool usePlugin = true,
 }) async {
   final resolvedFrom = normalizePluginId(from);
@@ -69,12 +67,6 @@ Future<String> getCachePicture({
 
   if (existingDownload != null) {
     try {
-      // 超分 + WebP 转换统一封装，内部会判断分辨率并保留原文件名。
-      if (pictureType == PictureType.page && applyRealSr) {
-        await RealSrSuperResolution.upscaleAndConvertToWebp(
-          existingDownload.path,
-        );
-      }
       return existingDownload.path;
     } catch (e) {
       logger.w(
@@ -87,9 +79,6 @@ Future<String> getCachePicture({
   final existingCache = await assetStore.findCanonicalCache();
   if (existingCache != null) {
     try {
-      if (pictureType == PictureType.page && applyRealSr) {
-        await RealSrSuperResolution.upscaleAndConvertToWebp(existingCache.path);
-      }
       return existingCache.path;
     } catch (e) {
       logger.w(
@@ -149,9 +138,6 @@ Future<String> getCachePicture({
     );
     // 验证文件已成功保存
     if (await File(newCacheFilePath).exists()) {
-      if (pictureType == PictureType.page && applyRealSr) {
-        await RealSrSuperResolution.upscaleAndConvertToWebp(newCacheFilePath);
-      }
       return newCacheFilePath;
     } else {
       throw Exception('图片保存失败');
@@ -164,10 +150,6 @@ Future<String> getCachePicture({
   // 验证文件已成功保存
   if (await File(newCacheFilePath).exists() &&
       await File(newCacheFilePath).length() > 0) {
-    // 超分 + WebP 转换统一封装，内部会判断分辨率并保留原文件名
-    if (pictureType == PictureType.page && applyRealSr) {
-      await RealSrSuperResolution.upscaleAndConvertToWebp(newCacheFilePath);
-    }
     return newCacheFilePath;
   } else {
     throw Exception('图片保存失败');
@@ -435,9 +417,6 @@ Future<DownloadPictureResult> downloadPictureResult({
       errorStackTrace: StackTrace.current,
     );
   }
-  if (pictureType == PictureType.page) {
-    await RealSrSuperResolution.upscaleAndConvertToWebp(downloadFilePath);
-  }
   return DownloadPictureResult(
     status: DownloadPictureResultStatus.downloaded,
     path: downloadFilePath,
@@ -552,18 +531,34 @@ Future<Uint8List> downloadImageWithRetry(
         if (e.statusCode == 404 || e.statusCode == 422) {
           throw DownloadPictureNotFoundException(
             url,
-            DownloadPictureHttpException(url, e.message, statusCode: e.statusCode),
+            DownloadPictureHttpException(
+              url,
+              e.message,
+              statusCode: e.statusCode,
+            ),
           );
         }
-        throw DownloadPictureHttpException(url, e.message, statusCode: e.statusCode);
+        throw DownloadPictureHttpException(
+          url,
+          e.message,
+          statusCode: e.statusCode,
+        );
       } on EhHttpException catch (e) {
         if (e.statusCode == 404 || e.statusCode == 422) {
           throw DownloadPictureNotFoundException(
             url,
-            DownloadPictureHttpException(url, e.message, statusCode: e.statusCode),
+            DownloadPictureHttpException(
+              url,
+              e.message,
+              statusCode: e.statusCode,
+            ),
           );
         }
-        throw DownloadPictureHttpException(url, e.message, statusCode: e.statusCode);
+        throw DownloadPictureHttpException(
+          url,
+          e.message,
+          statusCode: e.statusCode,
+        );
       } on EhImage509Exception catch (e) {
         throw DownloadPictureHttpException(url, e.toString(), statusCode: 509);
       } on EhLoginRequiredException catch (e) {
@@ -612,10 +607,7 @@ Future<Uint8List> downloadImageWithRetry(
           throw DownloadPictureNotFoundException(url, e);
         }
         if (e.statusCode == 401 || e.statusCode == 403 || e.statusCode == 509) {
-          logger.w(
-            '下载图片被拒绝（${e.statusCode}），停止重试: $url',
-            error: e,
-          );
+          logger.w('下载图片被拒绝（${e.statusCode}），停止重试: $url', error: e);
           rethrow;
         }
         logger.w(

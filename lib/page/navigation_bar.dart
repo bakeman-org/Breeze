@@ -97,8 +97,13 @@ class _NavigationBarState extends State<NavigationBar> {
 
     _railState = MiuixNavigationRailState();
 
+    final globalSetting = objectbox.userSettingBox.get(1)!.globalSetting;
+    final checkUpdateOnStartup = globalSetting.checkUpdateOnStartup;
+
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      checkUpdate(context);
+      if (checkUpdateOnStartup) {
+        checkUpdate(context);
+      }
       _autoSync();
       manageCacheSize(context);
       DownloadQueueManager.instance.resetStuckTasks();
@@ -110,7 +115,6 @@ class _NavigationBarState extends State<NavigationBar> {
       }
     });
 
-    final globalSetting = objectbox.userSettingBox.get(1)!.globalSetting;
     final configuredIndex = globalSetting.welcomePageNum;
     final initialIndex = _normalizeWelcomePageIndex(
       configuredIndex,
@@ -120,7 +124,9 @@ class _NavigationBarState extends State<NavigationBar> {
 
     ForegroundTaskService.instance.init();
     initializeNotificationsOnce();
-    _scheduleFollowUpdateCheck(context);
+    if (checkUpdateOnStartup) {
+      _scheduleFollowUpdateCheck(context);
+    }
 
     const duration = Duration(minutes: 5);
     Timer.periodic(duration, (Timer timer) async {

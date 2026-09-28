@@ -11,9 +11,7 @@ Future<ComicReadSnapshot> fetchBikaReadSnapshot({
   final imagesFuture = fetchBikaChapterImages(
     FetchChapterImagesPayload(id: comicId, order: order),
   );
-  final chaptersFuture = fetchBikaChapters(comicId).catchError((
-    Object error,
-  ) {
+  final chaptersFuture = fetchBikaChapters(comicId).catchError((Object error) {
     return const <Chapter>[];
   });
   final images = await imagesFuture;
@@ -48,7 +46,11 @@ Future<ComicReadSnapshot> fetchBikaReadSnapshot({
 
   return ComicReadSnapshot(
     source: 'bika',
-    comic: ComicReadSnapshotComic(id: comicId, source: 'bika', title: comicTitle),
+    comic: ComicReadSnapshotComic(
+      id: comicId,
+      source: 'bika',
+      title: comicTitle,
+    ),
     chapter: ComicReadSnapshotChapter(
       id: chapterId,
       name: chapterName,

@@ -256,7 +256,8 @@ class _CacheSettingPageState extends State<CacheSettingPage> {
                         value: state.cacheSetting.autoCleanCache,
                         onChanged: (bool value) {
                           cubit.updateCacheSetting(
-                            (current) => current.copyWith(autoCleanCache: value),
+                            (current) =>
+                                current.copyWith(autoCleanCache: value),
                           );
                         },
                         startAction: MiuixSettingHelpers.icon(

@@ -82,7 +82,9 @@ class _ComicFollowPageContent extends StatelessWidget {
                   return const Center(child: CircularProgressIndicator());
                 case ComicFollowStatus.failure:
                   return ErrorView(
-                    errorMessage: t.comicFollow.loadFailed(result: state.result),
+                    errorMessage: t.comicFollow.loadFailed(
+                      result: state.result,
+                    ),
                     onRetry: () =>
                         context.read<ComicFollowCubit>().loadFromDatabase(),
                   );

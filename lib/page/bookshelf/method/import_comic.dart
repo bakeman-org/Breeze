@@ -362,8 +362,12 @@ Future<void> _importCover({
     encodePath(path: normalizeStoredAssetPath(originalCoverPath)),
   );
 
-  await Directory(targetComicDir).create(recursive: true);
-  await sourceFile.copy(targetCoverPath);
+  await Directory(p.dirname(targetCoverPath)).create(recursive: true);
+  try {
+    await sourceFile.copy(targetCoverPath);
+  } catch (e) {
+    logger.w('导入漫画时封面复制失败: $sourceCoverPath -> $targetCoverPath', error: e);
+  }
 }
 
 Future<String?> _detectCoverExtension(String importDir) async {

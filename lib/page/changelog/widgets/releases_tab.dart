@@ -11,9 +11,10 @@ import 'package:zephyr/page/changelog/widgets/release_card.dart';
 import 'package:zephyr/service/update/json/github_release_json.dart';
 import 'package:zephyr/util/error_filter.dart';
 
-const _proxyReleasesApiUrl = '$breezeGithubApi/repos/deretame/Breeze/releases';
+const _proxyReleasesApiUrl =
+    '$breezeGithubApi/repos/bakeman-org/breeze/releases';
 const _githubReleasesApiUrl =
-    'https://api.github.com/repos/deretame/Breeze/releases';
+    'https://api.github.com/repos/bakeman-org/breeze/releases';
 
 class ReleasesTab extends StatefulWidget {
   const ReleasesTab({super.key});

@@ -47,6 +47,7 @@ _GlobalSettingState _$GlobalSettingStateFromJson(
   autoFollowOnCollect: json['autoFollowOnCollect'] as bool? ?? false,
   leftHandModeEnabled: json['leftHandModeEnabled'] as bool? ?? false,
   clickCoverToStartReading: json['clickCoverToStartReading'] as bool? ?? false,
+  checkUpdateOnStartup: json['checkUpdateOnStartup'] as bool? ?? true,
   searchHistory:
       (json['searchHistory'] as List<dynamic>?)
           ?.map((e) => e as String)
@@ -117,6 +118,7 @@ Map<String, dynamic> _$GlobalSettingStateToJson(_GlobalSettingState instance) =>
       'autoFollowOnCollect': instance.autoFollowOnCollect,
       'leftHandModeEnabled': instance.leftHandModeEnabled,
       'clickCoverToStartReading': instance.clickCoverToStartReading,
+      'checkUpdateOnStartup': instance.checkUpdateOnStartup,
       'searchHistory': instance.searchHistory,
       'proxySetting': instance.proxySetting.toJson(),
       'windowWidth': instance.windowWidth,

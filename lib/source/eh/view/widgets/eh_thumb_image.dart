@@ -48,7 +48,6 @@ class _EhThumbImageState extends State<EhThumbImage> {
       url: widget.url,
       path: widget.cacheKey,
       pictureType: PictureType.cover,
-      applyRealSr: false,
     );
   }
 

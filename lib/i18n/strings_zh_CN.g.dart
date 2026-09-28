@@ -59,7 +59,6 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	late final Translations$cache$zh_CN cache = Translations$cache$zh_CN.internal(_root);
 	late final Translations$dataBackup$zh_CN dataBackup = Translations$dataBackup$zh_CN.internal(_root);
 	late final Translations$webdavSync$zh_CN webdavSync = Translations$webdavSync$zh_CN.internal(_root);
-	late final Translations$realSr$zh_CN realSr = Translations$realSr$zh_CN.internal(_root);
 	late final Translations$about$zh_CN about = Translations$about$zh_CN.internal(_root);
 	late final Translations$oldHome$zh_CN oldHome = Translations$oldHome$zh_CN.internal(_root);
 	late final Translations$more$zh_CN more = Translations$more$zh_CN.internal(_root);
@@ -670,6 +669,12 @@ class Translations$settings$zh_CN {
 	/// zh-CN: '在漫画详情页点击封面直接开始阅读'
 	String get clickCoverToStartReadingSubtitle => '在漫画详情页点击封面直接开始阅读';
 
+	/// zh-CN: '启动时检查更新'
+	String get checkUpdateOnStartup => '启动时检查更新';
+
+	/// zh-CN: '启动时检查应用版本更新和漫画追更'
+	String get checkUpdateOnStartupSubtitle => '启动时检查应用版本更新和漫画追更';
+
 	/// zh-CN: '后台保活'
 	String get androidKeepAlive => '后台保活';
 
@@ -753,18 +758,6 @@ class Translations$settings$zh_CN {
 
 	/// zh-CN: '图片处理'
 	String get imageProcessing => '图片处理';
-
-	/// zh-CN: '图片超分（实验性）'
-	String get realSr => '图片超分（实验性）';
-
-	/// zh-CN: '试验性功能，可能不稳定'
-	String get realSrSubtitle => '试验性功能，可能不稳定';
-
-	/// zh-CN: '自动超分'
-	String get autoRealSr => '自动超分';
-
-	/// zh-CN: '分辨率阈值'
-	String get resolutionThreshold => '分辨率阈值';
 
 	/// zh-CN: '调试'
 	String get debug => '调试';
@@ -930,12 +923,6 @@ class Translations$settings$zh_CN {
 
 	/// zh-CN: '蓝灰色'
 	String get colorBlueGrey => '蓝灰色';
-
-	/// zh-CN: 'CoreML 超分调试'
-	String get coremlDebug => 'CoreML 超分调试';
-
-	/// zh-CN: '使用绝对路径模型测试 CoreML 超分'
-	String get coremlDebugSubtitle => '使用绝对路径模型测试 CoreML 超分';
 
 	/// zh-CN: '关于与更多'
 	String get aboutAndMore => '关于与更多';
@@ -2621,237 +2608,6 @@ class Translations$webdavSync$zh_CN {
 	String get faqMarkdown => '### 可以同步哪些内容？\n- 目前同步哔咔历史记录、禁漫收藏和禁漫历史。\n\n### WebDAV 如何配置？\n- 填写 WebDAV 地址、账号、密码，点击测试连接并保存即可。\n\n### S3 如何配置？\n- Endpoint 示例：`s3.amazonaws.com`、`s3.filebase.com`、`play.min.io`。\n- 如果是自建 MinIO，可填写自定义端口，必要时关闭 SSL。\n\n### 自动同步间隔是多久？\n- 每 5 分钟自动同步一次。\n\n### 如何手动触发一次同步？\n- 在同步配置页测试连接并保存后会触发一次同步。\n- 或在设置里切换一次自动同步开关。';
 }
 
-// Path: realSr
-class Translations$realSr$zh_CN {
-	Translations$realSr$zh_CN.internal(this._root);
-
-	final Translations _root; // ignore: unused_field
-
-	// Translations
-
-	/// zh-CN: '图片超分（实验性）'
-	String get title => '图片超分（实验性）';
-
-	/// zh-CN: '不限制'
-	String get unlimited => '不限制';
-
-	/// zh-CN: '模型下载失败'
-	String get modelDownloadFailed => '模型下载失败';
-
-	/// zh-CN: '通用'
-	String get generalSection => '通用';
-
-	/// zh-CN: '自动超分'
-	String get autoUpscaleSection => '自动超分';
-
-	/// zh-CN: '自动超分'
-	String get autoUpscale => '自动超分';
-
-	/// zh-CN: '模型未下载，开启后无法自动超分'
-	String get autoUpscaleSubtitleUnavailable => '模型未下载，开启后无法自动超分';
-
-	/// zh-CN: '下载或加载图片时自动调用超分'
-	String get autoUpscaleSubtitleAvailable => '下载或加载图片时自动调用超分';
-
-	/// zh-CN: '超分条件'
-	String get conditionSection => '超分条件';
-
-	/// zh-CN: '分辨率阈值'
-	String get resolutionThreshold => '分辨率阈值';
-
-	/// zh-CN: '仅当图片宽度小于该值时才自动超分'
-	String get resolutionThresholdSubtitle => '仅当图片宽度小于该值时才自动超分';
-
-	/// zh-CN: '性能'
-	String get performanceSection => '性能';
-
-	/// zh-CN: '并发数量'
-	String get concurrency => '并发数量';
-
-	/// zh-CN: '高端显卡可适当提高，移动设备或性能较低时不建议设置高于1的并发量'
-	String get concurrencySubtitle => '高端显卡可适当提高，移动设备或性能较低时不建议设置高于1的并发量';
-
-	/// zh-CN: '分块大小'
-	String get tileSize => '分块大小';
-
-	/// zh-CN: '遇到崩溃可设置较小值，0为不分块，桌面端可尝试设置为0'
-	String get tileSizeSubtitle => '遇到崩溃可设置较小值，0为不分块，桌面端可尝试设置为0';
-
-	/// zh-CN: '模型'
-	String get modelSection => '模型';
-
-	/// zh-CN: '模型'
-	String get model => '模型';
-
-	/// zh-CN: '切换模型族会重置对应的变体选项'
-	String get modelSubtitle => '切换模型族会重置对应的变体选项';
-
-	/// zh-CN: '降噪级别'
-	String get noiseLevel => '降噪级别';
-
-	/// zh-CN: '该选项随所选模型变化'
-	String get noiseLevelSubtitle => '该选项随所选模型变化';
-
-	/// zh-CN: '分块信息'
-	String get blockInfo => '分块信息';
-
-	/// zh-CN: 'blockSize 是模型输入尺寸，包含反射边距； 内容块 = blockSize - 2×shrinkSize，才是真正拼接输出的区域。'
-	String get blockInfoTooltip => 'blockSize 是模型输入尺寸，包含反射边距；\n内容块 = blockSize - 2×shrinkSize，才是真正拼接输出的区域。';
-
-	/// zh-CN: '内容块 $contentSize×$contentSize，模型输入 $blockSize×$blockSize（含 ${shrinkSize}px 反射边距）'
-	String blockInfoFormat({required Object contentSize, required Object blockSize, required Object shrinkSize}) => '内容块 ${contentSize}×${contentSize}，模型输入 ${blockSize}×${blockSize}（含 ${shrinkSize}px 反射边距）';
-
-	/// zh-CN: 'Android 超分'
-	String get androidSuperResolution => 'Android 超分';
-
-	/// zh-CN: '当前使用 waifu2x upconv 动漫模型，2 倍放大'
-	String get androidSuperResolutionSubtitle => '当前使用 waifu2x upconv 动漫模型，2 倍放大';
-
-	/// zh-CN: '超分策略'
-	String get desktopStrategy => '超分策略';
-
-	/// zh-CN: '效率优先使用 waifu2x，质量优先使用 Real-CUGAN'
-	String get desktopStrategySubtitle => '效率优先使用 waifu2x，质量优先使用 Real-CUGAN';
-
-	/// zh-CN: '降噪级别'
-	String get desktopNoiseLevel => '降噪级别';
-
-	/// zh-CN: '保守适合普通漫画，降噪级别越高涂抹感越强'
-	String get desktopNoiseLevelSubtitle => '保守适合普通漫画，降噪级别越高涂抹感越强';
-
-	/// zh-CN: '模型管理'
-	String get modelManagementSection => '模型管理';
-
-	/// zh-CN: '正在下载模型'
-	String get downloadingModel => '正在下载模型';
-
-	/// zh-CN: '模型已就绪'
-	String get modelReady => '模型已就绪';
-
-	/// zh-CN: '重新下载'
-	String get redownload => '重新下载';
-
-	/// zh-CN: '删除模型'
-	String get deleteModel => '删除模型';
-
-	/// zh-CN: '确定要删除已下载的超分模型吗？删除后需要重新下载才能使用。'
-	String get deleteModelConfirm => '确定要删除已下载的超分模型吗？删除后需要重新下载才能使用。';
-
-	/// zh-CN: '模型已删除'
-	String get modelDeleted => '模型已删除';
-
-	/// zh-CN: '模型删除失败'
-	String get modelDeleteFailed => '模型删除失败';
-
-	/// zh-CN: '模型未下载'
-	String get modelNotDownloaded => '模型未下载';
-
-	/// zh-CN: '使用超分前需要先下载模型'
-	String get modelNotDownloadedSubtitle => '使用超分前需要先下载模型';
-
-	/// zh-CN: '下载模型'
-	String get downloadModel => '下载模型';
-
-	/// zh-CN: '手动下载模型'
-	String get manualDownload => '手动下载模型';
-
-	/// zh-CN: '当前平台不支持手动下载超分模型'
-	String get manualDownloadUnsupported => '当前平台不支持手动下载超分模型';
-
-	/// zh-CN: '打开链接'
-	String get openDownloadUrl => '打开链接';
-
-	/// zh-CN: '打开链接失败'
-	String get openDownloadUrlFailed => '打开链接失败';
-
-	/// zh-CN: '导入模型压缩包'
-	String get importModel => '导入模型压缩包';
-
-	/// zh-CN: '选择手动下载的 7z 压缩包，导入时会校验格式与模型内容'
-	String get importModelSubtitle => '选择手动下载的 7z 压缩包，导入时会校验格式与模型内容';
-
-	/// zh-CN: '选择文件'
-	String get importModelAction => '选择文件';
-
-	/// zh-CN: '模型导入成功'
-	String get modelImportSuccess => '模型导入成功';
-
-	/// zh-CN: '模型导入失败'
-	String get modelImportFailed => '模型导入失败';
-
-	/// zh-CN: '效率优先'
-	String get modeEfficiency => '效率优先';
-
-	/// zh-CN: '质量优先'
-	String get modeQuality => '质量优先';
-
-	/// zh-CN: '保守'
-	String get noiseConservative => '保守';
-
-	/// zh-CN: '无降噪'
-	String get noise0 => '无降噪';
-
-	/// zh-CN: '降噪 1'
-	String get noise1 => '降噪 1';
-
-	/// zh-CN: '降噪 2'
-	String get noise2 => '降噪 2';
-
-	/// zh-CN: '降噪 3'
-	String get noise3 => '降噪 3';
-
-	/// zh-CN: 'waifu2x upconv 动漫'
-	String get variantWaifu2xAnime => 'waifu2x upconv 动漫';
-
-	/// zh-CN: 'Real-CUGAN 降噪 $noise'
-	String variantRealCuganDenoise({required Object noise}) => 'Real-CUGAN 降噪 ${noise}';
-
-	/// zh-CN: '速度优先 (waifu2x)'
-	String get coremlSpeed => '速度优先 (waifu2x)';
-
-	/// zh-CN: '质量优先 (Real-CUGAN)'
-	String get coremlQuality => '质量优先 (Real-CUGAN)';
-
-	/// zh-CN: '降噪 0'
-	String get coremlNoise0 => '降噪 0';
-
-	/// zh-CN: '无降噪'
-	String get coremlNoDenoise => '无降噪';
-
-	/// zh-CN: '输入图片绝对路径或 asset 路径'
-	String get coremlInputHint => '输入图片绝对路径或 asset 路径';
-
-	/// zh-CN: '开始超分'
-	String get coremlStartUpscale => '开始超分';
-
-	/// zh-CN: '请填写输入图片路径'
-	String get coremlStatusFillInput => '请填写输入图片路径';
-
-	/// zh-CN: '当前模型族没有可用的模型文件'
-	String get coremlStatusNoModelFile => '当前模型族没有可用的模型文件';
-
-	/// zh-CN: '正在准备资源...'
-	String get coremlStatusPreparing => '正在准备资源...';
-
-	/// zh-CN: '正在超分...'
-	String get coremlStatusUpscaling => '正在超分...';
-
-	/// zh-CN: '完成 $outputPath size: $size bytes'
-	String coremlStatusDone({required Object outputPath, required Object size}) => '完成\n${outputPath}\nsize: ${size} bytes';
-
-	/// zh-CN: '失败: $error'
-	String coremlStatusFailed({required Object error}) => '失败: ${error}';
-
-	/// zh-CN: '模型选项（降噪级别）'
-	String get coremlModelOption => '模型选项（降噪级别）';
-
-	/// zh-CN: '通用选项（放大倍率）'
-	String get coremlGeneralOption => '通用选项（放大倍率）';
-
-	/// zh-CN: '分块信息'
-	String get coremlTileInfo => '分块信息';
-}
-
 // Path: about
 class Translations$about$zh_CN {
 	Translations$about$zh_CN.internal(this._root);
@@ -2881,8 +2637,8 @@ class Translations$about$zh_CN {
 	/// zh-CN: '喜欢这个项目吗？点个star支持一下吧！'
 	String get projectAddressDesc => '喜欢这个项目吗？点个star支持一下吧！';
 
-	/// zh-CN: '前往 GitHub 仓库 (deretame/Breeze) ⭐'
-	String get projectLink => '前往 GitHub 仓库 (deretame/Breeze) ⭐';
+	/// zh-CN: '前往 GitHub 仓库 (bakeman-org/breeze) ⭐'
+	String get projectLink => '前往 GitHub 仓库 (bakeman-org/breeze) ⭐';
 
 	/// zh-CN: '联系方式'
 	String get contact => '联系方式';
@@ -4383,6 +4139,8 @@ extension on Translations {
 			'settings.leftHandModeSubtitle' => '开启后将悬浮按钮等操作按钮移到屏幕左侧',
 			'settings.clickCoverToStartReading' => '点击封面开始阅读',
 			'settings.clickCoverToStartReadingSubtitle' => '在漫画详情页点击封面直接开始阅读',
+			'settings.checkUpdateOnStartup' => '启动时检查更新',
+			'settings.checkUpdateOnStartupSubtitle' => '启动时检查应用版本更新和漫画追更',
 			'settings.androidKeepAlive' => '后台保活',
 			'settings.androidKeepAliveSubtitle' => '开启后通过前台服务尽量保持应用在后台运行，会显示常驻通知',
 			'settings.backPressExit' => '返回键退出',
@@ -4411,10 +4169,6 @@ extension on Translations {
 			'settings.exportData' => '导出数据',
 			'settings.importData' => '导入数据',
 			'settings.imageProcessing' => '图片处理',
-			'settings.realSr' => '图片超分（实验性）',
-			'settings.realSrSubtitle' => '试验性功能，可能不稳定',
-			'settings.autoRealSr' => '自动超分',
-			'settings.resolutionThreshold' => '分辨率阈值',
 			'settings.debug' => '调试',
 			'settings.logAddress' => '日志转发地址',
 			'settings.logAddressSubtitle' => '配置后实时转发日志到指定地址',
@@ -4470,8 +4224,6 @@ extension on Translations {
 			'settings.colorBrown' => '棕色',
 			'settings.colorGrey' => '灰色',
 			'settings.colorBlueGrey' => '蓝灰色',
-			'settings.coremlDebug' => 'CoreML 超分调试',
-			'settings.coremlDebugSubtitle' => '使用绝对路径模型测试 CoreML 超分',
 			'settings.aboutAndMore' => '关于与更多',
 			'settings.changelog' => '更新日志',
 			'settings.changelogSubtitle' => '查看各个版本的更新记录',
@@ -4710,12 +4462,12 @@ extension on Translations {
 			'reader.doublePageSeamlessSubtitle' => '左右各占一半宽度，按图片比例独立显示并消除中间留白',
 			'reader.doublePageLeadingBlank' => '首页留白',
 			'reader.doublePageLeadingBlankSubtitle' => '在每章最前插入一页空白，使配对整体错一位',
-			_ => null,
-		} ?? switch (path) {
 			'reader.landscapeReader' => '横屏阅读',
 			'reader.landscapeReaderSubtitle' => '阅读时切换为横屏，离开后恢复原来的方向',
 			'reader.themeMode' => '系统模式',
 			'reader.autoRead' => '自动阅读',
+			_ => null,
+		} ?? switch (path) {
 			'reader.autoReadSubtitle' => '开启后自动滚动',
 			'reader.autoReadHidePauseButton' => '隐藏暂停按钮',
 			'reader.autoReadHidePauseButtonSubtitle' => '自动阅读继续运行，但不显示阅读页上的暂停/播放按钮',
@@ -5005,80 +4757,6 @@ extension on Translations {
 			'webdavSync.success' => '成功',
 			'webdavSync.error' => '错误',
 			'webdavSync.faqMarkdown' => '### 可以同步哪些内容？\n- 目前同步哔咔历史记录、禁漫收藏和禁漫历史。\n\n### WebDAV 如何配置？\n- 填写 WebDAV 地址、账号、密码，点击测试连接并保存即可。\n\n### S3 如何配置？\n- Endpoint 示例：`s3.amazonaws.com`、`s3.filebase.com`、`play.min.io`。\n- 如果是自建 MinIO，可填写自定义端口，必要时关闭 SSL。\n\n### 自动同步间隔是多久？\n- 每 5 分钟自动同步一次。\n\n### 如何手动触发一次同步？\n- 在同步配置页测试连接并保存后会触发一次同步。\n- 或在设置里切换一次自动同步开关。',
-			'realSr.title' => '图片超分（实验性）',
-			'realSr.unlimited' => '不限制',
-			'realSr.modelDownloadFailed' => '模型下载失败',
-			'realSr.generalSection' => '通用',
-			'realSr.autoUpscaleSection' => '自动超分',
-			'realSr.autoUpscale' => '自动超分',
-			'realSr.autoUpscaleSubtitleUnavailable' => '模型未下载，开启后无法自动超分',
-			'realSr.autoUpscaleSubtitleAvailable' => '下载或加载图片时自动调用超分',
-			'realSr.conditionSection' => '超分条件',
-			'realSr.resolutionThreshold' => '分辨率阈值',
-			'realSr.resolutionThresholdSubtitle' => '仅当图片宽度小于该值时才自动超分',
-			'realSr.performanceSection' => '性能',
-			'realSr.concurrency' => '并发数量',
-			'realSr.concurrencySubtitle' => '高端显卡可适当提高，移动设备或性能较低时不建议设置高于1的并发量',
-			'realSr.tileSize' => '分块大小',
-			'realSr.tileSizeSubtitle' => '遇到崩溃可设置较小值，0为不分块，桌面端可尝试设置为0',
-			'realSr.modelSection' => '模型',
-			'realSr.model' => '模型',
-			'realSr.modelSubtitle' => '切换模型族会重置对应的变体选项',
-			'realSr.noiseLevel' => '降噪级别',
-			'realSr.noiseLevelSubtitle' => '该选项随所选模型变化',
-			'realSr.blockInfo' => '分块信息',
-			'realSr.blockInfoTooltip' => 'blockSize 是模型输入尺寸，包含反射边距；\n内容块 = blockSize - 2×shrinkSize，才是真正拼接输出的区域。',
-			'realSr.blockInfoFormat' => ({required Object contentSize, required Object blockSize, required Object shrinkSize}) => '内容块 ${contentSize}×${contentSize}，模型输入 ${blockSize}×${blockSize}（含 ${shrinkSize}px 反射边距）',
-			'realSr.androidSuperResolution' => 'Android 超分',
-			'realSr.androidSuperResolutionSubtitle' => '当前使用 waifu2x upconv 动漫模型，2 倍放大',
-			'realSr.desktopStrategy' => '超分策略',
-			'realSr.desktopStrategySubtitle' => '效率优先使用 waifu2x，质量优先使用 Real-CUGAN',
-			'realSr.desktopNoiseLevel' => '降噪级别',
-			'realSr.desktopNoiseLevelSubtitle' => '保守适合普通漫画，降噪级别越高涂抹感越强',
-			'realSr.modelManagementSection' => '模型管理',
-			'realSr.downloadingModel' => '正在下载模型',
-			'realSr.modelReady' => '模型已就绪',
-			'realSr.redownload' => '重新下载',
-			'realSr.deleteModel' => '删除模型',
-			'realSr.deleteModelConfirm' => '确定要删除已下载的超分模型吗？删除后需要重新下载才能使用。',
-			'realSr.modelDeleted' => '模型已删除',
-			'realSr.modelDeleteFailed' => '模型删除失败',
-			'realSr.modelNotDownloaded' => '模型未下载',
-			'realSr.modelNotDownloadedSubtitle' => '使用超分前需要先下载模型',
-			'realSr.downloadModel' => '下载模型',
-			'realSr.manualDownload' => '手动下载模型',
-			'realSr.manualDownloadUnsupported' => '当前平台不支持手动下载超分模型',
-			'realSr.openDownloadUrl' => '打开链接',
-			'realSr.openDownloadUrlFailed' => '打开链接失败',
-			'realSr.importModel' => '导入模型压缩包',
-			'realSr.importModelSubtitle' => '选择手动下载的 7z 压缩包，导入时会校验格式与模型内容',
-			'realSr.importModelAction' => '选择文件',
-			'realSr.modelImportSuccess' => '模型导入成功',
-			'realSr.modelImportFailed' => '模型导入失败',
-			'realSr.modeEfficiency' => '效率优先',
-			'realSr.modeQuality' => '质量优先',
-			'realSr.noiseConservative' => '保守',
-			'realSr.noise0' => '无降噪',
-			'realSr.noise1' => '降噪 1',
-			'realSr.noise2' => '降噪 2',
-			'realSr.noise3' => '降噪 3',
-			'realSr.variantWaifu2xAnime' => 'waifu2x upconv 动漫',
-			'realSr.variantRealCuganDenoise' => ({required Object noise}) => 'Real-CUGAN 降噪 ${noise}',
-			'realSr.coremlSpeed' => '速度优先 (waifu2x)',
-			'realSr.coremlQuality' => '质量优先 (Real-CUGAN)',
-			'realSr.coremlNoise0' => '降噪 0',
-			'realSr.coremlNoDenoise' => '无降噪',
-			'realSr.coremlInputHint' => '输入图片绝对路径或 asset 路径',
-			'realSr.coremlStartUpscale' => '开始超分',
-			'realSr.coremlStatusFillInput' => '请填写输入图片路径',
-			'realSr.coremlStatusNoModelFile' => '当前模型族没有可用的模型文件',
-			'realSr.coremlStatusPreparing' => '正在准备资源...',
-			'realSr.coremlStatusUpscaling' => '正在超分...',
-			'realSr.coremlStatusDone' => ({required Object outputPath, required Object size}) => '完成\n${outputPath}\nsize: ${size} bytes',
-			'realSr.coremlStatusFailed' => ({required Object error}) => '失败: ${error}',
-			'realSr.coremlModelOption' => '模型选项（降噪级别）',
-			'realSr.coremlGeneralOption' => '通用选项（放大倍率）',
-			'realSr.coremlTileInfo' => '分块信息',
 			'about.title' => '关于应用',
 			'about.version' => ({required Object version}) => '版本号: ${version}',
 			'about.loading' => '加载中...',
@@ -5086,7 +4764,7 @@ extension on Translations {
 			'about.networkError' => '网络错误',
 			'about.projectAddress' => '项目地址',
 			'about.projectAddressDesc' => '喜欢这个项目吗？点个star支持一下吧！',
-			'about.projectLink' => '前往 GitHub 仓库 (deretame/Breeze) ⭐',
+			'about.projectLink' => '前往 GitHub 仓库 (bakeman-org/breeze) ⭐',
 			'about.contact' => '联系方式',
 			'about.contactDesc' => '有任何想法或问题，欢迎来找我聊聊~',
 			'about.feedback' => '反馈与建议',
@@ -5224,8 +4902,6 @@ extension on Translations {
 			'comicEntry.deleteFavoriteConfirm' => ({required Object title}) => '确定要删除（${title}）的收藏记录吗？',
 			'comicEntry.deleteHistory' => '删除历史记录',
 			'comicEntry.deleteHistoryConfirm' => ({required Object title}) => '确定要删除（${title}）的历史记录吗？',
-			_ => null,
-		} ?? switch (path) {
 			'comicEntry.deleteDownload' => '删除下载记录',
 			'comicEntry.deleteDownloadConfirm' => ({required Object title}) => '确定要删除（${title}）的下载记录及文件吗？',
 			'comicEntry.deleteFailed' => '删除失败',
@@ -5304,6 +4980,8 @@ extension on Translations {
 			'fontSetting.loadFailed' => '字体加载失败',
 			'fontSetting.cleared' => '已清除',
 			'fontSetting.saved' => '已保存',
+			_ => null,
+		} ?? switch (path) {
 			'fontSetting.allCleared' => '已清空',
 			'fontSetting.noFileSelected' => '未选择文件',
 			'fontSetting.clearFile' => '清除',

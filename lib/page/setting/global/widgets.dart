@@ -39,10 +39,7 @@ Widget proxyToggle(BuildContext context, ProxySettingState proxySetting) {
         onSelectedIndexChange: (index) {
           final value = modes[index];
           if (value == proxySetting.mode) return;
-          _updateProxySetting(
-            context,
-            proxySetting.copyWith(mode: value),
-          );
+          _updateProxySetting(context, proxySetting.copyWith(mode: value));
         },
         startAction: MiuixSettingHelpers.icon(
           fallback: Icons.router_outlined,

@@ -54,7 +54,6 @@ class TranslationsEnUs extends Translations with BaseTranslations<AppLocale, Tra
 	@override late final _Translations$cache$en_US cache = _Translations$cache$en_US._(_root);
 	@override late final _Translations$dataBackup$en_US dataBackup = _Translations$dataBackup$en_US._(_root);
 	@override late final _Translations$webdavSync$en_US webdavSync = _Translations$webdavSync$en_US._(_root);
-	@override late final _Translations$realSr$en_US realSr = _Translations$realSr$en_US._(_root);
 	@override late final _Translations$about$en_US about = _Translations$about$en_US._(_root);
 	@override late final _Translations$oldHome$en_US oldHome = _Translations$oldHome$en_US._(_root);
 	@override late final _Translations$more$en_US more = _Translations$more$en_US._(_root);
@@ -296,6 +295,8 @@ class _Translations$settings$en_US extends Translations$settings$zh_CN {
 	@override String get leftHandModeSubtitle => 'Move floating action buttons and other controls to the left side';
 	@override String get clickCoverToStartReading => 'Tap cover to start reading';
 	@override String get clickCoverToStartReadingSubtitle => 'Tap the cover on the comic info page to start reading directly';
+	@override String get checkUpdateOnStartup => 'Check for updates on startup';
+	@override String get checkUpdateOnStartupSubtitle => 'Check for app release updates and comic follow updates on startup';
 	@override String get androidKeepAlive => 'Keep alive';
 	@override String get androidKeepAliveSubtitle => 'Use a foreground service to keep the app running in the background; shows a persistent notification';
 	@override String get backPressExit => 'Exit on back';
@@ -324,10 +325,6 @@ class _Translations$settings$en_US extends Translations$settings$zh_CN {
 	@override String get exportData => 'Export data';
 	@override String get importData => 'Import data';
 	@override String get imageProcessing => 'Image processing';
-	@override String get realSr => 'Image Super-Resolution (Experimental)';
-	@override String get realSrSubtitle => 'Experimental feature, may be unstable';
-	@override String get autoRealSr => 'Auto super-resolution';
-	@override String get resolutionThreshold => 'Resolution threshold';
 	@override String get debug => 'Debug';
 	@override String get logAddress => 'Log forward address';
 	@override String get logAddressSubtitle => 'Forward logs to specified address in real time';
@@ -383,8 +380,6 @@ class _Translations$settings$en_US extends Translations$settings$zh_CN {
 	@override String get colorBrown => 'Brown';
 	@override String get colorGrey => 'Grey';
 	@override String get colorBlueGrey => 'Blue grey';
-	@override String get coremlDebug => 'CoreML upscale debug';
-	@override String get coremlDebugSubtitle => 'Test CoreML upscale with absolute path model';
 	@override String get aboutAndMore => 'About & More';
 	@override String get changelog => 'Changelog';
 	@override String get changelogSubtitle => 'View update records for each version';
@@ -1007,89 +1002,6 @@ class _Translations$webdavSync$en_US extends Translations$webdavSync$zh_CN {
 	@override String get faqMarkdown => '### What can be synced?\n- Currently syncs Bika history, JM favorites, and JM history.\n\n### How to configure WebDAV?\n- Fill in WebDAV URL, username, password, then tap Test & Save.\n\n### How to configure S3?\n- Endpoint examples: `s3.amazonaws.com`, `s3.filebase.com`, `play.min.io`.\n- For self-hosted MinIO, fill in a custom port and disable SSL if necessary.\n\n### How often does auto-sync run?\n- Every 5 minutes.\n\n### How to trigger a manual sync?\n- Tap Test & Save on the sync config page.\n- Or toggle the auto-sync switch in Settings.';
 }
 
-// Path: realSr
-class _Translations$realSr$en_US extends Translations$realSr$zh_CN {
-	_Translations$realSr$en_US._(TranslationsEnUs root) : this._root = root, super.internal(root);
-
-	final TranslationsEnUs _root; // ignore: unused_field
-
-	// Translations
-	@override String get title => 'Image Super-Resolution (Experimental)';
-	@override String get unlimited => 'Unlimited';
-	@override String get modelDownloadFailed => 'Model download failed';
-	@override String get generalSection => 'General';
-	@override String get autoUpscaleSection => 'Auto Upscale';
-	@override String get autoUpscale => 'Auto Upscale';
-	@override String get autoUpscaleSubtitleUnavailable => 'Model not downloaded; auto upscale will not work';
-	@override String get autoUpscaleSubtitleAvailable => 'Automatically upscale when downloading or loading images';
-	@override String get conditionSection => 'Condition';
-	@override String get resolutionThreshold => 'Resolution Threshold';
-	@override String get resolutionThresholdSubtitle => 'Only auto-upscale when image width is below this value';
-	@override String get performanceSection => 'Performance';
-	@override String get concurrency => 'Concurrency';
-	@override String get concurrencySubtitle => 'Higher values suit high-end GPUs; mobile/low-end devices should keep it at 1';
-	@override String get tileSize => 'Tile Size';
-	@override String get tileSizeSubtitle => 'Set smaller if crashes occur; 0 means no tiling; desktop can try 0';
-	@override String get modelSection => 'Model';
-	@override String get model => 'Model';
-	@override String get modelSubtitle => 'Switching model family resets variant options';
-	@override String get noiseLevel => 'Denoise Level';
-	@override String get noiseLevelSubtitle => 'This option varies with the selected model';
-	@override String get blockInfo => 'Tile Info';
-	@override String get blockInfoTooltip => 'blockSize is the model input size including reflection padding;\ncontent block = blockSize - 2×shrinkSize, which is the actual拼接 output region.';
-	@override String blockInfoFormat({required Object contentSize, required Object blockSize, required Object shrinkSize}) => 'Content block ${contentSize}×${contentSize}, model input ${blockSize}×${blockSize} (with ${shrinkSize}px reflection padding)';
-	@override String get androidSuperResolution => 'Android Super-Resolution';
-	@override String get androidSuperResolutionSubtitle => 'Currently uses waifu2x upconv anime model, 2x upscale';
-	@override String get desktopStrategy => 'Upscale Strategy';
-	@override String get desktopStrategySubtitle => 'Efficiency priority uses waifu2x; quality priority uses Real-CUGAN';
-	@override String get desktopNoiseLevel => 'Denoise Level';
-	@override String get desktopNoiseLevelSubtitle => 'Conservative suits normal comics; higher levels produce stronger smearing';
-	@override String get modelManagementSection => 'Model Management';
-	@override String get downloadingModel => 'Downloading model';
-	@override String get modelReady => 'Model ready';
-	@override String get redownload => 'Redownload';
-	@override String get deleteModel => 'Delete Model';
-	@override String get deleteModelConfirm => 'Delete the downloaded super-resolution model? You will need to download it again before use.';
-	@override String get modelDeleted => 'Model deleted';
-	@override String get modelDeleteFailed => 'Failed to delete model';
-	@override String get modelNotDownloaded => 'Model not downloaded';
-	@override String get modelNotDownloadedSubtitle => 'Download model before using super-resolution';
-	@override String get downloadModel => 'Download Model';
-	@override String get manualDownload => 'Manual model download';
-	@override String get manualDownloadUnsupported => 'Manual model download is not supported on this platform';
-	@override String get openDownloadUrl => 'Open URL';
-	@override String get openDownloadUrlFailed => 'Failed to open URL';
-	@override String get importModel => 'Import model archive';
-	@override String get importModelSubtitle => 'Pick a manually downloaded 7z archive; the format and model content are validated before import';
-	@override String get importModelAction => 'Pick file';
-	@override String get modelImportSuccess => 'Model imported';
-	@override String get modelImportFailed => 'Model import failed';
-	@override String get modeEfficiency => 'Efficiency priority';
-	@override String get modeQuality => 'Quality priority';
-	@override String get noiseConservative => 'Conservative';
-	@override String get noise0 => 'No denoise';
-	@override String get noise1 => 'Denoise 1';
-	@override String get noise2 => 'Denoise 2';
-	@override String get noise3 => 'Denoise 3';
-	@override String get variantWaifu2xAnime => 'waifu2x upconv anime';
-	@override String variantRealCuganDenoise({required Object noise}) => 'Real-CUGAN denoise ${noise}';
-	@override String get coremlSpeed => 'Speed priority (waifu2x)';
-	@override String get coremlQuality => 'Quality priority (Real-CUGAN)';
-	@override String get coremlNoise0 => 'Denoise 0';
-	@override String get coremlNoDenoise => 'No denoise';
-	@override String get coremlInputHint => 'Enter input image absolute path or asset path';
-	@override String get coremlStartUpscale => 'Start upscale';
-	@override String get coremlStatusFillInput => 'Please fill in the input image path';
-	@override String get coremlStatusNoModelFile => 'No model files available for current family';
-	@override String get coremlStatusPreparing => 'Preparing resources...';
-	@override String get coremlStatusUpscaling => 'Upscaling...';
-	@override String coremlStatusDone({required Object outputPath, required Object size}) => 'Done\n${outputPath}\nsize: ${size} bytes';
-	@override String coremlStatusFailed({required Object error}) => 'Failed: ${error}';
-	@override String get coremlModelOption => 'Model option (denoise level)';
-	@override String get coremlGeneralOption => 'General option (scale)';
-	@override String get coremlTileInfo => 'Tile info';
-}
-
 // Path: about
 class _Translations$about$en_US extends Translations$about$zh_CN {
 	_Translations$about$en_US._(TranslationsEnUs root) : this._root = root, super.internal(root);
@@ -1104,7 +1016,7 @@ class _Translations$about$en_US extends Translations$about$zh_CN {
 	@override String get networkError => 'Network error';
 	@override String get projectAddress => 'Project';
 	@override String get projectAddressDesc => 'Like this project? Give it a star on GitHub!';
-	@override String get projectLink => 'Go to GitHub repo (deretame/Breeze) ⭐';
+	@override String get projectLink => 'Go to GitHub repo (bakeman-org/breeze) ⭐';
 	@override String get contact => 'Contact';
 	@override String get contactDesc => 'Have ideas or questions? Feel free to reach out~';
 	@override String get feedback => 'Feedback';
@@ -1855,6 +1767,8 @@ extension on TranslationsEnUs {
 			'settings.leftHandModeSubtitle' => 'Move floating action buttons and other controls to the left side',
 			'settings.clickCoverToStartReading' => 'Tap cover to start reading',
 			'settings.clickCoverToStartReadingSubtitle' => 'Tap the cover on the comic info page to start reading directly',
+			'settings.checkUpdateOnStartup' => 'Check for updates on startup',
+			'settings.checkUpdateOnStartupSubtitle' => 'Check for app release updates and comic follow updates on startup',
 			'settings.androidKeepAlive' => 'Keep alive',
 			'settings.androidKeepAliveSubtitle' => 'Use a foreground service to keep the app running in the background; shows a persistent notification',
 			'settings.backPressExit' => 'Exit on back',
@@ -1883,10 +1797,6 @@ extension on TranslationsEnUs {
 			'settings.exportData' => 'Export data',
 			'settings.importData' => 'Import data',
 			'settings.imageProcessing' => 'Image processing',
-			'settings.realSr' => 'Image Super-Resolution (Experimental)',
-			'settings.realSrSubtitle' => 'Experimental feature, may be unstable',
-			'settings.autoRealSr' => 'Auto super-resolution',
-			'settings.resolutionThreshold' => 'Resolution threshold',
 			'settings.debug' => 'Debug',
 			'settings.logAddress' => 'Log forward address',
 			'settings.logAddressSubtitle' => 'Forward logs to specified address in real time',
@@ -1942,8 +1852,6 @@ extension on TranslationsEnUs {
 			'settings.colorBrown' => 'Brown',
 			'settings.colorGrey' => 'Grey',
 			'settings.colorBlueGrey' => 'Blue grey',
-			'settings.coremlDebug' => 'CoreML upscale debug',
-			'settings.coremlDebugSubtitle' => 'Test CoreML upscale with absolute path model',
 			'settings.aboutAndMore' => 'About & More',
 			'settings.changelog' => 'Changelog',
 			'settings.changelogSubtitle' => 'View update records for each version',
@@ -2182,12 +2090,12 @@ extension on TranslationsEnUs {
 			'reader.doublePageLeadingBlank' => 'Leading blank',
 			'reader.doublePageLeadingBlankSubtitle' => 'Insert a blank page at the start of each chapter to shift page pairing',
 			'reader.landscapeReader' => 'Landscape reading',
-			_ => null,
-		} ?? switch (path) {
 			'reader.landscapeReaderSubtitle' => 'Switch to landscape while reading and restore the previous direction when you leave',
 			'reader.themeMode' => 'Theme mode',
 			'reader.autoRead' => 'Auto read',
 			'reader.autoReadSubtitle' => 'Automatically scroll the reader',
+			_ => null,
+		} ?? switch (path) {
 			'reader.autoReadHidePauseButton' => 'Hide pause button',
 			'reader.autoReadHidePauseButtonSubtitle' => 'Keep auto-read running without showing the pause/play button',
 			'reader.autoReadSmooth' => 'Smooth scroll',
@@ -2476,80 +2384,6 @@ extension on TranslationsEnUs {
 			'webdavSync.success' => 'Success',
 			'webdavSync.error' => 'Error',
 			'webdavSync.faqMarkdown' => '### What can be synced?\n- Currently syncs Bika history, JM favorites, and JM history.\n\n### How to configure WebDAV?\n- Fill in WebDAV URL, username, password, then tap Test & Save.\n\n### How to configure S3?\n- Endpoint examples: `s3.amazonaws.com`, `s3.filebase.com`, `play.min.io`.\n- For self-hosted MinIO, fill in a custom port and disable SSL if necessary.\n\n### How often does auto-sync run?\n- Every 5 minutes.\n\n### How to trigger a manual sync?\n- Tap Test & Save on the sync config page.\n- Or toggle the auto-sync switch in Settings.',
-			'realSr.title' => 'Image Super-Resolution (Experimental)',
-			'realSr.unlimited' => 'Unlimited',
-			'realSr.modelDownloadFailed' => 'Model download failed',
-			'realSr.generalSection' => 'General',
-			'realSr.autoUpscaleSection' => 'Auto Upscale',
-			'realSr.autoUpscale' => 'Auto Upscale',
-			'realSr.autoUpscaleSubtitleUnavailable' => 'Model not downloaded; auto upscale will not work',
-			'realSr.autoUpscaleSubtitleAvailable' => 'Automatically upscale when downloading or loading images',
-			'realSr.conditionSection' => 'Condition',
-			'realSr.resolutionThreshold' => 'Resolution Threshold',
-			'realSr.resolutionThresholdSubtitle' => 'Only auto-upscale when image width is below this value',
-			'realSr.performanceSection' => 'Performance',
-			'realSr.concurrency' => 'Concurrency',
-			'realSr.concurrencySubtitle' => 'Higher values suit high-end GPUs; mobile/low-end devices should keep it at 1',
-			'realSr.tileSize' => 'Tile Size',
-			'realSr.tileSizeSubtitle' => 'Set smaller if crashes occur; 0 means no tiling; desktop can try 0',
-			'realSr.modelSection' => 'Model',
-			'realSr.model' => 'Model',
-			'realSr.modelSubtitle' => 'Switching model family resets variant options',
-			'realSr.noiseLevel' => 'Denoise Level',
-			'realSr.noiseLevelSubtitle' => 'This option varies with the selected model',
-			'realSr.blockInfo' => 'Tile Info',
-			'realSr.blockInfoTooltip' => 'blockSize is the model input size including reflection padding;\ncontent block = blockSize - 2×shrinkSize, which is the actual拼接 output region.',
-			'realSr.blockInfoFormat' => ({required Object contentSize, required Object blockSize, required Object shrinkSize}) => 'Content block ${contentSize}×${contentSize}, model input ${blockSize}×${blockSize} (with ${shrinkSize}px reflection padding)',
-			'realSr.androidSuperResolution' => 'Android Super-Resolution',
-			'realSr.androidSuperResolutionSubtitle' => 'Currently uses waifu2x upconv anime model, 2x upscale',
-			'realSr.desktopStrategy' => 'Upscale Strategy',
-			'realSr.desktopStrategySubtitle' => 'Efficiency priority uses waifu2x; quality priority uses Real-CUGAN',
-			'realSr.desktopNoiseLevel' => 'Denoise Level',
-			'realSr.desktopNoiseLevelSubtitle' => 'Conservative suits normal comics; higher levels produce stronger smearing',
-			'realSr.modelManagementSection' => 'Model Management',
-			'realSr.downloadingModel' => 'Downloading model',
-			'realSr.modelReady' => 'Model ready',
-			'realSr.redownload' => 'Redownload',
-			'realSr.deleteModel' => 'Delete Model',
-			'realSr.deleteModelConfirm' => 'Delete the downloaded super-resolution model? You will need to download it again before use.',
-			'realSr.modelDeleted' => 'Model deleted',
-			'realSr.modelDeleteFailed' => 'Failed to delete model',
-			'realSr.modelNotDownloaded' => 'Model not downloaded',
-			'realSr.modelNotDownloadedSubtitle' => 'Download model before using super-resolution',
-			'realSr.downloadModel' => 'Download Model',
-			'realSr.manualDownload' => 'Manual model download',
-			'realSr.manualDownloadUnsupported' => 'Manual model download is not supported on this platform',
-			'realSr.openDownloadUrl' => 'Open URL',
-			'realSr.openDownloadUrlFailed' => 'Failed to open URL',
-			'realSr.importModel' => 'Import model archive',
-			'realSr.importModelSubtitle' => 'Pick a manually downloaded 7z archive; the format and model content are validated before import',
-			'realSr.importModelAction' => 'Pick file',
-			'realSr.modelImportSuccess' => 'Model imported',
-			'realSr.modelImportFailed' => 'Model import failed',
-			'realSr.modeEfficiency' => 'Efficiency priority',
-			'realSr.modeQuality' => 'Quality priority',
-			'realSr.noiseConservative' => 'Conservative',
-			'realSr.noise0' => 'No denoise',
-			'realSr.noise1' => 'Denoise 1',
-			'realSr.noise2' => 'Denoise 2',
-			'realSr.noise3' => 'Denoise 3',
-			'realSr.variantWaifu2xAnime' => 'waifu2x upconv anime',
-			'realSr.variantRealCuganDenoise' => ({required Object noise}) => 'Real-CUGAN denoise ${noise}',
-			'realSr.coremlSpeed' => 'Speed priority (waifu2x)',
-			'realSr.coremlQuality' => 'Quality priority (Real-CUGAN)',
-			'realSr.coremlNoise0' => 'Denoise 0',
-			'realSr.coremlNoDenoise' => 'No denoise',
-			'realSr.coremlInputHint' => 'Enter input image absolute path or asset path',
-			'realSr.coremlStartUpscale' => 'Start upscale',
-			'realSr.coremlStatusFillInput' => 'Please fill in the input image path',
-			'realSr.coremlStatusNoModelFile' => 'No model files available for current family',
-			'realSr.coremlStatusPreparing' => 'Preparing resources...',
-			'realSr.coremlStatusUpscaling' => 'Upscaling...',
-			'realSr.coremlStatusDone' => ({required Object outputPath, required Object size}) => 'Done\n${outputPath}\nsize: ${size} bytes',
-			'realSr.coremlStatusFailed' => ({required Object error}) => 'Failed: ${error}',
-			'realSr.coremlModelOption' => 'Model option (denoise level)',
-			'realSr.coremlGeneralOption' => 'General option (scale)',
-			'realSr.coremlTileInfo' => 'Tile info',
 			'about.title' => 'About app',
 			'about.version' => ({required Object version}) => 'Version: ${version}',
 			'about.loading' => 'Loading...',
@@ -2557,7 +2391,7 @@ extension on TranslationsEnUs {
 			'about.networkError' => 'Network error',
 			'about.projectAddress' => 'Project',
 			'about.projectAddressDesc' => 'Like this project? Give it a star on GitHub!',
-			'about.projectLink' => 'Go to GitHub repo (deretame/Breeze) ⭐',
+			'about.projectLink' => 'Go to GitHub repo (bakeman-org/breeze) ⭐',
 			'about.contact' => 'Contact',
 			'about.contactDesc' => 'Have ideas or questions? Feel free to reach out~',
 			'about.feedback' => 'Feedback',
@@ -2696,8 +2530,6 @@ extension on TranslationsEnUs {
 			'comicEntry.deleteHistory' => 'Delete History',
 			'comicEntry.deleteHistoryConfirm' => ({required Object title}) => 'Delete history record for "${title}"?',
 			'comicEntry.deleteDownload' => 'Delete Download',
-			_ => null,
-		} ?? switch (path) {
 			'comicEntry.deleteDownloadConfirm' => ({required Object title}) => 'Delete download record and files for "${title}"?',
 			'comicEntry.deleteFailed' => 'Delete failed',
 			'comicFollow.title' => 'Updates',
@@ -2776,6 +2608,8 @@ extension on TranslationsEnUs {
 			'fontSetting.cleared' => 'Cleared',
 			'fontSetting.saved' => 'Saved',
 			'fontSetting.allCleared' => 'All cleared',
+			_ => null,
+		} ?? switch (path) {
 			'fontSetting.noFileSelected' => 'No file selected',
 			'fontSetting.clearFile' => 'Clear',
 			'fontSetting.selectFile' => 'Select File',
