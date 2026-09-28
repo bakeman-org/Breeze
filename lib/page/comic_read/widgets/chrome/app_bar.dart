@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:ui';
 
 import 'package:flutter_miuix/miuix.dart';
@@ -94,24 +93,37 @@ class ComicReadAppBar extends StatelessWidget {
 
   Widget _translationAction() {
     final controller = TranslationController.instance;
-    return ValueListenableBuilder<String?>(
-      valueListenable: controller.loadingKey,
-      builder: (context, loadingKey, _) {
-        final translating =
-            loadingKey != null &&
-            loadingKey == controller.currentImagePath.value;
-        return Tooltip(
-          message: t.translation.translate,
-          child: MiuixIconButton(
-            onPressed: () => unawaited(controller.toggleCurrentPage()),
-            child: translating
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Icon(Icons.translate),
-          ),
+    return ValueListenableBuilder<bool>(
+      valueListenable: controller.autoMode,
+      builder: (context, autoMode, _) {
+        return ValueListenableBuilder<String?>(
+          valueListenable: controller.loadingKey,
+          builder: (context, loadingKey, _) {
+            final translating =
+                loadingKey != null &&
+                loadingKey == controller.currentImagePath.value;
+            final colorScheme = context.theme.colorScheme;
+            // 不用 Tooltip：其默认长按触发与「长按重翻」手势冲突。
+            // MiuixIconButton 传 null onPressed，手势统一交给外层处理。
+            return GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: controller.toggleAutoMode,
+              onLongPress: controller.retranslateCurrentPage,
+              child: MiuixIconButton(
+                onPressed: null,
+                child: translating
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : Icon(
+                        Icons.translate,
+                        color: autoMode ? colorScheme.primary : null,
+                      ),
+              ),
+            );
+          },
         );
       },
     );

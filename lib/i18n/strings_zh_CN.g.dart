@@ -3997,6 +3997,18 @@ class Translations$translation$zh_CN {
 	/// zh-CN: '翻译中…'
 	String get translating => '翻译中…';
 
+	/// zh-CN: '自动翻译已开启：滑动时将自动翻译沿途页面，长按按钮重翻当前页'
+	String get autoEnabledToast => '自动翻译已开启：滑动时将自动翻译沿途页面，长按按钮重翻当前页';
+
+	/// zh-CN: '自动翻译已关闭'
+	String get autoDisabledToast => '自动翻译已关闭';
+
+	/// zh-CN: '正在重新翻译当前页…'
+	String get retranslateStartedToast => '正在重新翻译当前页…';
+
+	/// zh-CN: '当前页正在翻译中，请稍候'
+	String get retranslateInProgressToast => '当前页正在翻译中，请稍候';
+
 	/// zh-CN: '翻译失败: $error'
 	String translationFailed({required Object error}) => '翻译失败: ${error}';
 
@@ -5217,6 +5229,10 @@ extension on Translations {
 			'translation.langEn' => 'English',
 			'translation.translate' => '翻译当前页',
 			'translation.translating' => '翻译中…',
+			'translation.autoEnabledToast' => '自动翻译已开启：滑动时将自动翻译沿途页面，长按按钮重翻当前页',
+			'translation.autoDisabledToast' => '自动翻译已关闭',
+			'translation.retranslateStartedToast' => '正在重新翻译当前页…',
+			'translation.retranslateInProgressToast' => '当前页正在翻译中，请稍候',
 			'translation.translationFailed' => ({required Object error}) => '翻译失败: ${error}',
 			'translation.ocrFailed' => ({required Object error}) => 'OCR 识别失败: ${error}',
 			'translation.noTextFound' => '未识别到文字',

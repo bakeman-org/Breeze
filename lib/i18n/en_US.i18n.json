@@ -1269,6 +1269,10 @@
     "langEn": "English",
     "translate": "Translate current page",
     "translating": "Translating…",
+    "autoEnabledToast": "Auto-translate on: pages are translated as you scroll; long-press to re-translate current page",
+    "autoDisabledToast": "Auto-translate off",
+    "retranslateStartedToast": "Re-translating current page…",
+    "retranslateInProgressToast": "Current page is already translating",
     "translationFailed": "Translation failed: $error",
     "ocrFailed": "OCR failed: $error",
     "noTextFound": "No text recognized"

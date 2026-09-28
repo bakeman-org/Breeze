@@ -1596,6 +1596,10 @@ class _Translations$translation$en_US extends Translations$translation$zh_CN {
 	@override String get langEn => 'English';
 	@override String get translate => 'Translate current page';
 	@override String get translating => 'Translating…';
+	@override String get autoEnabledToast => 'Auto-translate on: pages are translated as you scroll; long-press to re-translate current page';
+	@override String get autoDisabledToast => 'Auto-translate off';
+	@override String get retranslateStartedToast => 'Re-translating current page…';
+	@override String get retranslateInProgressToast => 'Current page is already translating';
 	@override String translationFailed({required Object error}) => 'Translation failed: ${error}';
 	@override String ocrFailed({required Object error}) => 'OCR failed: ${error}';
 	@override String get noTextFound => 'No text recognized';
@@ -2810,6 +2814,10 @@ extension on TranslationsEnUs {
 			'translation.langEn' => 'English',
 			'translation.translate' => 'Translate current page',
 			'translation.translating' => 'Translating…',
+			'translation.autoEnabledToast' => 'Auto-translate on: pages are translated as you scroll; long-press to re-translate current page',
+			'translation.autoDisabledToast' => 'Auto-translate off',
+			'translation.retranslateStartedToast' => 'Re-translating current page…',
+			'translation.retranslateInProgressToast' => 'Current page is already translating',
 			'translation.translationFailed' => ({required Object error}) => 'Translation failed: ${error}',
 			'translation.ocrFailed' => ({required Object error}) => 'OCR failed: ${error}',
 			'translation.noTextFound' => 'No text recognized',

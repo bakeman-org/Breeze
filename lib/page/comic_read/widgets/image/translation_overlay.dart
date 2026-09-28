@@ -21,37 +21,33 @@ class TranslationOverlay extends StatefulWidget {
 }
 
 class _TranslationOverlayState extends State<TranslationOverlay> {
-  String? _registeredPath;
+  bool _syncedActive = false;
+  String? _syncedPath;
 
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    _syncRegistration();
-  }
-
-  @override
-  void didUpdateWidget(covariant TranslationOverlay oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    _syncRegistration();
-  }
-
-  /// 仅活动槽位页注册自身路径，顶栏按钮据此翻译「当前页」。
-  void _syncRegistration() {
-    final isActive =
-        context.read<ReaderCubit>().state.currentSlot == widget.pageSlotIndex;
-    if (!isActive) return;
-    if (_registeredPath == widget.imagePath) return;
-    _registeredPath = widget.imagePath;
+  /// 活动状态或图片路径变化时，帧末把自身注册进控制器：
+  /// 非活动页仅进入槽位注册表供预取寻址；活动页刷新 currentImagePath。
+  void _scheduleSync(bool isActive) {
+    if (_syncedActive == isActive && _syncedPath == widget.imagePath) return;
+    _syncedActive = isActive;
+    _syncedPath = widget.imagePath;
+    final slotIndex = widget.pageSlotIndex;
+    final path = widget.imagePath;
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      TranslationController.instance.currentImagePath.value = widget.imagePath;
+      if (!mounted) return;
+      TranslationController.instance.syncOverlay(
+        slotIndex: slotIndex,
+        path: path,
+        isActive: isActive,
+      );
     });
   }
 
   @override
   void dispose() {
     final controller = TranslationController.instance;
-    if (controller.currentImagePath.value == _registeredPath) {
-      controller.currentImagePath.value = null;
+    final path = _syncedPath;
+    if (path != null) {
+      controller.removeOverlay(widget.pageSlotIndex, path);
     }
     super.dispose();
   }
@@ -61,6 +57,7 @@ class _TranslationOverlayState extends State<TranslationOverlay> {
     final isActive = context.select(
       (ReaderCubit c) => c.state.currentSlot == widget.pageSlotIndex,
     );
+    _scheduleSync(isActive);
     if (!isActive) return const SizedBox.shrink();
 
     final controller = TranslationController.instance;

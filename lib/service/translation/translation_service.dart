@@ -2,6 +2,7 @@
 // 实验: 漫画翻译。OCR（ML Kit 中文识别）+ 在线翻译 API。
 // 结果 rect 为归一化坐标（0-1），与显示尺寸解耦。
 
+import 'dart:async';
 import 'dart:io';
 import 'dart:ui' as ui;
 
@@ -111,9 +112,12 @@ class TranslationService {
 
 /// 阅读器翻译状态（全局单例，无 context 依赖）。
 ///
-/// - 活动页 overlay 把当前 imagePath 注册到 [currentImagePath]；
-/// - 顶栏按钮调 [toggleCurrentPage] 完成显示/隐藏/翻译；
-/// - 结果按 imagePath 缓存在内存，翻回该页立即复用。
+/// - overlay 在 build 同步时把「槽位 → 图片路径」注册进 [_registeredPages]，
+///   活动页同时写入 [currentImagePath]；
+/// - 顶栏按钮点击切换 [autoMode]：开启后当前页 + 后方预取页进入串行翻译
+///   队列，滑动时新当前页插队；关闭后停止派发，已生成的浮层保留；
+/// - 长按顶栏按钮 = 重翻当前页（清缓存强制重新 OCR + 翻译）；
+/// - 结果按 imagePath 缓存在内存；失败页记入 [_failedKeys]，不自动重试。
 class TranslationController {
   TranslationController._();
 
@@ -130,38 +134,148 @@ class TranslationController {
   /// 正在翻译中的页 key。
   final loadingKey = ValueNotifier<String?>(null);
 
+  /// 自动翻译模式：开启后随滑动自动翻译当前页及预取页。
+  final autoMode = ValueNotifier<bool>(false);
+
+  /// 已构建页注册表：pageSlotIndex → imagePath。
+  final _registeredPages = <int, String>{};
+  int _currentSlot = -1;
+
   final _cache = <String, List<TranslatedBlock>>{};
+  final _failedKeys = <String>{};
+  final _inFlight = <String>{};
+  final _queue = <String>[];
+  bool _pumping = false;
+
   static const _cacheLimit = 30;
+
+  /// 开启自动翻译后向前预取的页数。
+  static const _prefetchAhead = 2;
 
   List<TranslatedBlock>? blocksFor(String key) => _cache[key];
 
-  Future<void> toggleCurrentPage() async {
+  // ── overlay 注册 ──────────────────────────────────────────────────
+
+  /// overlay 在帧末同步自身状态：更新槽位注册表；活动页同时刷新
+  /// [currentImagePath] 并触发队列重排。
+  void syncOverlay({
+    required int slotIndex,
+    required String path,
+    required bool isActive,
+  }) {
+    _registeredPages[slotIndex] = path;
+    if (!isActive) return;
+    _currentSlot = slotIndex;
+    if (currentImagePath.value == path) return;
+    currentImagePath.value = path;
+    _scheduleAutoTranslations();
+  }
+
+  /// overlay 销毁时移除注册，避免预取到已回收的槽位。
+  void removeOverlay(int slotIndex, String path) {
+    if (_registeredPages[slotIndex] == path) {
+      _registeredPages.remove(slotIndex);
+    }
+    if (currentImagePath.value == path) {
+      currentImagePath.value = null;
+    }
+  }
+
+  // ── 顶栏按钮 ──────────────────────────────────────────────────────
+
+  /// 点击：切换自动翻译模式。
+  void toggleAutoMode() {
+    if (autoMode.value) {
+      autoMode.value = false;
+      _queue.clear();
+      showInfoToast(t.translation.autoDisabledToast);
+      return;
+    }
+    autoMode.value = true;
+    showInfoToast(t.translation.autoEnabledToast);
+    _scheduleAutoTranslations();
+  }
+
+  /// 长按：重翻当前页（清除缓存与失败标记后强制重跑，也用于失败重试）。
+  void retranslateCurrentPage() {
     final key = currentImagePath.value;
-    if (key == null || loadingKey.value != null) return;
-
-    if (activeKeys.value.contains(key)) {
-      activeKeys.value = {...activeKeys.value}..remove(key);
+    if (key == null) return;
+    if (_inFlight.contains(key)) {
+      showInfoToast(t.translation.retranslateInProgressToast);
       return;
     }
+    _cache.remove(key);
+    _failedKeys.remove(key);
+    activeKeys.value = {...activeKeys.value}..remove(key);
+    _queue
+      ..remove(key)
+      ..insert(0, key);
+    showInfoToast(t.translation.retranslateStartedToast);
+    unawaited(_pump());
+  }
 
-    if (_cache.containsKey(key)) {
-      activeKeys.value = {...activeKeys.value, key};
-      return;
+  // ── 队列 ──────────────────────────────────────────────────────────
+
+  /// 按当前页 + 预取页重排队列（新当前页插队，旧计划作废）。
+  void _scheduleAutoTranslations() {
+    if (!autoMode.value) return;
+    final wanted = <String>[];
+    final current = currentImagePath.value;
+    if (current != null) wanted.add(current);
+    for (var i = 1; i <= _prefetchAhead; i++) {
+      final path = _registeredPages[_currentSlot + i];
+      if (path != null) wanted.add(path);
     }
+    _queue
+      ..clear()
+      ..addAll([
+        for (final key in wanted)
+          if (!_isScheduledOrDone(key)) key,
+      ]);
+    unawaited(_pump());
+  }
 
-    loadingKey.value = key;
+  bool _isScheduledOrDone(String key) =>
+      _inFlight.contains(key) ||
+      _queue.contains(key) ||
+      _cache.containsKey(key) ||
+      _failedKeys.contains(key);
+
+  Future<void> _pump() async {
+    if (_pumping) return;
+    _pumping = true;
     try {
-      final blocks = await TranslationService.translateImage(key);
-      if (_cache.length >= _cacheLimit) {
-        _cache.remove(_cache.keys.first);
+      while (_queue.isNotEmpty) {
+        final key = _queue.removeAt(0);
+        if (_inFlight.contains(key) ||
+            _cache.containsKey(key) ||
+            _failedKeys.contains(key)) {
+          continue;
+        }
+        _inFlight.add(key);
+        loadingKey.value = key;
+        try {
+          final blocks = await TranslationService.translateImage(key);
+          if (_cache.length >= _cacheLimit) {
+            _cache.remove(_cache.keys.first);
+          }
+          _cache[key] = blocks;
+          activeKeys.value = {...activeKeys.value, key};
+        } catch (e, s) {
+          logger.e('translate page failed: $e\n$s');
+          _failedKeys.add(key);
+          if (key == currentImagePath.value) {
+            showErrorToast(
+              t.translation.translationFailed(error: e.toString()),
+            );
+          }
+        } finally {
+          _inFlight.remove(key);
+          if (loadingKey.value == key) loadingKey.value = null;
+        }
       }
-      _cache[key] = blocks;
-      activeKeys.value = {...activeKeys.value, key};
-    } catch (e, s) {
-      logger.e('translate page failed: $e\n$s');
-      showErrorToast(t.translation.translationFailed(error: e.toString()));
     } finally {
-      if (loadingKey.value == key) loadingKey.value = null;
+      _pumping = false;
     }
   }
 }

@@ -1270,6 +1270,10 @@
     "langEn": "English",
     "translate": "翻译当前页",
     "translating": "翻译中…",
+    "autoEnabledToast": "自动翻译已开启：滑动时将自动翻译沿途页面，长按按钮重翻当前页",
+    "autoDisabledToast": "自动翻译已关闭",
+    "retranslateStartedToast": "正在重新翻译当前页…",
+    "retranslateInProgressToast": "当前页正在翻译中，请稍候",
     "translationFailed": "翻译失败: $error",
     "ocrFailed": "OCR 识别失败: $error",
     "noTextFound": "未识别到文字"
