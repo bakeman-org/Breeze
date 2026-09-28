@@ -1,6 +1,10 @@
 // lib/service/translation/translation_api.dart
-// 在线翻译 API 封装：google（免 key）/ deepl（key）。
+// 在线翻译 API 封装：google（免 key）/ deepl（key）/ baidu（国内直连）。
 
+import 'dart:convert';
+import 'dart:math';
+
+import 'package:crypto/crypto.dart';
 import 'package:zephyr/main.dart';
 
 class TranslationApi {
@@ -11,11 +15,15 @@ class TranslationApi {
     required String provider,
     required String apiKey,
     required String targetLang,
+    String baiduAppId = '',
+    String baiduSecretKey = '',
   }) async {
     if (text.trim().isEmpty) return '';
     switch (provider) {
       case 'deepl':
         return _deepl(text, apiKey, targetLang);
+      case 'baidu':
+        return _baidu(text, baiduAppId, baiduSecretKey, targetLang);
       default:
         return _google(text, targetLang);
     }
@@ -90,4 +98,63 @@ class TranslationApi {
     }
     return translated.trim();
   }
+
+  // 百度翻译通用翻译 API（国内可直连）：sign = md5(appid + q + salt + 密钥)。
+  // https://fanyi-api.baidu.com/api/trans/vip/translate?q=&from=auto&to=zh&appid=&salt=&sign=
+  static Future<String> _baidu(
+    String text,
+    String appId,
+    String secretKey,
+    String targetLang,
+  ) async {
+    if (appId.trim().isEmpty || secretKey.trim().isEmpty) {
+      throw Exception('baidu: missing appId / secretKey');
+    }
+    final salt = _random.nextInt(1 << 32).toString();
+    final sign = md5
+        .convert(utf8.encode('$appId$text$salt$secretKey'))
+        .toString();
+    final to = targetLang.toLowerCase() == 'zh' ? 'zh' : 'en';
+    final res = await fetch(
+      'https://fanyi-api.baidu.com/api/trans/vip/translate',
+      query: {
+        'q': text,
+        'from': 'auto',
+        'to': to,
+        'appid': appId,
+        'salt': salt,
+        'sign': sign,
+      },
+      timeout: const Duration(seconds: 15),
+    );
+    if (!res.ok) {
+      throw Exception('baidu HTTP ${res.status}');
+    }
+    final data = res.json;
+    if (data is! Map) {
+      throw Exception('baidu: unexpected response');
+    }
+    if (data['error_code'] != null) {
+      throw Exception(
+        'baidu ${data['error_code']}: ${data['error_msg'] ?? 'unknown'}',
+      );
+    }
+    final results = data['trans_result'];
+    if (results is! List || results.isEmpty) {
+      throw Exception('baidu: empty result');
+    }
+    final buffer = StringBuffer();
+    for (final item in results) {
+      if (item is Map && item['dst'] is String) {
+        buffer.writeln(item['dst'] as String);
+      }
+    }
+    final translated = buffer.toString().trim();
+    if (translated.isEmpty) {
+      throw Exception('baidu: empty result');
+    }
+    return translated;
+  }
+
+  static final _random = Random.secure();
 }

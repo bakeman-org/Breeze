@@ -146,6 +146,8 @@ abstract class GlobalSettingState with _$GlobalSettingState {
     @Default(false) bool enableTranslation,
     @Default('google') String translationProvider,
     @Default('') String translationApiKey,
+    @Default('') String baiduAppId,
+    @Default('') String baiduSecretKey,
     @Default('zh') String translationTargetLang,
     @Default(true) bool checkUpdateOnStartup,
     @Default([]) List<String> searchHistory,

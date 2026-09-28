@@ -83,6 +83,10 @@ class _AppBehaviorSettingPageState extends State<AppBehaviorSettingPage> {
                   _translationProvider(state, cubit),
                   if (state.translationProvider == 'deepl')
                     _translationApiKey(state, cubit),
+                  if (state.translationProvider == 'baidu') ...[
+                    _baiduAppId(state, cubit),
+                    _baiduSecretKey(state, cubit),
+                  ],
                   _translationTargetLang(state, cubit),
                 ],
               ],
@@ -120,10 +124,11 @@ class _AppBehaviorSettingPageState extends State<AppBehaviorSettingPage> {
     GlobalSettingState state,
     GlobalSettingCubit cubit,
   ) {
-    const providers = ['google', 'deepl'];
+    const providers = ['google', 'deepl', 'baidu'];
     final labels = {
       'google': t.translation.providerGoogle,
       'deepl': t.translation.providerDeepl,
+      'baidu': t.translation.providerBaidu,
     };
     final selectedIndex = providers.indexOf(state.translationProvider);
     return MiuixOverlayDropdownPreference(
@@ -190,6 +195,104 @@ class _AppBehaviorSettingPageState extends State<AppBehaviorSettingPage> {
           cubit.updateState(
             (currentSetting) =>
                 currentSetting.copyWith(translationApiKey: result),
+          );
+          showSuccessToast(t.common.settingSaved);
+        }
+      },
+    );
+  }
+
+  Widget _baiduAppId(GlobalSettingState state, GlobalSettingCubit cubit) {
+    final current = state.baiduAppId;
+    return MiuixArrowPreference(
+      title: t.translation.baiduAppId,
+      summary: current.isEmpty
+          ? t.translation.baiduAppIdSubtitle
+          : '••••••••${current.substring(current.length - 4)}',
+      startAction: MiuixSettingHelpers.icon(
+        fallback: Icons.badge_outlined,
+        name: 'badge',
+      ),
+      insideMargin: MiuixSettingHelpers.itemMargin,
+      onClick: () async {
+        var inputValue = current;
+        final result = await showDialog<String>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Text(t.translation.baiduAppId),
+            content: TextFormField(
+              initialValue: current,
+              autofocus: true,
+              onChanged: (value) => inputValue = value.trim(),
+              decoration: InputDecoration(
+                hintText: t.translation.baiduAppIdHint,
+                border: const OutlineInputBorder(),
+              ),
+            ),
+            actions: [
+              TextButton(
+                child: Text(t.common.cancel),
+                onPressed: () => Navigator.pop(context),
+              ),
+              TextButton(
+                child: Text(t.common.ok),
+                onPressed: () => Navigator.pop(context, inputValue),
+              ),
+            ],
+          ),
+        );
+        if (result != null && result != current) {
+          cubit.updateState(
+            (currentSetting) => currentSetting.copyWith(baiduAppId: result),
+          );
+          showSuccessToast(t.common.settingSaved);
+        }
+      },
+    );
+  }
+
+  Widget _baiduSecretKey(GlobalSettingState state, GlobalSettingCubit cubit) {
+    final current = state.baiduSecretKey;
+    return MiuixArrowPreference(
+      title: t.translation.baiduSecretKey,
+      summary: current.isEmpty
+          ? t.translation.baiduSecretKeySubtitle
+          : '••••••••${current.substring(current.length - 4)}',
+      startAction: MiuixSettingHelpers.icon(
+        fallback: Icons.key_outlined,
+        name: 'key',
+      ),
+      insideMargin: MiuixSettingHelpers.itemMargin,
+      onClick: () async {
+        var inputValue = current;
+        final result = await showDialog<String>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Text(t.translation.baiduSecretKey),
+            content: TextFormField(
+              initialValue: current,
+              autofocus: true,
+              onChanged: (value) => inputValue = value.trim(),
+              decoration: InputDecoration(
+                hintText: t.translation.baiduSecretKeyHint,
+                border: const OutlineInputBorder(),
+              ),
+            ),
+            actions: [
+              TextButton(
+                child: Text(t.common.cancel),
+                onPressed: () => Navigator.pop(context),
+              ),
+              TextButton(
+                child: Text(t.common.ok),
+                onPressed: () => Navigator.pop(context, inputValue),
+              ),
+            ],
+          ),
+        );
+        if (result != null && result != current) {
+          cubit.updateState(
+            (currentSetting) => currentSetting.copyWith(baiduSecretKey: result),
           );
           showSuccessToast(t.common.settingSaved);
         }

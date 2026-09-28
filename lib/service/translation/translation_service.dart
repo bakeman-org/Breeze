@@ -39,6 +39,8 @@ class TranslationService {
     final targetLang = setting.translationTargetLang;
     final provider = setting.translationProvider;
     final apiKey = setting.translationApiKey;
+    final baiduAppId = setting.baiduAppId;
+    final baiduSecretKey = setting.baiduSecretKey;
 
     final file = File(imagePath);
     if (!await file.exists()) {
@@ -84,6 +86,8 @@ class TranslationService {
             provider: provider,
             apiKey: apiKey,
             targetLang: targetLang,
+            baiduAppId: baiduAppId,
+            baiduSecretKey: baiduSecretKey,
           ),
       ];
       final results = await Future.wait(chunk);

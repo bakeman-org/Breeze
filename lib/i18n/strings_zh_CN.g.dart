@@ -3973,6 +3973,9 @@ class Translations$translation$zh_CN {
 	/// zh-CN: 'DeepL'
 	String get providerDeepl => 'DeepL';
 
+	/// zh-CN: '百度翻译（国内直连）'
+	String get providerBaidu => '百度翻译（国内直连）';
+
 	/// zh-CN: 'API Key'
 	String get apiKey => 'API Key';
 
@@ -3981,6 +3984,24 @@ class Translations$translation$zh_CN {
 
 	/// zh-CN: '输入 DeepL API Key'
 	String get apiKeyHint => '输入 DeepL API Key';
+
+	/// zh-CN: '百度 App ID'
+	String get baiduAppId => '百度 App ID';
+
+	/// zh-CN: '百度翻译开放平台 App ID'
+	String get baiduAppIdSubtitle => '百度翻译开放平台 App ID';
+
+	/// zh-CN: '输入百度翻译 App ID'
+	String get baiduAppIdHint => '输入百度翻译 App ID';
+
+	/// zh-CN: '百度密钥'
+	String get baiduSecretKey => '百度密钥';
+
+	/// zh-CN: '百度翻译开放平台密钥'
+	String get baiduSecretKeySubtitle => '百度翻译开放平台密钥';
+
+	/// zh-CN: '输入百度翻译密钥'
+	String get baiduSecretKeyHint => '输入百度翻译密钥';
 
 	/// zh-CN: '目标语言'
 	String get targetLang => '目标语言';
@@ -5221,9 +5242,16 @@ extension on Translations {
 			'translation.provider' => '翻译服务',
 			'translation.providerGoogle' => 'Google 翻译（免 Key）',
 			'translation.providerDeepl' => 'DeepL',
+			'translation.providerBaidu' => '百度翻译（国内直连）',
 			'translation.apiKey' => 'API Key',
 			'translation.apiKeySubtitle' => 'DeepL 需要 API Key',
 			'translation.apiKeyHint' => '输入 DeepL API Key',
+			'translation.baiduAppId' => '百度 App ID',
+			'translation.baiduAppIdSubtitle' => '百度翻译开放平台 App ID',
+			'translation.baiduAppIdHint' => '输入百度翻译 App ID',
+			'translation.baiduSecretKey' => '百度密钥',
+			'translation.baiduSecretKeySubtitle' => '百度翻译开放平台密钥',
+			'translation.baiduSecretKeyHint' => '输入百度翻译密钥',
 			'translation.targetLang' => '目标语言',
 			'translation.langZh' => '中文',
 			'translation.langEn' => 'English',
