@@ -50,6 +50,8 @@ _GlobalSettingState _$GlobalSettingStateFromJson(
   enableTranslation: json['enableTranslation'] as bool? ?? false,
   translationProvider: json['translationProvider'] as String? ?? 'google',
   translationApiKey: json['translationApiKey'] as String? ?? '',
+  baiduAppId: json['baiduAppId'] as String? ?? '',
+  baiduSecretKey: json['baiduSecretKey'] as String? ?? '',
   translationTargetLang: json['translationTargetLang'] as String? ?? 'zh',
   checkUpdateOnStartup: json['checkUpdateOnStartup'] as bool? ?? true,
   searchHistory:
@@ -125,6 +127,8 @@ Map<String, dynamic> _$GlobalSettingStateToJson(_GlobalSettingState instance) =>
       'enableTranslation': instance.enableTranslation,
       'translationProvider': instance.translationProvider,
       'translationApiKey': instance.translationApiKey,
+      'baiduAppId': instance.baiduAppId,
+      'baiduSecretKey': instance.baiduSecretKey,
       'translationTargetLang': instance.translationTargetLang,
       'checkUpdateOnStartup': instance.checkUpdateOnStartup,
       'searchHistory': instance.searchHistory,
