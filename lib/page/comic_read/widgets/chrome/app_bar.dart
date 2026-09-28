@@ -1,9 +1,11 @@
 import 'dart:ui';
 
+import 'package:auto_route/auto_route.dart';
 import 'package:flutter_miuix/miuix.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:zephyr/config/global/global_setting.dart';
+import 'package:zephyr/config/router/router.gr.dart';
 import 'package:zephyr/page/comic_read/cubit/reader_cubit.dart';
 import 'package:zephyr/service/translation/translation_batch_service.dart';
 import 'package:zephyr/service/translation/translation_service.dart';
@@ -97,37 +99,49 @@ class ComicReadAppBar extends StatelessWidget {
     return ValueListenableBuilder<TranslationViewMode>(
       valueListenable: controller.viewMode,
       builder: (context, mode, _) {
-        return ValueListenableBuilder<String?>(
-          valueListenable: controller.loadingKey,
-          builder: (context, loadingKey, _) {
-            final translating =
-                loadingKey != null &&
-                loadingKey == controller.currentImagePath.value;
-            final colorScheme = context.theme.colorScheme;
-            final active = mode != TranslationViewMode.off;
-            return GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onTap: controller.cycleViewMode,
-              onLongPress: () => TranslationBatchService.instance.runChapter(
-                controller.registeredImagePaths(),
+        final colorScheme = context.theme.colorScheme;
+        final imagePath = controller.currentImagePath.value;
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (mode == TranslationViewMode.image && imagePath != null)
+              MiuixIconButton(
+                onPressed: () => context.pushRoute(
+                  TranslationEditorRoute(imagePath: imagePath),
+                ),
+                child: Icon(Icons.edit_outlined, color: colorScheme.primary),
               ),
-              child: MiuixIconButton(
-                onPressed: null,
-                child: translating
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : Icon(
-                        mode == TranslationViewMode.image
-                            ? Icons.photo_library_outlined
-                            : Icons.translate,
-                        color: active ? colorScheme.primary : null,
-                      ),
-              ),
-            );
-          },
+            ValueListenableBuilder<String?>(
+              valueListenable: controller.loadingKey,
+              builder: (context, loadingKey, _) {
+                final translating =
+                    loadingKey != null &&
+                    loadingKey == controller.currentImagePath.value;
+                final active = mode != TranslationViewMode.off;
+                return GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: controller.cycleViewMode,
+                  onLongPress: () => TranslationBatchService.instance
+                      .runChapter(controller.registeredImagePaths()),
+                  child: MiuixIconButton(
+                    onPressed: null,
+                    child: translating
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : Icon(
+                            mode == TranslationViewMode.image
+                                ? Icons.photo_library_outlined
+                                : Icons.translate,
+                            color: active ? colorScheme.primary : null,
+                          ),
+                  ),
+                );
+              },
+            ),
+          ],
         );
       },
     );

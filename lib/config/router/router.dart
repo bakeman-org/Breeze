@@ -65,6 +65,7 @@ class AppRouter extends RootStackRouter {
     AutoRoute(page: EhCommentsRoute.page),
     AutoRoute(page: EhLoginRoute.page),
     AutoRoute(page: EhSettingsRoute.page),
+    AutoRoute(page: TranslationEditorRoute.page),
   ];
 
   @override

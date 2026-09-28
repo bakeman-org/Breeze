@@ -4048,6 +4048,24 @@ class Translations$translation$zh_CN {
 	/// zh-CN: '批量翻译完成：成功 $success 页，失败 $failed 页'
 	String batchFinishedToast({required Object success, required Object failed}) => '批量翻译完成：成功 ${success} 页，失败 ${failed} 页';
 
+	/// zh-CN: '翻译编辑器'
+	String get editorTitle => '翻译编辑器';
+
+	/// zh-CN: '保存并重渲染'
+	String get editorSave => '保存并重渲染';
+
+	/// zh-CN: '该页暂无翻译数据，请先翻译'
+	String get editorNoBlocks => '该页暂无翻译数据，请先翻译';
+
+	/// zh-CN: '已保存并重新渲染译文图片'
+	String get editorSavedToast => '已保存并重新渲染译文图片';
+
+	/// zh-CN: '编辑译文'
+	String get editDialogTitle => '编辑译文';
+
+	/// zh-CN: '输入修正后的译文'
+	String get editDialogHint => '输入修正后的译文';
+
 	/// zh-CN: '翻译失败: $error'
 	String translationFailed({required Object error}) => '翻译失败: ${error}';
 
@@ -5285,6 +5303,12 @@ extension on Translations {
 			'translation.batchAlreadyRunningToast' => '批量翻译进行中，请稍候',
 			'translation.batchCancelledToast' => '批量翻译已取消',
 			'translation.batchFinishedToast' => ({required Object success, required Object failed}) => '批量翻译完成：成功 ${success} 页，失败 ${failed} 页',
+			'translation.editorTitle' => '翻译编辑器',
+			'translation.editorSave' => '保存并重渲染',
+			'translation.editorNoBlocks' => '该页暂无翻译数据，请先翻译',
+			'translation.editorSavedToast' => '已保存并重新渲染译文图片',
+			'translation.editDialogTitle' => '编辑译文',
+			'translation.editDialogHint' => '输入修正后的译文',
 			'translation.translationFailed' => ({required Object error}) => '翻译失败: ${error}',
 			'translation.ocrFailed' => ({required Object error}) => 'OCR 识别失败: ${error}',
 			'translation.noTextFound' => '未识别到文字',

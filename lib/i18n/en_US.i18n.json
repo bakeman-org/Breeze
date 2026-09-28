@@ -1286,6 +1286,12 @@
     "batchAlreadyRunningToast": "Batch translation in progress, please wait",
     "batchCancelledToast": "Batch translation cancelled",
     "batchFinishedToast": "Batch done: $success succeeded, $failed failed",
+    "editorTitle": "Translation editor",
+    "editorSave": "Save & re-render",
+    "editorNoBlocks": "No translation data for this page yet",
+    "editorSavedToast": "Saved and re-rendered translated image",
+    "editDialogTitle": "Edit translation",
+    "editDialogHint": "Enter corrected translation",
     "translationFailed": "Translation failed: $error",
     "ocrFailed": "OCR failed: $error",
     "noTextFound": "No text recognized"

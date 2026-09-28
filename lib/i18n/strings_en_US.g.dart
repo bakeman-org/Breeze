@@ -1613,6 +1613,12 @@ class _Translations$translation$en_US extends Translations$translation$zh_CN {
 	@override String get batchAlreadyRunningToast => 'Batch translation in progress, please wait';
 	@override String get batchCancelledToast => 'Batch translation cancelled';
 	@override String batchFinishedToast({required Object success, required Object failed}) => 'Batch done: ${success} succeeded, ${failed} failed';
+	@override String get editorTitle => 'Translation editor';
+	@override String get editorSave => 'Save & re-render';
+	@override String get editorNoBlocks => 'No translation data for this page yet';
+	@override String get editorSavedToast => 'Saved and re-rendered translated image';
+	@override String get editDialogTitle => 'Edit translation';
+	@override String get editDialogHint => 'Enter corrected translation';
 	@override String translationFailed({required Object error}) => 'Translation failed: ${error}';
 	@override String ocrFailed({required Object error}) => 'OCR failed: ${error}';
 	@override String get noTextFound => 'No text recognized';
@@ -2844,6 +2850,12 @@ extension on TranslationsEnUs {
 			'translation.batchAlreadyRunningToast' => 'Batch translation in progress, please wait',
 			'translation.batchCancelledToast' => 'Batch translation cancelled',
 			'translation.batchFinishedToast' => ({required Object success, required Object failed}) => 'Batch done: ${success} succeeded, ${failed} failed',
+			'translation.editorTitle' => 'Translation editor',
+			'translation.editorSave' => 'Save & re-render',
+			'translation.editorNoBlocks' => 'No translation data for this page yet',
+			'translation.editorSavedToast' => 'Saved and re-rendered translated image',
+			'translation.editDialogTitle' => 'Edit translation',
+			'translation.editDialogHint' => 'Enter corrected translation',
 			'translation.translationFailed' => ({required Object error}) => 'Translation failed: ${error}',
 			'translation.ocrFailed' => ({required Object error}) => 'OCR failed: ${error}',
 			'translation.noTextFound' => 'No text recognized',

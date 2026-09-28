@@ -1287,6 +1287,12 @@
     "batchAlreadyRunningToast": "批量翻译进行中，请稍候",
     "batchCancelledToast": "批量翻译已取消",
     "batchFinishedToast": "批量翻译完成：成功 $success 页，失败 $failed 页",
+    "editorTitle": "翻译编辑器",
+    "editorSave": "保存并重渲染",
+    "editorNoBlocks": "该页暂无翻译数据，请先翻译",
+    "editorSavedToast": "已保存并重新渲染译文图片",
+    "editDialogTitle": "编辑译文",
+    "editDialogHint": "输入修正后的译文",
     "translationFailed": "翻译失败: $error",
     "ocrFailed": "OCR 识别失败: $error",
     "noTextFound": "未识别到文字"
