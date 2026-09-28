@@ -4018,11 +4018,14 @@ class Translations$translation$zh_CN {
 	/// zh-CN: '翻译中…'
 	String get translating => '翻译中…';
 
-	/// zh-CN: '自动翻译已开启：滑动时将自动翻译沿途页面，长按按钮重翻当前页'
-	String get autoEnabledToast => '自动翻译已开启：滑动时将自动翻译沿途页面，长按按钮重翻当前页';
+	/// zh-CN: '翻译已关闭'
+	String get viewModeOffToast => '翻译已关闭';
 
-	/// zh-CN: '自动翻译已关闭'
-	String get autoDisabledToast => '自动翻译已关闭';
+	/// zh-CN: '译文浮层模式：滑动时自动翻译，长按重翻当前页'
+	String get viewModeOverlayToast => '译文浮层模式：滑动时自动翻译，长按重翻当前页';
+
+	/// zh-CN: '译文图片模式：显示已生成的翻译图片'
+	String get viewModeImageToast => '译文图片模式：显示已生成的翻译图片';
 
 	/// zh-CN: '正在重新翻译当前页…'
 	String get retranslateStartedToast => '正在重新翻译当前页…';
@@ -5257,8 +5260,9 @@ extension on Translations {
 			'translation.langEn' => 'English',
 			'translation.translate' => '翻译当前页',
 			'translation.translating' => '翻译中…',
-			'translation.autoEnabledToast' => '自动翻译已开启：滑动时将自动翻译沿途页面，长按按钮重翻当前页',
-			'translation.autoDisabledToast' => '自动翻译已关闭',
+			'translation.viewModeOffToast' => '翻译已关闭',
+			'translation.viewModeOverlayToast' => '译文浮层模式：滑动时自动翻译，长按重翻当前页',
+			'translation.viewModeImageToast' => '译文图片模式：显示已生成的翻译图片',
 			'translation.retranslateStartedToast' => '正在重新翻译当前页…',
 			'translation.retranslateInProgressToast' => '当前页正在翻译中，请稍候',
 			'translation.translationFailed' => ({required Object error}) => '翻译失败: ${error}',

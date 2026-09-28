@@ -9,6 +9,8 @@ import 'package:zephyr/main.dart';
 import 'package:zephyr/page/comic_read/cubit/image_size_cubit.dart';
 import 'package:zephyr/page/comic_read/cubit/reader_cubit.dart';
 import 'package:zephyr/page/comic_read/widgets/image/translation_overlay.dart';
+import 'package:zephyr/service/translation/translation_image_renderer.dart';
+import 'package:zephyr/service/translation/translation_service.dart';
 
 class ImageDisplay extends StatefulWidget {
   final String imagePath;
@@ -40,12 +42,15 @@ class _ImageDisplayState extends State<ImageDisplay> {
   bool _einkDelayFinished = true;
   bool _wasRowActive = false;
 
+  String? _translatedPath;
+
   bool get isColumn => widget.isColumn;
 
   @override
   void initState() {
     super.initState();
     _resolveImageMeta();
+    _resolveTranslatedPath();
     _startEinkDelayIfNeeded(
       context.read<GlobalSettingCubit>().state.readSetting,
     );
@@ -61,6 +66,7 @@ class _ImageDisplayState extends State<ImageDisplay> {
       _rawWidth = null;
       _rawHeight = null;
       _resolveImageMeta();
+      _resolveTranslatedPath();
     }
 
     if (widget.isColumn) {
@@ -131,6 +137,20 @@ class _ImageDisplayState extends State<ImageDisplay> {
     _imageStream = newStream;
     _imageListener = newListener;
     newStream.addListener(newListener);
+  }
+
+  /// 解析当前页是否已有译文 PNG；存在则记录路径供 image 模式显示。
+  void _resolveTranslatedPath() {
+    final expected = TranslationImageRenderer.translatedPathFor(
+      widget.imagePath,
+    );
+    File(expected).exists().then((exists) {
+      if (!mounted) return;
+      final next = exists ? expected : null;
+      if (_translatedPath != next) {
+        setState(() => _translatedPath = next);
+      }
+    });
   }
 
   void _updateCubitSize(double actualWidth) {
@@ -223,58 +243,79 @@ class _ImageDisplayState extends State<ImageDisplay> {
           alignment: widget.imageAlignment,
           child: Stack(
             children: [
-              Image.file(
-                File(widget.imagePath),
-                width: width,
-                cacheWidth: cacheWidth,
-                fit: isColumn ? BoxFit.fill : BoxFit.contain,
-                alignment: widget.imageAlignment,
-                gaplessPlayback: true,
-                frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
-                  if (wasSynchronouslyLoaded || frame != null) {
-                    if (!isColumn &&
-                        canUseEinkMask &&
-                        isActiveRowImage &&
-                        !_einkDelayFinished) {
-                      return Container(width: width, color: Colors.white);
-                    }
-                    return child;
+              ValueListenableBuilder<TranslationViewMode>(
+                valueListenable: TranslationController.instance.viewMode,
+                builder: (context, mode, _) {
+                  if (mode == TranslationViewMode.image &&
+                      _translatedPath == null) {
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      if (mounted) _resolveTranslatedPath();
+                    });
                   }
+                  final useTranslated =
+                      mode == TranslationViewMode.image &&
+                      _translatedPath != null;
+                  return Image.file(
+                    File(useTranslated ? _translatedPath! : widget.imagePath),
+                    width: width,
+                    cacheWidth: cacheWidth,
+                    fit: isColumn ? BoxFit.fill : BoxFit.contain,
+                    alignment: widget.imageAlignment,
+                    gaplessPlayback: true,
+                    frameBuilder:
+                        (context, child, frame, wasSynchronouslyLoaded) {
+                          if (wasSynchronouslyLoaded || frame != null) {
+                            if (!isColumn &&
+                                canUseEinkMask &&
+                                isActiveRowImage &&
+                                !_einkDelayFinished) {
+                              return Container(
+                                width: width,
+                                color: Colors.white,
+                              );
+                            }
+                            return child;
+                          }
 
-                  if (isColumn) {
-                    return Container(
-                      width: width,
-                      color: backgroundColor,
-                      alignment: Alignment.center,
-                      child: SizedBox(
-                        width: 24,
-                        height: 24,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: progressColor,
-                        ),
-                      ),
-                    );
-                  } else {
-                    if (canUseEinkMask &&
-                        isActiveRowImage &&
-                        !_einkDelayFinished) {
-                      return Container(width: width, color: Colors.white);
-                    }
-                    return Container(
-                      width: width,
-                      color: backgroundColor,
-                      alignment: Alignment.center,
-                      child: SizedBox(
-                        width: 24,
-                        height: 24,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: progressColor,
-                        ),
-                      ),
-                    );
-                  }
+                          if (isColumn) {
+                            return Container(
+                              width: width,
+                              color: backgroundColor,
+                              alignment: Alignment.center,
+                              child: SizedBox(
+                                width: 24,
+                                height: 24,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: progressColor,
+                                ),
+                              ),
+                            );
+                          } else {
+                            if (canUseEinkMask &&
+                                isActiveRowImage &&
+                                !_einkDelayFinished) {
+                              return Container(
+                                width: width,
+                                color: Colors.white,
+                              );
+                            }
+                            return Container(
+                              width: width,
+                              color: backgroundColor,
+                              alignment: Alignment.center,
+                              child: SizedBox(
+                                width: 24,
+                                height: 24,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: progressColor,
+                                ),
+                              ),
+                            );
+                          }
+                        },
+                  );
                 },
               ),
               // 译文浮层：与图片边界完全重合，归一化 rect 直接按此尺寸缩放。

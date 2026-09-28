@@ -93,9 +93,9 @@ class ComicReadAppBar extends StatelessWidget {
 
   Widget _translationAction() {
     final controller = TranslationController.instance;
-    return ValueListenableBuilder<bool>(
-      valueListenable: controller.autoMode,
-      builder: (context, autoMode, _) {
+    return ValueListenableBuilder<TranslationViewMode>(
+      valueListenable: controller.viewMode,
+      builder: (context, mode, _) {
         return ValueListenableBuilder<String?>(
           valueListenable: controller.loadingKey,
           builder: (context, loadingKey, _) {
@@ -103,11 +103,10 @@ class ComicReadAppBar extends StatelessWidget {
                 loadingKey != null &&
                 loadingKey == controller.currentImagePath.value;
             final colorScheme = context.theme.colorScheme;
-            // 不用 Tooltip：其默认长按触发与「长按重翻」手势冲突。
-            // MiuixIconButton 传 null onPressed，手势统一交给外层处理。
+            final active = mode != TranslationViewMode.off;
             return GestureDetector(
               behavior: HitTestBehavior.opaque,
-              onTap: controller.toggleAutoMode,
+              onTap: controller.cycleViewMode,
               onLongPress: controller.retranslateCurrentPage,
               child: MiuixIconButton(
                 onPressed: null,
@@ -118,8 +117,10 @@ class ComicReadAppBar extends StatelessWidget {
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
                     : Icon(
-                        Icons.translate,
-                        color: autoMode ? colorScheme.primary : null,
+                        mode == TranslationViewMode.image
+                            ? Icons.photo_library_outlined
+                            : Icons.translate,
+                        color: active ? colorScheme.primary : null,
                       ),
               ),
             );

@@ -12,6 +12,7 @@ import 'package:zephyr/config/global/global_setting.dart';
 import 'package:zephyr/i18n/strings.g.dart';
 import 'package:zephyr/main.dart';
 import 'package:zephyr/service/translation/translation_api.dart';
+import 'package:zephyr/service/translation/translation_image_renderer.dart';
 import 'package:zephyr/widgets/toast.dart';
 
 class TranslatedBlock {
@@ -114,12 +115,16 @@ class TranslationService {
   }
 }
 
+/// 阅读器翻译显示模式。
+enum TranslationViewMode { off, overlay, image }
+
 /// 阅读器翻译状态（全局单例，无 context 依赖）。
 ///
 /// - overlay 在 build 同步时把「槽位 → 图片路径」注册进 [_registeredPages]，
 ///   活动页同时写入 [currentImagePath]；
-/// - 顶栏按钮点击切换 [autoMode]：开启后当前页 + 后方预取页进入串行翻译
-///   队列，滑动时新当前页插队；关闭后停止派发，已生成的浮层保留；
+/// - 顶栏按钮点击循环切换 [viewMode]：off→overlay→image→off。
+///   overlay 模式下当前页 + 后方预取页进入串行翻译队列，滑动时新当前页
+///   插队；image 模式停止派发新翻译，仅显示已生成的译文 PNG；
 /// - 长按顶栏按钮 = 重翻当前页（清缓存强制重新 OCR + 翻译）；
 /// - 结果按 imagePath 缓存在内存；失败页记入 [_failedKeys]，不自动重试。
 class TranslationController {
@@ -138,8 +143,8 @@ class TranslationController {
   /// 正在翻译中的页 key。
   final loadingKey = ValueNotifier<String?>(null);
 
-  /// 自动翻译模式：开启后随滑动自动翻译当前页及预取页。
-  final autoMode = ValueNotifier<bool>(false);
+  /// 翻译显示模式：off / overlay / image。
+  final viewMode = ValueNotifier<TranslationViewMode>(TranslationViewMode.off);
 
   /// 已构建页注册表：pageSlotIndex → imagePath。
   final _registeredPages = <int, String>{};
@@ -187,17 +192,25 @@ class TranslationController {
 
   // ── 顶栏按钮 ──────────────────────────────────────────────────────
 
-  /// 点击：切换自动翻译模式。
-  void toggleAutoMode() {
-    if (autoMode.value) {
-      autoMode.value = false;
-      _queue.clear();
-      showInfoToast(t.translation.autoDisabledToast);
-      return;
+  /// 点击：循环切换显示模式 off → overlay → image → off。
+  void cycleViewMode() {
+    final next = switch (viewMode.value) {
+      TranslationViewMode.off => TranslationViewMode.overlay,
+      TranslationViewMode.overlay => TranslationViewMode.image,
+      TranslationViewMode.image => TranslationViewMode.off,
+    };
+    viewMode.value = next;
+    switch (next) {
+      case TranslationViewMode.off:
+        _queue.clear();
+        showInfoToast(t.translation.viewModeOffToast);
+      case TranslationViewMode.overlay:
+        showInfoToast(t.translation.viewModeOverlayToast);
+        _scheduleAutoTranslations();
+      case TranslationViewMode.image:
+        _queue.clear();
+        showInfoToast(t.translation.viewModeImageToast);
     }
-    autoMode.value = true;
-    showInfoToast(t.translation.autoEnabledToast);
-    _scheduleAutoTranslations();
   }
 
   /// 长按：重翻当前页（清除缓存与失败标记后强制重跑，也用于失败重试）。
@@ -222,7 +235,7 @@ class TranslationController {
 
   /// 按当前页 + 预取页重排队列（新当前页插队，旧计划作废）。
   void _scheduleAutoTranslations() {
-    if (!autoMode.value) return;
+    if (viewMode.value != TranslationViewMode.overlay) return;
     final wanted = <String>[];
     final current = currentImagePath.value;
     if (current != null) wanted.add(current);
@@ -265,6 +278,13 @@ class TranslationController {
           }
           _cache[key] = blocks;
           activeKeys.value = {...activeKeys.value, key};
+          // 渲染译文 PNG + 写 blocks JSON，供 image 模式显示与编辑器加载。
+          unawaited(
+            TranslationImageRenderer.render(
+              imagePath: key,
+              blocks: blocks,
+            ).then((_) => TranslationImageRenderer.saveBlocksJson(key, blocks)),
+          );
         } catch (e, s) {
           logger.e('translate page failed: $e\n$s');
           _failedKeys.add(key);

@@ -63,42 +63,50 @@ class _TranslationOverlayState extends State<TranslationOverlay> {
 
     final controller = TranslationController.instance;
     return IgnorePointer(
-      child: ValueListenableBuilder<Set<String>>(
-        valueListenable: controller.activeKeys,
-        builder: (context, activeKeys, _) {
-          final blocks = activeKeys.contains(widget.imagePath)
-              ? controller.blocksFor(widget.imagePath)
-              : null;
-          return Stack(
-            fit: StackFit.expand,
-            children: [
-              if (blocks != null && blocks.isNotEmpty)
-                CustomPaint(painter: _TranslationPainter(blocks)),
-              ValueListenableBuilder<String?>(
-                valueListenable: controller.loadingKey,
-                builder: (context, loadingKey, _) {
-                  if (loadingKey != widget.imagePath) {
-                    return const SizedBox.shrink();
-                  }
-                  return const Center(
-                    child: SizedBox(
-                      width: 32,
-                      height: 32,
-                      child: ColoredBox(
-                        color: Colors.black54,
-                        child: Padding(
-                          padding: EdgeInsets.all(6),
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2.5,
-                            color: Colors.white,
+      child: ValueListenableBuilder<TranslationViewMode>(
+        valueListenable: controller.viewMode,
+        builder: (context, mode, _) {
+          if (mode != TranslationViewMode.overlay) {
+            return const SizedBox.shrink();
+          }
+          return ValueListenableBuilder<Set<String>>(
+            valueListenable: controller.activeKeys,
+            builder: (context, activeKeys, _) {
+              final blocks = activeKeys.contains(widget.imagePath)
+                  ? controller.blocksFor(widget.imagePath)
+                  : null;
+              return Stack(
+                fit: StackFit.expand,
+                children: [
+                  if (blocks != null && blocks.isNotEmpty)
+                    CustomPaint(painter: _TranslationPainter(blocks)),
+                  ValueListenableBuilder<String?>(
+                    valueListenable: controller.loadingKey,
+                    builder: (context, loadingKey, _) {
+                      if (loadingKey != widget.imagePath) {
+                        return const SizedBox.shrink();
+                      }
+                      return const Center(
+                        child: SizedBox(
+                          width: 32,
+                          height: 32,
+                          child: ColoredBox(
+                            color: Colors.black54,
+                            child: Padding(
+                              padding: EdgeInsets.all(6),
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2.5,
+                                color: Colors.white,
+                              ),
+                            ),
                           ),
                         ),
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ],
+                      );
+                    },
+                  ),
+                ],
+              );
+            },
           );
         },
       ),
