@@ -33,13 +33,16 @@ class ReaderOrientationController {
             DeviceOrientation.landscapeLeft,
             DeviceOrientation.landscapeRight,
           ]
-        : const [DeviceOrientation.portraitUp, DeviceOrientation.portraitDown];
+        // 关闭横屏阅读时，不强制锁竖屏，而是释放回全方向跟随系统，
+        // 这样应用其他页面在用户旋转系统时也能横屏。
+        : DeviceOrientation.values;
     final previousRequest = _pendingRequest;
     final request = _applyAfter(previousRequest, orientations);
     _pendingRequest = request;
     await request;
   }
 
+  /// 退出阅读页时释放方向锁定，让其他页面可自由跟随系统旋转。
   Future<void> restorePortrait() async {
     if (!_isActive) {
       return;

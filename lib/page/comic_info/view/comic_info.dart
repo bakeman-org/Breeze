@@ -735,7 +735,9 @@ class _ComicInfoState extends State<_ComicInfo>
   Widget _constrainedSliver(Widget sliver) {
     return SliverLayoutBuilder(
       builder: (context, constraints) {
-        final horizontalPadding = ((constraints.crossAxisExtent - 1120) / 2)
+        // 横屏/平板/桌面：内容约束到 840 宽并居中，避免单栏拉太宽难读。
+        // 竖屏手机：左右各 20 padding 贴边。
+        final horizontalPadding = ((constraints.crossAxisExtent - 840) / 2)
             .clamp(20.0, double.infinity)
             .toDouble();
         return SliverPadding(

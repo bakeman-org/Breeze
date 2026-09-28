@@ -28,7 +28,6 @@ import 'package:zephyr/plugin/plugin_registry_service.dart';
 import 'package:zephyr/service/startup_database_snapshot_service.dart';
 import 'package:zephyr/src/rust/api/qjs.dart';
 import 'package:zephyr/src/rust/api/simple.dart';
-import 'package:zephyr/util/debouncer.dart';
 import 'package:zephyr/util/error_filter.dart';
 import 'package:zephyr/util/font/font_profile.dart';
 import 'package:zephyr/util/get_path.dart';
@@ -247,12 +246,11 @@ Future<(GlobalSettingCubit, PluginRegistryCubit)> initServices() async {
       cache.maximumSizeBytes = (isDesktop ? 512 : 220) * 1024 * 1024;
       cache.maximumSize = isDesktop ? 300 : 100;
 
-      if (!isTabletWithOutContext()) {
-        await SystemChrome.setPreferredOrientations([
-          DeviceOrientation.portraitUp,
-          DeviceOrientation.portraitDown,
-        ]);
-      }
+      // 不再锁定手机竖屏：允许手机和平板都跟随系统旋转，
+      // 让所有页面支持横屏（配合各页的响应式布局）。
+      // 阅读器内仍由 ReaderOrientationController 根据 readSetting.landscapeReader
+      // 临时强制横屏，退出时释放回全方向跟随系统。
+      await SystemChrome.setPreferredOrientations(DeviceOrientation.values);
     }(),
   ]);
 
