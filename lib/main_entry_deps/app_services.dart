@@ -26,9 +26,11 @@ import 'package:zephyr/object_box/object_box.dart';
 import 'package:zephyr/page/comic_follow/cubit/comic_follow_cubit.dart';
 import 'package:zephyr/plugin/plugin_registry_service.dart';
 import 'package:zephyr/service/startup_database_snapshot_service.dart';
+import 'package:zephyr/service/home_widget/home_widget_service.dart';
 import 'package:zephyr/src/rust/api/qjs.dart';
 import 'package:zephyr/src/rust/api/simple.dart';
 import 'package:zephyr/util/error_filter.dart';
+import 'package:zephyr/util/deep_link.dart';
 import 'package:zephyr/util/font/font_profile.dart';
 import 'package:zephyr/util/get_path.dart';
 import 'package:zephyr/util/manage_cache.dart';
@@ -312,6 +314,10 @@ Future<(GlobalSettingCubit, PluginRegistryCubit)> initServices() async {
   //   这样 AppBootstrapPage 只剩「注册回调 + 数据库迁移 + 应用锁」，
   //   1-2 帧内就能导航走，用户看不到第二次 loading。
   await PluginRegistryService.I.init();
+
+  // 桌面小部件：注册 deep link 处理 + 启动时同步一次最近下载数据。
+  DeepLinkHandler.init();
+  unawaited(HomeWidgetService.updateWidgetData());
 
   unawaited(saveStartupDatabaseSnapshot());
 

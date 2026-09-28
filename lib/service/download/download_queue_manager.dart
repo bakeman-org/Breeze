@@ -12,6 +12,7 @@ import 'package:zephyr/service/download/download_notification_reporter.dart';
 import 'package:zephyr/service/download/download_asset_store.dart';
 import 'package:zephyr/service/download/download_task_repository.dart';
 import 'package:zephyr/service/download/models/download_task_json.dart';
+import 'package:zephyr/service/home_widget/home_widget_service.dart';
 import 'package:zephyr/service/lifecycle/foreground_task/foreground_task_service.dart';
 
 import 'package:zephyr/util/error_filter.dart';
@@ -268,6 +269,10 @@ class DownloadQueueManager {
 
       // 下载成功后清理所有已完成的任务记录
       _removeAllCompletedTasks();
+      // 下载完成后刷新桌面小部件数据
+      if (Platform.isAndroid || Platform.isIOS) {
+        unawaited(HomeWidgetService.updateWidgetData());
+      }
       logger.d('_processQueue: 任务完成并清理');
     } catch (e, s) {
       if (_isTaskCancelledOrMarked(taskKey, e)) {
